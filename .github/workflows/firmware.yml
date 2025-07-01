@@ -1,0 +1,29 @@
+name: ESP-IDF Firmware Build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build firmware
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ESP-IDF
+        uses: espressif/install-esp-idf-action@v1
+        with:
+          version: "v5.4"
+
+      - name: Build Project
+        run: |
+          cd device/firmware
+          idf.py set-target esp32s3
+          idf.py build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: device/firmware/build/monolith.*
