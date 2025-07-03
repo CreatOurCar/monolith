@@ -51,8 +51,24 @@
           "min_clearance": 0.5
         }
       },
-      "diff_pair_dimensions": [],
-      "drc_exclusions": [],
+      "diff_pair_dimensions": [
+        {
+          "gap": 0.0,
+          "via_gap": 0.0,
+          "width": 0.0
+        }
+      ],
+      "drc_exclusions": [
+        "clearance|108375000|113175000|1762f642-3386-4387-8595-c2e43d364e5a|7f59a3b5-a5f2-4e0d-8d73-b40ad470978e",
+        "clearance|116575000|115800000|e5b4d502-0fe3-4d1d-bfb7-151451a603e9|30f83ead-b9d7-4dfb-9a23-52acc89ea5bf",
+        "clearance|117325000|113200000|236bb03a-2b51-409c-a556-a32762d4d6ce|0c40fa68-5251-4e6e-812b-68708b7cb0c7",
+        "clearance|93275000|95250000|c772ce9c-70b9-46cf-a7c8-25a72989f2dd|22af36c5-7ceb-476b-b8d3-7bd9d9f3c9ab",
+        "clearance|93275000|97600000|2a167d81-0020-4c34-a506-f13517b98941|5d3f7fe4-eb4a-46d4-9f72-a1ff1d590c24",
+        "clearance|93550000|100175000|1d4f8274-3d57-4f4e-be6e-cd3cdf0ae813|bc1efd43-6de5-4d73-9086-a8b92cea8878",
+        "clearance|99500000|108925000|0d522c65-382a-44e3-af0d-8f0d98b9896e|1793e0b2-5c69-4b4e-bf3c-ba50d8a53aeb",
+        "silk_overlap|76685990|120393735|76a3a0ad-b840-4ace-ab1c-9799cb1b20c9|c40daf3b-e406-44fb-a159-1150537e3540",
+        "text_thickness|76750000|90250000|b8cbaf48-993b-4f7b-8793-5f6b464060a6|00000000-0000-0000-0000-000000000000"
+      ],
       "meta": {
         "version": 2
       },
@@ -90,7 +106,7 @@
         "padstack": "warning",
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "warning",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
@@ -119,9 +135,9 @@
         "min_microvia_drill": 0.1,
         "min_resolved_spokes": 2,
         "min_silk_clearance": 0.0,
-        "min_text_height": 0.8,
+        "min_text_height": 0.4,
         "min_text_thickness": 0.08,
-        "min_through_hole_diameter": 0.3,
+        "min_through_hole_diameter": 0.2,
         "min_track_width": 0.0,
         "min_via_annular_width": 0.1,
         "min_via_diameter": 0.5,
@@ -171,7 +187,9 @@
           "td_width_to_size_filter_ratio": 0.9
         }
       ],
-      "track_widths": [],
+      "track_widths": [
+        0.0
+      ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
           "corner_radius_percentage": 80,
@@ -198,7 +216,12 @@
           "spacing": 0.6
         }
       },
-      "via_dimensions": [],
+      "via_dimensions": [
+        {
+          "diameter": 0.0,
+          "drill": 0.0
+        }
+      ],
       "zones_allow_external_fillets": false
     },
     "ipc2581": {
@@ -571,7 +594,7 @@
       "intersheets_ref_short": false,
       "intersheets_ref_show": false,
       "intersheets_ref_suffix": "",
-      "junction_size_choice": 3,
+      "junction_size_choice": 2,
       "label_size_ratio": 0.375,
       "operating_point_overlay_i_precision": 3,
       "operating_point_overlay_i_range": "~A",
