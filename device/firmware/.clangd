@@ -9,5 +9,4 @@ CompileFlags:
   ]
 
 Diagnostics:
-  Suppress: [
-  ]
+  Suppress: [ ]
