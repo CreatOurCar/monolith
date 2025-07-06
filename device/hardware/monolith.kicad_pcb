@@ -22269,7 +22269,7 @@
 				)
 			)
 		)
-		(property "Value" "I2C2"
+		(property "Value" "I2C0"
 			(at -0.175 2.9 180)
 			(layer "F.SilkS")
 			(uuid "9de8d745-92be-41ff-aacf-5580704b1e5d")

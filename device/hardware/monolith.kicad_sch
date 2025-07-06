@@ -12485,7 +12485,7 @@
 		)
 		(uuid "0f2aad0b-cda4-4bfc-8472-336cab858605")
 	)
-	(label "SCL2"
+	(label "SCL0"
 		(at 92.71 146.05 0)
 		(effects
 			(font
@@ -12585,7 +12585,7 @@
 		)
 		(uuid "29ecc273-e925-4355-9a64-f6815a7c1e73")
 	)
-	(label "SCL2"
+	(label "SCL0"
 		(at 218.44 152.4 0)
 		(effects
 			(font
@@ -12837,7 +12837,7 @@
 		)
 		(uuid "6b8c60a3-9928-4cfa-9fc5-a8a6c73fea5b")
 	)
-	(label "SDA2"
+	(label "SDA0"
 		(at 92.71 143.51 0)
 		(effects
 			(font
@@ -12917,7 +12917,7 @@
 		)
 		(uuid "7be1f26c-5b49-4171-a64c-d8d49966f6cd")
 	)
-	(label "SDA2"
+	(label "SDA0"
 		(at 218.44 154.94 0)
 		(effects
 			(font
@@ -12948,7 +12948,7 @@
 		)
 		(uuid "820eaacc-01da-4a50-b739-9e42de0af0d5")
 	)
-	(label "SCL2"
+	(label "SCL0"
 		(at 336.55 147.32 180)
 		(effects
 			(font
@@ -13262,7 +13262,7 @@
 		)
 		(uuid "dd17a6bb-cd48-4e52-ad5c-ec3ec665d298")
 	)
-	(label "SDA2"
+	(label "SDA0"
 		(at 336.55 149.86 180)
 		(effects
 			(font
@@ -14247,7 +14247,7 @@
 				(hide yes)
 			)
 		)
-		(property "Value" "I2C2"
+		(property "Value" "I2C0"
 			(at 78.74 144.78 0)
 			(effects
 				(font
