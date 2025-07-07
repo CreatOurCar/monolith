@@ -1,2 +1,3 @@
 # monolith
-![image](/web/assets/logo/wide.jpg)
+
+![image](.github/assets/wide.jpg)

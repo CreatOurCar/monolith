@@ -11,9 +11,6 @@ static void task_sdcard(void *pvParameters);
 
 void app_main(void) {
   // core system initialization
-  uint8_t mac[6];
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
-
   gpio_config_t gpio;
 
   /*** LED ********************************************************************/
@@ -81,7 +78,7 @@ void app_main(void) {
   tm.tm_hour = BCD_TO_DEC(rx[2] & 0x3F);
   tm.tm_mday = BCD_TO_DEC(rx[3] & 0x3F);
   tm.tm_mon  = BCD_TO_DEC(rx[5] & 0x1F) - 1;
-  tm.tm_year = BCD_TO_DEC(rx[6]) + 100;  // after 2000
+  tm.tm_year = BCD_TO_DEC(rx[6]) + 100;  // from 2000
 
   time_t seconds = mktime(&tm);
 
@@ -134,6 +131,12 @@ void app_main(void) {
     SET_STATE(STATE_FATAL);
   }
 
+  logqueue = xQueueCreate(32, sizeof(log_t));
+
+  // TODO: add boot record
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+
   // halt on fatal error
   if (system_state == STATE_FATAL) {
     while (TRUE);
@@ -169,8 +172,6 @@ static void task_led(void *pvParameters) {
 
 static void task_sdcard(void *pvParameters) {
   int fd = (int)pvParameters;
-  // TODO: proper log format
-  logqueue = xQueueCreate(10, sizeof(int32_t));
 
   while (TRUE) {
     BaseType_t ret;
