@@ -19,8 +19,14 @@ void app_main(void) {
   gpio.intr_type    = GPIO_INTR_DISABLE;
   gpio.pull_up_en   = GPIO_PULLUP_DISABLE;
   gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
-  gpio_config(&gpio);
-  xTaskCreatePinnedToCore(task_led, "led", 512, NULL, 5, &task_led_handle, 0);
+
+  if (gpio_config(&gpio) != ESP_OK) {
+    ESP_LOGW("LED", "GPIO config failure");
+  }
+
+  if (xTaskCreatePinnedToCore(task_led, "led", 1024, NULL, 5, &task_led_handle, 0) != pdPASS) {
+    ESP_LOGW("LED", "task creation failure");
+  }
 
   /*** RST ********************************************************************/
   gpio.pin_bit_mask = (1ULL << GPIO_NUM_21);
@@ -28,13 +34,22 @@ void app_main(void) {
   gpio.intr_type    = GPIO_INTR_ANYEDGE;
   gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
-  gpio_config(&gpio);
-  gpio_install_isr_service(0);
-  gpio_isr_handler_add(GPIO_NUM_21, reset_isr, NULL);
+  if (gpio_config(&gpio) != ESP_OK) {
+    ESP_LOGW("RST", "GPIO config failure");
+  }
+
+  if (gpio_install_isr_service(0) != ESP_OK) {
+    ESP_LOGW("RST", "ISR service install failure");
+  }
+
+  if (gpio_isr_handler_add(GPIO_NUM_21, reset_isr, NULL) != ESP_OK) {
+    ESP_LOGW("RST", "ISR handler add failure");
+  }
 
   /*** NVS ********************************************************************/
   if (nvs_flash_init() != ESP_OK) {
     SET_STATE(STATE_FATAL);
+    ESP_LOGE("NVS", "flash init failure");
   }
 
   /*** RTC ********************************************************************/
@@ -50,6 +65,7 @@ void app_main(void) {
 
   if (i2c_new_master_bus(&i2c_mst_config, &i2c0_handle) != ESP_OK) {
     SET_STATE(STATE_ERR);
+    ESP_LOGW("RTC", "I2C0 init failure");
   }
 
   i2c_master_dev_handle_t rtc_handle;
@@ -61,6 +77,7 @@ void app_main(void) {
 
   if (i2c_master_bus_add_device(i2c0_handle, &rtc_cfg, &rtc_handle) != ESP_OK) {
     SET_STATE(STATE_ERR);
+    ESP_LOGW("RTC", "device init failure");
   }
 
   uint8_t tx[1] = { 0x02 };  // VL_seconds register address
@@ -68,27 +85,33 @@ void app_main(void) {
 
   if (i2c_master_transmit_receive(rtc_handle, tx, sizeof(tx), rx, sizeof(rx), 100) != ESP_OK) {
     SET_STATE(STATE_ERR);
+    memset(rx, 0, sizeof(rx));
+    ESP_LOGW("RTC", "read time transfer failure");
   }
 
   struct timeval tv;
   struct tm tm = { 0 };
 
-  tm.tm_sec  = BCD_TO_DEC(rx[0] & 0x7F);
-  tm.tm_min  = BCD_TO_DEC(rx[1] & 0x7F);
-  tm.tm_hour = BCD_TO_DEC(rx[2] & 0x3F);
-  tm.tm_mday = BCD_TO_DEC(rx[3] & 0x3F);
-  tm.tm_mon  = BCD_TO_DEC(rx[5] & 0x1F) - 1;
-  tm.tm_year = BCD_TO_DEC(rx[6]) + 100;  // from 2000
+  // rtc has valid time set
+  if (rx[6] != 0x00) {
+    tm.tm_sec  = BCD_TO_DEC(rx[0] & 0x7F);
+    tm.tm_min  = BCD_TO_DEC(rx[1] & 0x7F);
+    tm.tm_hour = BCD_TO_DEC(rx[2] & 0x3F);
+    tm.tm_mday = BCD_TO_DEC(rx[3] & 0x3F);
+    tm.tm_mon  = BCD_TO_DEC(rx[5] & 0x1F) - 1;
+    tm.tm_year = BCD_TO_DEC(rx[6]) + 100;  // from 2000
 
-  time_t seconds = mktime(&tm);
+    time_t seconds = mktime(&tm);
 
-  if (seconds == (time_t)-1) {
-    SET_STATE(STATE_ERR);
+    if (seconds == (time_t)-1) {
+      SET_STATE(STATE_ERR);
+      ESP_LOGW("RTC", "mktime failure");
+    }
+
+    gettimeofday(&tv, NULL);
+    tv.tv_sec += seconds;
+    settimeofday(&tv, NULL);
   }
-
-  gettimeofday(&tv, NULL);
-  tv.tv_sec += seconds;
-  settimeofday(&tv, NULL);
 
   /*** SDIO *******************************************************************/
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
@@ -117,18 +140,20 @@ void app_main(void) {
 
   if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
     SET_STATE(STATE_FATAL);
+    ESP_LOGE("SDCARD", "mount failure");
   }
-
-  char logpath[64];
 
   gettimeofday(&tv, NULL);
   struct tm *tm_info = localtime(&tv.tv_sec);
+
+  char logpath[64];
   strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm_info);
 
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
 
   if (fd < 0) {
     SET_STATE(STATE_FATAL);
+    ESP_LOGE("SDCARD", "log file open failure");
   }
 
   logqueue = xQueueCreate(32, sizeof(log_t));
@@ -138,9 +163,10 @@ void app_main(void) {
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
 
   // halt on fatal error
-  if (system_state == STATE_FATAL) {
-    while (TRUE);
-  }
+  // if (system_state == STATE_FATAL) {
+  //   ESP_LOGE("CORE LOGIC", "Fatal error during initialization. halting...");
+  //   while (TRUE);
+  // }
 
   // Core 0: sdcard sync task
   xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0);
@@ -149,14 +175,12 @@ void app_main(void) {
   xTaskCreatePinnedToCore(task_network, "network", 4096, NULL, 5, NULL, 0);
 
   // Core 1: data record tasks
-  xTaskCreatePinnedToCore(task_can, "can", 1024, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_gps, "gps", 1024, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_analog, "analog", 1024, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_digital, "digital", 1024, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 1024, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_temperature, "temperature", 1024, NULL, 5, NULL, 1);
-
-  vTaskStartScheduler();
+  xTaskCreatePinnedToCore(task_can, "can", 4096, NULL, 5, NULL, 1);
+  xTaskCreatePinnedToCore(task_gps, "gps", 4096, NULL, 5, NULL, 1);
+  xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, 1);
+  xTaskCreatePinnedToCore(task_digital, "digital", 4096, NULL, 5, NULL, 1);
+  xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1);
+  xTaskCreatePinnedToCore(task_temperature, "temperature", 4096, NULL, 5, NULL, 1);
 }
 
 static void IRAM_ATTR reset_isr(void *arg) {
@@ -165,23 +189,26 @@ static void IRAM_ATTR reset_isr(void *arg) {
 
 static void task_led(void *pvParameters) {
   static int32_t value = FALSE;
-  gpio_set_level(GPIO_NUM_21, value);
-  value = !value;
-  vTaskDelay(pdMS_TO_TICKS(system_state));
+
+  while (TRUE) {
+    gpio_set_level(GPIO_NUM_5, value);
+    value = !value;
+    vTaskDelay(pdMS_TO_TICKS(system_state));
+  }
 }
 
 static void task_sdcard(void *pvParameters) {
   int fd = (int)pvParameters;
+  log_t log;
 
   while (TRUE) {
     BaseType_t ret;
 
     do {
-      ret = xQueueReceive(logqueue, NULL, 0);
+      ret = xQueueReceive(logqueue, &log, 0);
 
       if (ret == pdTRUE) {
-        // TODO: proper log format
-        write(fd, "Log entry\n", 10);
+        write(fd, &log, sizeof(log));
       }
     } while (ret == pdTRUE);
 
