@@ -89,28 +89,33 @@ void app_main(void) {
     ESP_LOGW("RTC", "read time transfer failure");
   }
 
-  struct timeval tv;
-  struct tm tm = { 0 };
-
   // rtc has valid time set
   if (rx[6] != 0x00) {
-    tm.tm_sec  = BCD_TO_DEC(rx[0] & 0x7F);
-    tm.tm_min  = BCD_TO_DEC(rx[1] & 0x7F);
-    tm.tm_hour = BCD_TO_DEC(rx[2] & 0x3F);
-    tm.tm_mday = BCD_TO_DEC(rx[3] & 0x3F);
-    tm.tm_mon  = BCD_TO_DEC(rx[5] & 0x1F) - 1;
-    tm.tm_year = BCD_TO_DEC(rx[6]) + 100;  // from 2000
+    struct tm tm = {
+      .tm_sec  = BCD_TO_DEC(rx[0] & 0x7F),
+      .tm_min  = BCD_TO_DEC(rx[1] & 0x7F),
+      .tm_hour = BCD_TO_DEC(rx[2] & 0x3F),
+      .tm_mday = BCD_TO_DEC(rx[3] & 0x3F),
+      .tm_mon  = BCD_TO_DEC(rx[5] & 0x1F) - 1,
+      .tm_year = BCD_TO_DEC(rx[6]) + 100  // from 2000
+    };
 
     time_t seconds = mktime(&tm);
 
     if (seconds == (time_t)-1) {
       SET_STATE(STATE_ERR);
-      ESP_LOGW("RTC", "mktime failure");
+      ESP_LOGW("RTC", "no valid time set");
     }
 
-    gettimeofday(&tv, NULL);
-    tv.tv_sec += seconds;
+    struct timeval tv = {
+      .tv_sec  = seconds,
+      .tv_usec = esp_timer_get_time() % 1000000,
+    };
+
     settimeofday(&tv, NULL);
+  } else {
+    SET_STATE(STATE_ERR);
+    ESP_LOGW("RTC", "no valid time set");
   }
 
   /*** SDIO *******************************************************************/
@@ -143,11 +148,13 @@ void app_main(void) {
     ESP_LOGE("SDCARD", "mount failure");
   }
 
+  // set log file
+  struct timeval tv;
   gettimeofday(&tv, NULL);
-  struct tm *tm_info = localtime(&tv.tv_sec);
 
   char logpath[64];
-  strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm_info);
+  struct tm *tm = localtime(&tv.tv_sec);
+  strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm);
 
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
 
@@ -156,37 +163,105 @@ void app_main(void) {
     ESP_LOGE("SDCARD", "log file open failure");
   }
 
+  // create log queue and sdcard task
   logqueue = xQueueCreate(32, sizeof(log_t));
 
-  // TODO: add boot record
-  uint8_t mac[6];
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+  if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0) != pdPASS) {
+    SET_STATE(STATE_FATAL);
+    ESP_LOGE("SDCARD", "task creation failure");
+  }
+
+  // save boot record
+  log_t boot_record;
+  boot_record.payload.boot.protocol_version = PROTOCOL_VERSION;
+  boot_record.payload.boot.boot_time        = (uint64_t)tv.tv_sec;
+  esp_read_mac(boot_record.payload.boot.mac, ESP_MAC_WIFI_STA);
+
+  if (LOG(LOG_TYPE_BOOT, &boot_record) != pdTRUE) {
+    SET_STATE(STATE_FATAL);
+    ESP_LOGE("CORE", "boot record failure");
+  }
 
   // halt on fatal error
-  // if (system_state == STATE_FATAL) {
-  //   ESP_LOGE("CORE LOGIC", "Fatal error during initialization. halting...");
-  //   while (TRUE);
-  // }
+  if (system_state == STATE_FATAL) {
+    ESP_LOGE("CORE", "Fatal error during initialization. halting...");
 
-  // Core 0: sdcard sync task
-  xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0);
+    while (TRUE) {
+      vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+  }
 
-  // Core 0: network task
-  xTaskCreatePinnedToCore(task_network, "network", 4096, NULL, 5, NULL, 0);
+  /*** Wi-Fi ******************************************************************/
+  if (xTaskCreatePinnedToCore(task_network, "network", 4096, NULL, 5, NULL, 0) != pdPASS) {
+    SET_STATE(STATE_ERR);
 
-  // Core 1: data record tasks
-  xTaskCreatePinnedToCore(task_can, "can", 4096, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_gps, "gps", 4096, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_digital, "digital", 4096, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1);
-  xTaskCreatePinnedToCore(task_temperature, "temperature", 4096, NULL, 5, NULL, 1);
+    log_t log;
+    strncpy(log.payload.system_event.msg, "NET_NEWTASK_FAIL", sizeof(log.payload.system_event.msg));
+    LOG(LOG_TYPE_SYSTEM, &log);
+
+    ESP_LOGW("NETWORK", "task creation failure");
+  }
+
+  /*** RECORDER START *********************************************************/
+  if (xTaskCreatePinnedToCore(task_can, "can", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    SET_STATE(STATE_ERR);
+
+    log_t log;
+    strncpy(log.payload.system_event.msg, "CAN_NEWTASK_FAIL", sizeof(log.payload.system_event.msg));
+    LOG(LOG_TYPE_SYSTEM, &log);
+
+    ESP_LOGW("CAN", "task creation failure");
+  }
+
+  if (xTaskCreatePinnedToCore(task_gps, "gps", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    SET_STATE(STATE_ERR);
+
+    log_t log;
+    strncpy(log.payload.system_event.msg, "GPS_NEWTASK_FAIL", sizeof(log.payload.system_event.msg));
+    LOG(LOG_TYPE_SYSTEM, &log);
+
+    ESP_LOGW("GPS", "task creation failure");
+  }
+
+  if (xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    SET_STATE(STATE_ERR);
+
+    log_t log;
+    strncpy(log.payload.system_event.msg, "ANL_NEWTASK_FAIL", sizeof(log.payload.system_event.msg));
+    LOG(LOG_TYPE_SYSTEM, &log);
+
+    ESP_LOGW("ANALOG", "task creation failure");
+  }
+
+  if (xTaskCreatePinnedToCore(task_digital, "digital", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    SET_STATE(STATE_ERR);
+
+    log_t log;
+    strncpy(log.payload.system_event.msg, "DGT_NEWTASK_FAIL", sizeof(log.payload.system_event.msg));
+    LOG(LOG_TYPE_SYSTEM, &log);
+
+    ESP_LOGW("DIGITAL", "task creation failure");
+  }
+
+  if (xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    SET_STATE(STATE_ERR);
+
+    log_t log;
+    strncpy(log.payload.system_event.msg, "GYR_NEWTASK_FAIL", sizeof(log.payload.system_event.msg));
+    LOG(LOG_TYPE_SYSTEM, &log);
+
+    ESP_LOGW("GYROSCOPE", "task creation failure");
+  }
 }
 
+
+// reset network nvs handler
 static void IRAM_ATTR reset_isr(void *arg) {
   // TODO: reset AP logic
 }
 
+
+// system status LED indicator
 static void task_led(void *pvParameters) {
   static int32_t value = FALSE;
 
@@ -197,6 +272,8 @@ static void task_led(void *pvParameters) {
   }
 }
 
+
+// log queue to SD card every 1000 ms
 static void task_sdcard(void *pvParameters) {
   int fd = (int)pvParameters;
   log_t log;
@@ -215,4 +292,27 @@ static void task_sdcard(void *pvParameters) {
     fsync(fd);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
+}
+
+
+BaseType_t LOG(uint8_t type, log_t *log) {
+  // won't validate pointer and logqueue
+  uint32_t *ptr   = (uint32_t *)log;
+  uint32_t chksum = 0;
+
+  // set log header
+  log->magic     = LOG_MAGIC;
+  log->checksum  = 0;
+  log->type      = type;
+  log->timestamp = (uint32_t)(esp_timer_get_time() / 1000);
+
+  // calculate checksum
+  for (size_t i = 0; i < sizeof(log_t) / sizeof(uint32_t); i++) {
+    chksum ^= ptr[i];
+  }
+
+  // fold to 16 bit
+  log->checksum = (chksum & 0xFFFF) + (chksum >> 16);
+
+  return xQueueSend(logqueue, log, 0);
 }

@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <sys/time.h>
@@ -14,6 +15,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_mac.h"
+#include "esp_timer.h"
 #include "esp_vfs_fat.h"
 
 #include "driver/gpio.h"
@@ -42,6 +44,7 @@ extern QueueHandle_t logqueue;
 
 /***** log protocol *****/
 #define PROTOCOL_VERSION 1
+#define LOG_MAGIC 0xAE
 
 typedef enum {
   LOG_TYPE_INVALID,
@@ -54,7 +57,6 @@ typedef enum {
   LOG_TYPE_ANALOG_56VT,
   LOG_TYPE_DIGITAL,
   LOG_TYPE_GYROSCOPE,
-  LOG_TYPE_TEMPERATURE,
 } log_type_t;
 
 typedef struct {
@@ -135,16 +137,16 @@ static inline void SET_STATE(state_t state) {
 }
 
 static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
-
 static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
 
 /***** function prototypes *****/
+BaseType_t LOG(uint8_t type, log_t *log);
+
 void task_can(void *pvParameters);
 void task_gps(void *pvParameters);
 void task_analog(void *pvParameters);
 void task_digital(void *pvParameters);
 void task_gyroscope(void *pvParameters);
-void task_temperature(void *pvParameters);
 
 void task_network(void *pvParameters);
 

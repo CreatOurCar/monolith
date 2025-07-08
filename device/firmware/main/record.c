@@ -70,6 +70,29 @@ void task_analog(void *pvParameters) {
     // TODO: error handling
   }
 
+  temperature_sensor_handle_t sensor     = NULL;
+  temperature_sensor_config_t sensor_cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 80);
+
+  if (temperature_sensor_install(&sensor_cfg, &sensor) != ESP_OK) {
+    // TODO: error handling
+  }
+
+  if (temperature_sensor_enable(sensor) != ESP_OK) {
+    // TODO: error handling
+  }
+
+  float temperature;
+
+  while (TRUE) {
+    if (temperature_sensor_get_celsius(sensor, &temperature) != ESP_OK) {
+      // TODO: error handling
+    }
+
+    // TODO: record
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+
   while (TRUE) {
     vTaskDelay(pdMS_TO_TICKS(100));
     // TODO: read analog values
@@ -121,30 +144,5 @@ void task_gyroscope(void *pvParameters) {
   while (TRUE) {
     vTaskDelay(pdMS_TO_TICKS(100));
     // TODO: read analog values
-  }
-}
-
-void task_temperature(void *pvParameters) {
-  temperature_sensor_handle_t sensor     = NULL;
-  temperature_sensor_config_t sensor_cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 80);
-
-  if (temperature_sensor_install(&sensor_cfg, &sensor) != ESP_OK) {
-    // TODO: error handling
-  }
-
-  if (temperature_sensor_enable(sensor) != ESP_OK) {
-    // TODO: error handling
-  }
-
-  float temperature;
-
-  while (TRUE) {
-    if (temperature_sensor_get_celsius(sensor, &temperature) != ESP_OK) {
-      // TODO: error handling
-    }
-
-    // TODO: record
-
-    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
