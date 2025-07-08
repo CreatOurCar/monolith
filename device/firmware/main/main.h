@@ -13,10 +13,13 @@
 #include "freertos/task.h"
 
 #include "esp_err.h"
+#include "esp_http_server.h"
 #include "esp_log.h"
 #include "esp_mac.h"
+#include "esp_netif.h"
 #include "esp_timer.h"
 #include "esp_vfs_fat.h"
+#include "esp_wifi.h"
 
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
@@ -41,6 +44,10 @@ typedef enum {
 extern TaskHandle_t ledtask;
 extern QueueHandle_t ledqueue;
 extern QueueHandle_t logqueue;
+
+/***** Wi-Fi AP *****/
+#define WIFI_AP_SSID "Monolith v2"
+#define WIFI_AP_PASSWD "monolith"
 
 /***** log protocol *****/
 #define PROTOCOL_VERSION 1
@@ -139,6 +146,7 @@ void task_analog(void *pvParameters);
 void task_digital(void *pvParameters);
 void task_gyroscope(void *pvParameters);
 
+void init_ap(void);
 void task_network(void *pvParameters);
 
 /***** utility functions *****/
@@ -147,13 +155,28 @@ static inline void SET_STATE(state_t state) {
   xTaskAbortDelay(ledtask);
 }
 
-static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
-static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
-
 static inline void SYSLOG(const char *msg) {
   log_t log;
   strncpy(log.payload.system_event.msg, msg, sizeof(log.payload.system_event.msg));
   LOG(LOG_TYPE_SYSTEM, &log);
 }
+
+static inline void STATE_ESPLOG(state_t state, const char *tag, const char *msg) {
+  SET_STATE(state);
+
+  if (state == STATE_FATAL) {
+    ESP_LOGE(tag, "%s", msg);
+  } else if (state == STATE_ERR) {
+    ESP_LOGW(tag, "%s", msg);
+  }
+}
+
+static inline void STATE_SYSLOG(state_t state, const char *tag, const char *msg, const char *log) {
+  SYSLOG(log);
+  STATE_ESPLOG(state, tag, msg);
+}
+
+static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
+static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
 
 #endif  // MAIN_H

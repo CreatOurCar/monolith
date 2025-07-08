@@ -1,10 +1,9 @@
 #include "main.h"
 
-TaskHandle_t ledtask = NULL;
+TaskHandle_t ledtask   = NULL;
 QueueHandle_t ledqueue = NULL;
 QueueHandle_t logqueue = NULL;
 
-static void nvs_init(void);
 static void rtc_init(void);
 static void sdcard_init(struct timeval *tv);
 static void peripheral_task_init(void);
@@ -28,8 +27,7 @@ void app_main(void) {
 
   ledqueue = xQueueCreate(4, sizeof(state_t));
 
-  if (gpio_config(&gpio) != ESP_OK ||
-      xTaskCreatePinnedToCore(task_led, "led", 1024, NULL, 5, &ledtask, 0) != pdPASS) {
+  if (gpio_config(&gpio) != ESP_OK || xTaskCreatePinnedToCore(task_led, "led", 1024, NULL, 5, &ledtask, 0) != pdPASS) {
     ESP_LOGW("LED", "config failure");
   }
 
@@ -45,7 +43,9 @@ void app_main(void) {
   }
 
   /*** NVS ***/
-  nvs_init();
+  if (nvs_flash_init() != ESP_OK) {
+    STATE_SYSLOG(STATE_FATAL, "NVS", "flash init failure", "NVS_INIT_FAIL");
+  }
 
   /*** RTC ***/
   rtc_init();
@@ -64,40 +64,15 @@ void app_main(void) {
   esp_read_mac(boot_record.payload.boot.mac, ESP_MAC_WIFI_STA);
 
   if (LOG(LOG_TYPE_BOOT, &boot_record) != pdTRUE) {
-    SET_STATE(STATE_FATAL);
-    ESP_LOGE("CORE", "boot record failure");
+    STATE_ESPLOG(STATE_FATAL, "CORE", "boot record failure");
   }
 
   /*** Wi-Fi ***/
   if (xTaskCreatePinnedToCore(task_network, "network", 4096, NULL, 5, NULL, 0) != pdPASS) {
-    SET_STATE(STATE_ERR);
-    SYSLOG("NET_NEWTASK_FAIL");
-    ESP_LOGW("NETWORK", "task creation failure");
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "task creation failure", "NET_NEWTASK_FAIL");
   }
 
   peripheral_task_init();
-}
-
-/*******************************************************************************
- * nvs_init(): init NVS and set keys if not set
- ******************************************************************************/
-static void nvs_init(void) {
-  nvs_handle_t nvs;
-
-  if (nvs_flash_init() != ESP_OK || nvs_open("enabled", NVS_READWRITE, &nvs) != ESP_OK) {
-    SET_STATE(STATE_FATAL);
-    SYSLOG("NVS_INIT_FAIL");
-    ESP_LOGE("NVS", "flash init failure");
-  }
-
-  uint8_t enabled;
-  const char *target[] = { "CAN", "GPS", "ANALOG", "DIGITAL", "GYROSCOPE" };
-
-  for (size_t i = 0; i < sizeof(target) / sizeof(target[0]); i++) {
-    if (nvs_get_u8(nvs, target[i], &enabled) != ESP_OK) {
-      nvs_set_u8(nvs, target[i], TRUE);
-    }
-  }
 }
 
 /*******************************************************************************
@@ -115,8 +90,7 @@ static void rtc_init(void) {
   };
 
   if (i2c_new_master_bus(&i2c_mst_config, &i2c0_handle) != ESP_OK) {
-    SET_STATE(STATE_ERR);
-    ESP_LOGW("RTC", "I2C0 init failure");
+    STATE_ESPLOG(STATE_ERR, "RTC", "I2C0 init failure");
   }
 
   i2c_master_dev_handle_t rtc_handle;
@@ -127,17 +101,15 @@ static void rtc_init(void) {
   };
 
   if (i2c_master_bus_add_device(i2c0_handle, &rtc_cfg, &rtc_handle) != ESP_OK) {
-    SET_STATE(STATE_ERR);
-    ESP_LOGW("RTC", "device init failure");
+    STATE_ESPLOG(STATE_ERR, "RTC", "device init failure");
   }
 
   uint8_t tx[1] = { 0x02 };  // VL_seconds register address
   uint8_t rx[7] = { 0 };     // 0x02 VL_seconds to 0x08 Years register
 
   if (i2c_master_transmit_receive(rtc_handle, tx, sizeof(tx), rx, sizeof(rx), 100) != ESP_OK) {
-    SET_STATE(STATE_ERR);
     memset(rx, 0, sizeof(rx));
-    ESP_LOGW("RTC", "read time transfer failure");
+    STATE_ESPLOG(STATE_ERR, "RTC", "read time transfer failure");
   }
 
   // rtc has valid time set
@@ -154,8 +126,7 @@ static void rtc_init(void) {
     time_t seconds = mktime(&tm);
 
     if (seconds == (time_t)-1) {
-      SET_STATE(STATE_ERR);
-      ESP_LOGW("RTC", "no valid time set");
+      STATE_ESPLOG(STATE_ERR, "RTC", "no valid time set");
     }
 
     struct timeval tv = {
@@ -165,8 +136,7 @@ static void rtc_init(void) {
 
     settimeofday(&tv, NULL);
   } else {
-    SET_STATE(STATE_ERR);
-    ESP_LOGW("RTC", "no valid time set");
+    STATE_ESPLOG(STATE_ERR, "RTC", "no valid time set");
   }
 }
 
@@ -199,8 +169,7 @@ static void sdcard_init(struct timeval *tv) {
   };
 
   if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
-    SET_STATE(STATE_FATAL);
-    ESP_LOGE("SDCARD", "mount failure");
+    STATE_ESPLOG(STATE_FATAL, "SDCARD", "mount failure");
   }
 
   // set log file
@@ -211,16 +180,14 @@ static void sdcard_init(struct timeval *tv) {
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
 
   if (fd < 0) {
-    SET_STATE(STATE_FATAL);
-    ESP_LOGE("SDCARD", "log file open failure");
+    STATE_ESPLOG(STATE_FATAL, "SDCARD", "log open failure");
   }
 
   // create log queue and sdcard task
   logqueue = xQueueCreate(32, sizeof(log_t));
 
   if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0) != pdPASS) {
-    SET_STATE(STATE_FATAL);
-    ESP_LOGE("SDCARD", "task creation failure");
+    STATE_ESPLOG(STATE_FATAL, "SDCARD", "task create failure");
   }
 }
 
@@ -229,57 +196,75 @@ static void sdcard_init(struct timeval *tv) {
  ******************************************************************************/
 static void peripheral_task_init(void) {
   nvs_handle_t nvs;
-  nvs_open("enabled", NVS_READONLY, &nvs);
 
-  uint8_t enabled = FALSE;
-  nvs_get_u8(nvs, "CAN", &enabled);
+  if (nvs_open("enabled", NVS_READWRITE, &nvs) != ESP_OK) {
+    STATE_SYSLOG(STATE_ERR, "NVS", "enabled config open failure", "NVS_OPEN_FAIL");
+  }
+
+  uint8_t enabled = TRUE;
+
+  /***** CAN *****/
+  if (nvs_get_u8(nvs, "CAN", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "CAN", TRUE);
+    enabled = TRUE;
+  }
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_can, "can", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      SET_STATE(STATE_ERR);
-      SYSLOG("CAN_NEWTASK_FAIL");
-      ESP_LOGW("CAN", "task creation failure");
+      STATE_SYSLOG(STATE_ERR, "CAN", "task create failure", "CAN_NEWTASK_FAIL");
     }
   }
 
-  nvs_get_u8(nvs, "GPS", &enabled);
+  /***** GPS *****/
+  if (nvs_get_u8(nvs, "GPS", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "GPS", TRUE);
+    enabled = TRUE;
+  }
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_gps, "gps", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      SET_STATE(STATE_ERR);
-      SYSLOG("GPS_NEWTASK_FAIL");
-      ESP_LOGW("GPS", "task creation failure");
+      STATE_SYSLOG(STATE_ERR, "GPS", "task create failure", "GPS_NEWTASK_FAIL");
     }
   }
 
-  nvs_get_u8(nvs, "ANALOG", &enabled);
+  /***** ANALOG *****/
+  if (nvs_get_u8(nvs, "ANALOG", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "ANALOG", TRUE);
+    enabled = TRUE;
+  }
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      SET_STATE(STATE_ERR);
-      SYSLOG("ANL_NEWTASK_FAIL");
-      ESP_LOGW("ANALOG", "task creation failure");
+      STATE_SYSLOG(STATE_ERR, "ANALOG", "task create failure", "ANL_NEWTASK_FAIL");
     }
   }
 
-  nvs_get_u8(nvs, "DIGITAL", &enabled);
+  /***** DIGITAL *****/
+  if (nvs_get_u8(nvs, "DIGITAL", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "DIGITAL", TRUE);
+    enabled = TRUE;
+  }
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_digital, "digital", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      SET_STATE(STATE_ERR);
-      SYSLOG("DGT_NEWTASK_FAIL");
-      ESP_LOGW("DIGITAL", "task creation failure");
+      STATE_SYSLOG(STATE_ERR, "DIGITAL", "task create failure", "DGT_NEWTASK_FAIL");
     }
   }
 
-  nvs_get_u8(nvs, "GYROSCOPE", &enabled);
+  /***** GYROSCOPE *****/
+  if (nvs_get_u8(nvs, "GYRO", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "GYRO", TRUE);
+    enabled = TRUE;
+  }
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      SET_STATE(STATE_ERR);
-      SYSLOG("GYR_NEWTASK_FAIL");
-      ESP_LOGW("GYROSCOPE", "task creation failure");
+      STATE_SYSLOG(STATE_ERR, "GYRO", "task create failure", "GYR_NEWTASK_FAIL");
     }
+  }
+
+  if (nvs_commit(nvs) != ESP_OK) {
+    STATE_SYSLOG(STATE_ERR, "NVS", "enabled config commit failure", "NVS_COMMIT_FAIL");
   }
 
   nvs_close(nvs);
@@ -296,7 +281,7 @@ static void IRAM_ATTR reset_isr(void *arg) {
  * system status LED indicator
  ******************************************************************************/
 static void task_led(void *pvParameters) {
-  int32_t led = TRUE;
+  int32_t led   = TRUE;
   state_t state = STATE_OK;
   BaseType_t ret;
 
