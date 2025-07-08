@@ -19,14 +19,16 @@ void task_can(void *pvParameters) {
 
   while (TRUE) {
     vTaskDelay(pdMS_TO_TICKS(100));
-    // TODO: read analog values
   }
 }
 
 void task_gps(void *pvParameters) {
+  // TODO: check GPS enabled
+  // TODO: check GPS conf
+  // TODO: set uart and ISR
+
   while (TRUE) {
     vTaskDelay(pdMS_TO_TICKS(100));
-    // TODO: read analog values
   }
 }
 

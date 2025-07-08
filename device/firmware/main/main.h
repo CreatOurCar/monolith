@@ -38,8 +38,8 @@ typedef enum {
 } state_t;
 
 /***** shared global variables *****/
-extern state_t system_state;
-extern TaskHandle_t task_led_handle;
+extern TaskHandle_t ledtask;
+extern QueueHandle_t ledqueue;
 extern QueueHandle_t logqueue;
 
 /***** log protocol *****/
@@ -130,15 +130,6 @@ typedef struct {
   } payload;  // 16 bytes
 } log_t;
 
-/***** utility functions *****/
-static inline void SET_STATE(state_t state) {
-  system_state = state;
-  xTaskAbortDelay(task_led_handle);
-}
-
-static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
-static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
-
 /***** function prototypes *****/
 BaseType_t LOG(uint8_t type, log_t *log);
 
@@ -149,5 +140,20 @@ void task_digital(void *pvParameters);
 void task_gyroscope(void *pvParameters);
 
 void task_network(void *pvParameters);
+
+/***** utility functions *****/
+static inline void SET_STATE(state_t state) {
+  xQueueSend(ledqueue, &state, 0);
+  xTaskAbortDelay(ledtask);
+}
+
+static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
+static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
+
+static inline void SYSLOG(const char *msg) {
+  log_t log;
+  strncpy(log.payload.system_event.msg, msg, sizeof(log.payload.system_event.msg));
+  LOG(LOG_TYPE_SYSTEM, &log);
+}
 
 #endif  // MAIN_H
