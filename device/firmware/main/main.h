@@ -48,6 +48,7 @@ extern QueueHandle_t logqueue;
 /***** Wi-Fi AP *****/
 #define WIFI_AP_SSID "Monolith v2"
 #define WIFI_AP_PASSWD "monolith"
+#define DEFAULT_SERVER "v2.monolith.luftaquila.io"
 
 /***** log protocol *****/
 #define PROTOCOL_VERSION 1
@@ -146,7 +147,7 @@ void task_analog(void *pvParameters);
 void task_digital(void *pvParameters);
 void task_gyroscope(void *pvParameters);
 
-void init_ap(void);
+httpd_handle_t webserver(void);
 void task_network(void *pvParameters);
 
 /***** utility functions *****/
@@ -157,7 +158,7 @@ static inline void SET_STATE(state_t state) {
 
 static inline void SYSLOG(const char *msg) {
   log_t log;
-  strncpy(log.payload.system_event.msg, msg, sizeof(log.payload.system_event.msg));
+  strncpy(log.payload.system_event.msg, msg, sizeof(log.payload.system_event.msg));  // no need to null-terminate
   LOG(LOG_TYPE_SYSTEM, &log);
 }
 
