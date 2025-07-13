@@ -7,7 +7,25 @@ char name[32];
 char key[32];
 char macaddr[20];
 
-void task_network(void *pvParameters) {
+#define WIFI_FAIL_BIT (1 << 0)
+#define WIFI_CONNECTED_BIT (1 << 1)
+
+static EventGroupHandle_t wifi_evtgrp;
+
+static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
+  if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+    esp_wifi_connect();
+  } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+    char buf[16];
+    snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t*)event_data)->reason);
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "Wi-Fi disconnected", buf);
+    esp_wifi_connect();
+  } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+    xEventGroupSetBits(wifi_evtgrp, WIFI_CONNECTED_BIT);
+  }
+}
+
+void task_network(void* pvParameters) {
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
   snprintf(macaddr, sizeof(macaddr), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -79,8 +97,47 @@ void task_network(void *pvParameters) {
   }
 
   // start Wi-Fi connection
+  wifi_evtgrp = xEventGroupCreate();
 
-  ESP_LOGE("NETWORK", "waiting!");
+  if (wifi_evtgrp == NULL) {
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "Event group creation failure", "WIFI_EVTGRP_FAIL");
+  }
+
+  if (esp_netif_init() != ESP_OK || esp_event_loop_create_default() != ESP_OK) {
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "NETIF init failure", "NETIF_INIT_FAIL");
+  }
+
+  esp_netif_create_default_wifi_sta();
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+
+  if (esp_wifi_init(&cfg) != ESP_OK) {
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "esp_wifi_init failed", "WIFI_INIT_FAIL");
+  }
+
+  esp_event_handler_instance_t instance_any_id;
+  esp_event_handler_instance_t instance_got_ip;
+  esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, &instance_any_id);
+  esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, &instance_got_ip);
+
+  wifi_config_t wifi = { 0 };
+  snprintf((char*)wifi.sta.ssid, sizeof(wifi.sta.ssid), "%s", ssid);
+  snprintf((char*)wifi.sta.password, sizeof(wifi.sta.password), "%s", passwd);
+  wifi.sta.scan_method        = WIFI_ALL_CHANNEL_SCAN;
+  wifi.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+
+  if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wifi) != ESP_OK) {
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "STA config failure", "STA_CONFIG_FAIL");
+  }
+
+  if (esp_wifi_start() != ESP_OK) {
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "STA start failure", "STA_START_FAIL");
+  }
+
+  EventBits_t bits = xEventGroupWaitBits(wifi_evtgrp, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, FALSE, FALSE, portMAX_DELAY);
+
+  if (!(bits & WIFI_CONNECTED_BIT)) {
+    STATE_SYSLOG(STATE_ERR, "NETWORK", "Wi-Fi connection failed", "STA_CONN_FAIL");
+  }
 
   while (1) {
     vTaskDelay(pdMS_TO_TICKS(1000));

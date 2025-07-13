@@ -68,7 +68,7 @@ void app_main(void) {
   }
 
   /*** Wi-Fi ***/
-  if (xTaskCreatePinnedToCore(task_network, "network", 4096, NULL, 5, NULL, 0) != pdPASS) {
+  if (xTaskCreatePinnedToCore(task_network, "network", 8192, NULL, 5, NULL, 0) != pdPASS) {
     STATE_SYSLOG(STATE_ERR, "NETWORK", "task creation failure", "NET_NEWTASK_FAIL");
   }
 
