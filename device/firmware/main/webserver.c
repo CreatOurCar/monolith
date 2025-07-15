@@ -80,7 +80,7 @@ extern char passwd[32];
 extern char server[64];
 extern char name[32];
 extern char key[32];
-extern char macaddr[20];
+extern uint8_t mac[6];
 
 static esp_err_t getconf(httpd_req_t *req) {
   nvs_handle_t nvs;
@@ -109,8 +109,10 @@ static esp_err_t getconf(httpd_req_t *req) {
   nvs_close(nvs);
 
   char res[288];
-  snprintf(res, sizeof(res), "{\"id\":\"%s\", \"ssid\":\"%s\", \"passwd\":\"%s\", \"server\":\"%s\", \"name\":\"%s\", \"key\":\"%s\"}",
-    macaddr, ssid, passwd, server, name, key);
+  snprintf(res, sizeof(res),
+    "{\"id\":\"%02X:%02X:%02X:%02X:%02X:%02X\", "
+    "\"ssid\":\"%s\", \"passwd\":\"%s\", \"server\":\"%s\", \"name\":\"%s\", \"key\":\"%s\"}",
+    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], ssid, passwd, server, name, key);
   httpd_resp_set_type(req, "application/json");
   httpd_resp_send(req, res, strlen(res));
   return ESP_OK;
@@ -207,13 +209,13 @@ httpd_handle_t webserver(void) {
 
   wifi_config_t wifi = {
     .ap = {
-      .ssid = WIFI_AP_SSID,
-      .ssid_len = strlen(WIFI_AP_SSID),
-      .password = WIFI_AP_PASSWD,
+      .password = "monolith",
       .max_connection = 4,
       .authmode = WIFI_AUTH_WPA2_PSK,
     },
   };
+
+  sprintf((char *)wifi.ap.ssid, "Monolith v2 %02X%02X%02X", mac[3], mac[4], mac[5]);
 
   if (esp_wifi_set_mode(WIFI_MODE_AP) != ESP_OK || esp_wifi_set_config(WIFI_IF_AP, &wifi) != ESP_OK) {
     STATE_SYSLOG(STATE_ERR, "NETWORK", "AP config failure", "AP_CONFIG_FAIL");

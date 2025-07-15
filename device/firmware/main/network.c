@@ -5,7 +5,7 @@ char passwd[32];
 char server[64];
 char name[32];
 char key[32];
-char macaddr[20];
+uint8_t mac[6];
 
 #define WIFI_FAIL_BIT (1 << 0)
 #define WIFI_CONNECTED_BIT (1 << 1)
@@ -26,9 +26,7 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
 }
 
 void task_network(void* pvParameters) {
-  uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
-  snprintf(macaddr, sizeof(macaddr), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
   nvs_handle_t nvs;
 

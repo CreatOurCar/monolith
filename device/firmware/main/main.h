@@ -33,6 +33,8 @@
 #define TRUE (1)
 #define FALSE (0)
 
+#define DEFAULT_SERVER "monolith.luftaquila.io"
+
 /***** system state (LED blink interval) *****/
 typedef enum {
   STATE_OK    = 3000,
@@ -44,11 +46,6 @@ typedef enum {
 extern TaskHandle_t ledtask;
 extern QueueHandle_t ledqueue;
 extern QueueHandle_t logqueue;
-
-/***** Wi-Fi AP *****/
-#define WIFI_AP_SSID "Monolith v2"
-#define WIFI_AP_PASSWD "monolith"
-#define DEFAULT_SERVER "v2.monolith.luftaquila.io"
 
 /***** log protocol *****/
 #define PROTOCOL_VERSION 1
