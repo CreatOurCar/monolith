@@ -1,0 +1,67 @@
+name: monolith
+
+services:
+  traefik:
+    image: traefik:3.4
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80/tcp
+      - --entrypoints.websecure.address=:443/tcp
+      - --entrypoints.websecure.http.tls.certresolver=le
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefik
+    restart: unless-stopped
+    env_file:
+        - .env
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mqtt.priority=10"
+      - "traefik.http.routers.mqtt.rule=Host(`${DOMAIN_NAME}`) && Header(`Upgrade`,`websocket`)"
+      - "traefik.http.routers.mqtt.entrypoints=websecure"
+      - "traefik.http.routers.mqtt.tls=true"
+      - "traefik.http.services.mqtt.loadbalancer.server.port=9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./data/mosquitto:/mosquitto/data:rw
+      - ./log/mosquitto:/mosquitto/log:rw
+    networks:
+      - traefik
+    restart: unless-stopped
+    env_file:
+        - .env
+
+  monolith:
+    build:
+      context: .
+    # image: luftaquila/monolith:latest
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monolith.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.monolith.entrypoints=websecure"
+      - "traefik.http.routers.monolith.tls=true"
+      - "traefik.http.routers.monolith.tls.certresolver=le"
+      - "traefik.http.services.monolith.loadbalancer.server.port=7000"
+    networks:
+      - traefik
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+    env_file:
+        - .env
+
+networks:
+  traefik:
+    external: true

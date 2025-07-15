@@ -1,0 +1,8 @@
+*Dockerfile*
+*docker-compose*
+node_modules
+.git
+.env
+*.db
+*.log
+acme.json
