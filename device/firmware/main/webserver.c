@@ -1,77 +1,11 @@
 #include "cJSON.h"
 #include "main.h"
 
-const char *html =
-  "<!DOCTYPE html> \
-<html lang='en'> \
-<head> \
-  <meta charset='UTF-8'> \
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'> \
-  <title>Monolith v2</title> \
-  <style> \
-    body { \
-      display: flex; align-items: center; flex-direction: column; \
-      height: 100vh; margin: 0; padding: 0; line-height: 1.3; \
-      font-size: 1rem; font-weight: bold; text-align: center; \
-    } \
-    p { margin: 0.5rem 0; } \
-    div { margin: 1rem 0 0.5rem; } \
-    input { height: 1.8rem; width: 70vw; font-size: 1rem; text-align: center; } \
-    button { font-size: 1.2rem; padding: 0.5rem 2rem; } \
-    body, input, button { font-family: monospace, system-ui, sans-serif; } \
-  </style> \
-</head> \
-<body> \
-  <h3 style='font-size: 1.6rem; margin-top: 3rem;'>Monolith v2<br>Device Configuration</h3> \
-  <p>ID: <span id='deviceid'>N/A</span></p> \
-  <div><p>Wi-Fi SSID</p><input id='ssid' maxlength='30' placeholder=''></div> \
-  <div><p>Wi-Fi Password</p><input id='passwd' maxlength='30' placeholder=''></div> \
-  <div><p>Server Address</p><input id='server' maxlength='50' placeholder=''></div> \
-  <div><p>Device Name</p><input id='name' maxlength='30' placeholder=''></div> \
-  <div><p>Device Key</p><input id='key' maxlength='30' placeholder=''></div> \
-  <div style='margin-top: 2.5rem;'><button id='save'>Save</button></div> \
-    <script> \
-    document.addEventListener('DOMContentLoaded', async () => { \
-      try { \
-        const res = await fetch('/config'); \
-        if (!res.ok) throw new Error(`failed to load config: ${res.status}`); \
-        const cfg = await res.json(); \
-        document.getElementById('deviceid').textContent = cfg.id     || 'N/A'; \
-        document.getElementById('ssid').value           = cfg.ssid   || ''; \
-        document.getElementById('passwd').value         = cfg.passwd || ''; \
-        document.getElementById('server').value         = cfg.server || ''; \
-        document.getElementById('name').value           = cfg.name   || ''; \
-        document.getElementById('key').value            = cfg.key    || ''; \
-      } catch (e) { \
-        alert(e.toString()); \
-      } \
-      document.getElementById('save').addEventListener('click', async () => { \
-        const payload = { \
-          ssid:   document.getElementById('ssid').value.trim(), \
-          passwd: document.getElementById('passwd').value.trim(), \
-          server: document.getElementById('server').value.trim(), \
-          name:   document.getElementById('name').value.trim(), \
-          key:    document.getElementById('key').value.trim() \
-        }; \
-        try { \
-          const res = await fetch('/config', { \
-            method: 'POST', \
-            headers: { 'Content-Type': 'application/json' }, \
-            body: JSON.stringify(payload) \
-          }); \
-          if (!res.ok) throw new Error(`failed to send config: ${res.status}`); \
-          alert('Configuration saved. Please reboot the device.'); \
-        } catch (e) { \
-          alert(e); \
-        } \
-      }); \
-    }); \
-  </script> \
-</body> \
-</html>";
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[] asm("_binary_index_html_end");
 
 esp_err_t htmlprovider(httpd_req_t *req) {
-  httpd_resp_send(req, html, strlen(html));
+  httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
   return ESP_OK;
 }
 

@@ -106,16 +106,16 @@ void task_network(void* pvParameters) {
   }
 
   esp_netif_create_default_wifi_sta();
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  wifi_init_config_t wifi_cfg = WIFI_INIT_CONFIG_DEFAULT();
 
-  if (esp_wifi_init(&cfg) != ESP_OK) {
+  if (esp_wifi_init(&wifi_cfg) != ESP_OK) {
     STATE_SYSLOG(STATE_ERR, "NETWORK", "esp_wifi_init failed", "WIFI_INIT_FAIL");
   }
 
   esp_event_handler_instance_t instance_any_id;
   esp_event_handler_instance_t instance_got_ip;
-  esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, &instance_any_id);
-  esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, &instance_got_ip);
+  esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, &instance_any_id);
+  esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, &instance_got_ip);
 
   wifi_config_t wifi = { 0 };
   snprintf((char*)wifi.sta.ssid, sizeof(wifi.sta.ssid), "%s", ssid);
