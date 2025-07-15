@@ -1,5 +1,9 @@
-#include "cJSON.h"
 #include "main.h"
+
+#include "cJSON.h"
+#include "esp_http_server.h"
+#include "esp_netif.h"
+#include "esp_wifi.h"
 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_end");
@@ -9,18 +13,12 @@ esp_err_t htmlprovider(httpd_req_t *req) {
   return ESP_OK;
 }
 
-extern char ssid[32];
-extern char passwd[32];
-extern char server[64];
-extern char name[32];
-extern char key[32];
-extern uint8_t mac[6];
-
 static esp_err_t getconf(httpd_req_t *req) {
   nvs_handle_t nvs;
 
   if (nvs_open("network", NVS_READONLY, &nvs) != ESP_OK) {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "NET_NVS_FAIL");
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "WEB_NVS_O_FAIL");
+    ERROR_SYSLOG(NVS, "open failure: network", "WEB_NVS_O_FAIL");
     nvs_close(nvs);
     return ESP_FAIL;
   }
@@ -47,6 +45,7 @@ static esp_err_t getconf(httpd_req_t *req) {
     "{\"id\":\"%02X:%02X:%02X:%02X:%02X:%02X\", "
     "\"ssid\":\"%s\", \"passwd\":\"%s\", \"server\":\"%s\", \"name\":\"%s\", \"key\":\"%s\"}",
     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], ssid, passwd, server, name, key);
+
   httpd_resp_set_type(req, "application/json");
   httpd_resp_send(req, res, strlen(res));
   return ESP_OK;
@@ -56,7 +55,8 @@ static esp_err_t setconf(httpd_req_t *req) {
   nvs_handle_t nvs;
 
   if (nvs_open("network", NVS_READWRITE, &nvs) != ESP_OK) {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "NET_NVS_FAIL");
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "WEB_NVS_O_FAIL");
+    ERROR_SYSLOG(NVS, "open failure: network", "WEB_NVS_O_FAIL");
     return ESP_FAIL;
   }
 
@@ -101,6 +101,7 @@ static esp_err_t setconf(httpd_req_t *req) {
 
   if (nvs_commit(nvs) != ESP_OK) {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "NVS_COMMIT_FAIL");
+    ERROR_SYSLOG(NVS, "commit failure: network", "WEB_NVS_C_FAIL");
     nvs_close(nvs);
     return ESP_FAIL;
   }
@@ -131,14 +132,14 @@ static esp_err_t setconf(httpd_req_t *req) {
 
 httpd_handle_t webserver(void) {
   if (esp_netif_init() != ESP_OK || esp_event_loop_create_default() != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "NETIF init failure", "NETIF_INIT_FAIL");
+    ERROR_SYSLOG(WIFI, "netif init failure", "NETIF_INIT_FAIL");
   }
 
   esp_netif_create_default_wifi_ap();
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
   if (esp_wifi_init(&cfg) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "esp_wifi_init failed", "WIFI_INIT_FAIL");
+    ERROR_SYSLOG(WIFI, "init failure", "WIFI_INIT_FAIL");
   }
 
   wifi_config_t wifi = {
@@ -152,11 +153,11 @@ httpd_handle_t webserver(void) {
   sprintf((char *)wifi.ap.ssid, "Monolith v2 %02X%02X%02X", mac[3], mac[4], mac[5]);
 
   if (esp_wifi_set_mode(WIFI_MODE_AP) != ESP_OK || esp_wifi_set_config(WIFI_IF_AP, &wifi) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "AP config failure", "AP_CONFIG_FAIL");
+    ERROR_SYSLOG(WIFI, "AP config failure", "AP_CFG_FAIL");
   }
 
   if (esp_wifi_start() != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "AP start failure", "AP_START_FAIL");
+    ERROR_SYSLOG(WIFI, "AP start failure", "AP_START_FAIL");
   }
 
   httpd_handle_t server   = NULL;
@@ -172,6 +173,7 @@ httpd_handle_t webserver(void) {
     httpd_register_uri_handler(server, &root);
     httpd_register_uri_handler(server, &getconfig);
     httpd_register_uri_handler(server, &setconfig);
+    SYSLOG("WEB_SVR_START");
     return server;
   }
 

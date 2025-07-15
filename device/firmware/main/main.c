@@ -1,8 +1,30 @@
+#include <fcntl.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
+
 #include "main.h"
 
-TaskHandle_t ledtask   = NULL;
-QueueHandle_t ledqueue = NULL;
-QueueHandle_t logqueue = NULL;
+#include "driver/gpio.h"
+#include "driver/i2c_master.h"
+#include "driver/sdmmc_host.h"
+#include "esp_mac.h"
+#include "esp_vfs_fat.h"
+#include "nvs_flash.h"
+
+QueueHandle_t logqueue;
+
+uint32_t state;
+EventGroupHandle_t led;
+
+const char components[][8] = { "CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO" };
+
+void task_can(void *pvParameters);
+void task_gps(void *pvParameters);
+void task_analog(void *pvParameters);
+void task_digital(void *pvParameters);
+void task_gyroscope(void *pvParameters);
+void task_network(void *pvParameters);
 
 static void rtc_init(void);
 static void sdcard_init(struct timeval *tv);
@@ -11,6 +33,9 @@ static void peripheral_task_init(void);
 static void reset_isr(void *arg);
 static void task_led(void *pvParameters);
 static void task_sdcard(void *pvParameters);
+
+static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
+static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
 
 /*******************************************************************************
  * core system initialization entry point
@@ -25,10 +50,11 @@ void app_main(void) {
   gpio.pull_up_en   = GPIO_PULLUP_DISABLE;
   gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
 
-  ledqueue = xQueueCreate(4, sizeof(state_t));
+  esp_err_t ret = gpio_config(&gpio);
+  led           = xEventGroupCreate();
 
-  if (gpio_config(&gpio) != ESP_OK || xTaskCreatePinnedToCore(task_led, "led", 1024, NULL, 5, &ledtask, 0) != pdPASS) {
-    ESP_LOGW("LED", "config failure");
+  if (ret != ESP_OK || xTaskCreatePinnedToCore(task_led, "led", 1024, NULL, 5, NULL, 0) != pdPASS) {
+    ERROR_LOG(CORE, "LED config failure");
   }
 
   /*** RST ***/
@@ -37,14 +63,17 @@ void app_main(void) {
   gpio.intr_type    = GPIO_INTR_ANYEDGE;
   gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
-  if (gpio_config(&gpio) != ESP_OK || gpio_install_isr_service(0) != ESP_OK ||
-      gpio_isr_handler_add(GPIO_NUM_21, reset_isr, NULL) != ESP_OK) {
-    ESP_LOGW("RST", "config failure");
+  ret = gpio_config(&gpio);
+  ret |= gpio_install_isr_service(0);
+  ret |= gpio_isr_handler_add(GPIO_NUM_21, reset_isr, NULL);
+
+  if (ret != ESP_OK) {
+    ERROR_LOG(CORE, "RST config failure");
   }
 
   /*** NVS ***/
   if (nvs_flash_init() != ESP_OK) {
-    STATE_SYSLOG(STATE_FATAL, "NVS", "flash init failure", "NVS_INIT_FAIL");
+    FATAL_LOG(NVS, "NVS flash init failure");
   }
 
   /*** RTC ***/
@@ -64,12 +93,12 @@ void app_main(void) {
   esp_read_mac(boot_record.payload.boot.mac, ESP_MAC_WIFI_STA);
 
   if (LOG(LOG_TYPE_BOOT, &boot_record) != pdTRUE) {
-    STATE_ESPLOG(STATE_FATAL, "CORE", "boot record failure");
+    FATAL_LOG(SD, "boot record failure");
   }
 
   /*** Wi-Fi ***/
   if (xTaskCreatePinnedToCore(task_network, "network", 8192, NULL, 5, NULL, 0) != pdPASS) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "task creation failure", "NET_NEWTASK_FAIL");
+    FATAL_SYSLOG(WIFI, "network task creation failure", "NET_TASK_FAIL");
   }
 
   peripheral_task_init();
@@ -90,7 +119,7 @@ static void rtc_init(void) {
   };
 
   if (i2c_new_master_bus(&i2c_mst_config, &i2c0_handle) != ESP_OK) {
-    STATE_ESPLOG(STATE_ERR, "RTC", "I2C0 init failure");
+    ERROR_LOG(RTC, "I2C init failure");
   }
 
   i2c_master_dev_handle_t rtc_handle;
@@ -101,7 +130,7 @@ static void rtc_init(void) {
   };
 
   if (i2c_master_bus_add_device(i2c0_handle, &rtc_cfg, &rtc_handle) != ESP_OK) {
-    STATE_ESPLOG(STATE_ERR, "RTC", "device init failure");
+    ERROR_LOG(RTC, "device init failure");
   }
 
   uint8_t tx[1] = { 0x02 };  // VL_seconds register address
@@ -109,7 +138,7 @@ static void rtc_init(void) {
 
   if (i2c_master_transmit_receive(rtc_handle, tx, sizeof(tx), rx, sizeof(rx), 100) != ESP_OK) {
     memset(rx, 0, sizeof(rx));
-    STATE_ESPLOG(STATE_ERR, "RTC", "read time transfer failure");
+    ERROR_LOG(RTC, "read time transfer failure");
   }
 
   // rtc has valid time set
@@ -126,7 +155,7 @@ static void rtc_init(void) {
     time_t seconds = mktime(&tm);
 
     if (seconds == (time_t)-1) {
-      STATE_ESPLOG(STATE_ERR, "RTC", "no valid time set");
+      ERROR_LOG(RTC, "mktime failure");
     }
 
     struct timeval tv = {
@@ -136,7 +165,7 @@ static void rtc_init(void) {
 
     settimeofday(&tv, NULL);
   } else {
-    STATE_ESPLOG(STATE_ERR, "RTC", "no valid time set");
+    ERROR_LOG(RTC, "no valid time set");
   }
 }
 
@@ -169,7 +198,7 @@ static void sdcard_init(struct timeval *tv) {
   };
 
   if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
-    STATE_ESPLOG(STATE_FATAL, "SDCARD", "mount failure");
+    FATAL_LOG(SD, "mount failure");
   }
 
   // set log file
@@ -180,14 +209,14 @@ static void sdcard_init(struct timeval *tv) {
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
 
   if (fd < 0) {
-    STATE_ESPLOG(STATE_FATAL, "SDCARD", "log open failure");
+    FATAL_LOG(SD, "file open failure");
   }
 
   // create log queue and sdcard task
   logqueue = xQueueCreate(32, sizeof(log_t));
 
   if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0) != pdPASS) {
-    STATE_ESPLOG(STATE_FATAL, "SDCARD", "task create failure");
+    FATAL_LOG(SD, "task create failure");
   }
 }
 
@@ -198,7 +227,7 @@ static void peripheral_task_init(void) {
   nvs_handle_t nvs;
 
   if (nvs_open("enabled", NVS_READWRITE, &nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NVS", "enabled config open failure", "NVS_OPEN_FAIL");
+    ERROR_SYSLOG(NVS, "open failure: enabled", "NVS_OPEN_FAIL");
   }
 
   uint8_t enabled = TRUE;
@@ -211,7 +240,7 @@ static void peripheral_task_init(void) {
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_can, "can", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      STATE_SYSLOG(STATE_ERR, "CAN", "task create failure", "CAN_NEWTASK_FAIL");
+      ERROR_SYSLOG(CAN, "task create failure", "CAN_TASK_FAIL");
     }
   }
 
@@ -223,7 +252,7 @@ static void peripheral_task_init(void) {
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_gps, "gps", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      STATE_SYSLOG(STATE_ERR, "GPS", "task create failure", "GPS_NEWTASK_FAIL");
+      ERROR_SYSLOG(GPS, "task create failure", "GPS_TASK_FAIL");
     }
   }
 
@@ -235,7 +264,7 @@ static void peripheral_task_init(void) {
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      STATE_SYSLOG(STATE_ERR, "ANALOG", "task create failure", "ANL_NEWTASK_FAIL");
+      ERROR_SYSLOG(ANALOG, "task create failure", "ANL_TASK_FAIL");
     }
   }
 
@@ -247,7 +276,7 @@ static void peripheral_task_init(void) {
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_digital, "digital", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      STATE_SYSLOG(STATE_ERR, "DIGITAL", "task create failure", "DGT_NEWTASK_FAIL");
+      ERROR_SYSLOG(DIGITAL, "task create failure", "DGT_TASK_FAIL");
     }
   }
 
@@ -259,12 +288,12 @@ static void peripheral_task_init(void) {
 
   if (enabled) {
     if (xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      STATE_SYSLOG(STATE_ERR, "GYRO", "task create failure", "GYR_NEWTASK_FAIL");
+      ERROR_SYSLOG(GYRO, "task create failure", "GYR_TASK_FAIL");
     }
   }
 
   if (nvs_commit(nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NVS", "enabled config commit failure", "NVS_COMMIT_FAIL");
+    ERROR_SYSLOG(NVS, "commit failure: enabled", "NVS_COMMIT_FAIL");
   }
 
   nvs_close(nvs);
@@ -281,19 +310,24 @@ static void IRAM_ATTR reset_isr(void *arg) {
  * system status LED indicator
  ******************************************************************************/
 static void task_led(void *pvParameters) {
-  int32_t led   = TRUE;
-  state_t state = STATE_OK;
-  BaseType_t ret;
+  int32_t led_state             = TRUE;
+  state_led_interval_t interval = STATE_OK;
 
   while (TRUE) {
-    do {
-      ret = xQueueReceive(ledqueue, &state, 0);
-    } while (ret == pdTRUE);
+    xEventGroupWaitBits(led, 1, TRUE, FALSE, 0);
 
-    led = !led;
-    gpio_set_level(GPIO_NUM_5, led);
+    if (state & (0xFFFF << 12)) {
+      interval = STATE_FATAL;
+    } else if (state & 0xFFFF) {
+      interval = STATE_ERROR;
+    } else {
+      interval = STATE_OK;
+    }
 
-    vTaskDelay(pdMS_TO_TICKS(state));
+    led_state = !led_state;
+    gpio_set_level(GPIO_NUM_5, led_state);
+
+    vTaskDelay(pdMS_TO_TICKS(interval));
   }
 }
 
@@ -302,8 +336,8 @@ static void task_led(void *pvParameters) {
  ******************************************************************************/
 static void task_sdcard(void *pvParameters) {
   int fd = (int)pvParameters;
+  int ret;
   log_t log;
-  BaseType_t ret;
 
   while (TRUE) {
     do {
@@ -314,32 +348,10 @@ static void task_sdcard(void *pvParameters) {
       }
     } while (ret == pdTRUE);
 
-    fsync(fd);
+    if (fsync(fd) != 0 && !(state & (1 << (SD + 16)))) {
+      FATAL_LOG(SD, "fsync failure");
+    }
+
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
-}
-
-/*******************************************************************************
- * create log entry
- ******************************************************************************/
-BaseType_t LOG(uint8_t type, log_t *log) {
-  // won't validate pointer and logqueue
-  uint32_t *ptr   = (uint32_t *)log;
-  uint32_t chksum = 0;
-
-  // set log header
-  log->magic     = LOG_MAGIC;
-  log->checksum  = 0;
-  log->type      = type;
-  log->timestamp = (uint32_t)(esp_timer_get_time() / 1000);
-
-  // calculate checksum
-  for (size_t i = 0; i < sizeof(log_t) / sizeof(uint32_t); i++) {
-    chksum ^= ptr[i];
-  }
-
-  // fold to 16 bit
-  log->checksum = (chksum & 0xFFFF) + (chksum >> 16);
-
-  return xQueueSend(logqueue, log, 0);
 }

@@ -1,19 +1,23 @@
 #include "main.h"
 
+#include "driver/i2c_master.h"
+#include "driver/temperature_sensor.h"
+#include "driver/twai.h"
+
 /*******************************************************************************
  * CAN traffic monitor / transmitter task
  ******************************************************************************/
 void task_can(void *pvParameters) {
   nvs_handle_t nvs;
 
-  if (nvs_open("CAN", NVS_READWRITE, &nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "CAN", "nvs open failure", "CAN_NVS_FAIL");
+  if (nvs_open("can", NVS_READWRITE, &nvs) != ESP_OK) {
+    ERROR_SYSLOG(NVS, "open failure: can", "CAN_NVS_O_FAIL");
   }
 
   // TODO: check send enabled, bps, filter
 
   if (nvs_commit(nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "CAN", "nvs commit failure", "NVS_COMMIT_FAIL");
+    ERROR_SYSLOG(CAN, "commit failure: can", "CAN_NVS_C_FAIL");
   }
 
   nvs_close(nvs);
@@ -23,7 +27,7 @@ void task_can(void *pvParameters) {
   twai_filter_config_t f_config  = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
   if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK || twai_start() != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "CAN", "driver init failure", "CAN_INIT_FAIL");
+    ERROR_SYSLOG(CAN, "driver init failure", "CAN_INIT_FAIL");
   }
 
   // TODO: set can ISR
@@ -40,13 +44,13 @@ void task_gps(void *pvParameters) {
   nvs_handle_t nvs;
 
   if (nvs_open("GPS", NVS_READWRITE, &nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "GPS", "nvs open failure", "GPS_NVS_FAIL");
+    ERROR_SYSLOG(NVS, "open failure: GPS", "GPS_NVS_O_FAIL");
   }
 
   // TODO: check GPS conf, set uart and ISR
 
   if (nvs_commit(nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "CAN", "nvs commit failure", "NVS_COMMIT_FAIL");
+    ERROR_SYSLOG(GPS, "commit failure: GPS", "GPS_NVS_C_FAIL");
   }
 
   nvs_close(nvs);
@@ -72,7 +76,7 @@ void task_analog(void *pvParameters) {
   i2c_master_bus_handle_t i2c1_handle;
 
   if (i2c_new_master_bus(&i2c_mst_config, &i2c1_handle) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "ANALOG", "I2C1 init failure", "ANL_INIT_FAIL");
+    ERROR_SYSLOG(ANALOG, "I2C init failure", "ANL_INIT_FAIL");
   }
 
   i2c_device_config_t adc0_cfg = {
@@ -89,16 +93,18 @@ void task_analog(void *pvParameters) {
 
   i2c_master_dev_handle_t dev_handle;
 
-  if (i2c_master_bus_add_device(i2c1_handle, &adc0_cfg, &dev_handle) != ESP_OK ||
-      i2c_master_bus_add_device(i2c1_handle, &adc1_cfg, &dev_handle) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "ANALOG", "device init failure", "ANL_DEV_FAIL");
+  esp_err_t ret = i2c_master_bus_add_device(i2c1_handle, &adc0_cfg, &dev_handle);
+  ret |= i2c_master_bus_add_device(i2c1_handle, &adc1_cfg, &dev_handle);
+
+  if (ret != ESP_OK) {
+    ERROR_SYSLOG(ANALOG, "device init failure", "ANL_DEV_FAIL");
   }
 
   temperature_sensor_handle_t sensor     = NULL;
   temperature_sensor_config_t sensor_cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 80);
 
   if (temperature_sensor_install(&sensor_cfg, &sensor) != ESP_OK || temperature_sensor_enable(sensor) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "TEMP", "sensor init failure", "TMP_INIT_FAIL");
+    ERROR_SYSLOG(ANALOG, "temperature sensor init failure", "TMP_INIT_FAIL");
   }
 
   float temperature;
@@ -127,7 +133,7 @@ void task_digital(void *pvParameters) {
   gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
   if (gpio_config(&gpio) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "DIGITAL", "GPIO init failure", "DGT_INIT_FAIL");
+    ERROR_SYSLOG(DIGITAL, "GPIO init failure", "DGT_INIT_FAIL");
   }
 
   // TODO: set ISR
@@ -145,7 +151,7 @@ void task_gyroscope(void *pvParameters) {
 
   // i2c0 already initalized by main thread
   if (i2c_master_get_bus_handle(I2C_NUM_0, &i2c0_handle) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "GYRO", "I2C0 get bus failure", "GYR_INIT_FAIL");
+    ERROR_SYSLOG(GYRO, "I2C get bus failure", "GYR_INIT_FAIL");
   }
 
   i2c_device_config_t gyro_cfg = {
@@ -157,7 +163,7 @@ void task_gyroscope(void *pvParameters) {
   i2c_master_dev_handle_t dev_handle;
 
   if (i2c_master_bus_add_device(i2c0_handle, &gyro_cfg, &dev_handle) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "GYRO", "device init failure", "GYR_DEV_FAIL");
+    ERROR_SYSLOG(GYRO, "device init failure", "GYR_DEV_FAIL");
   }
 
   while (TRUE) {

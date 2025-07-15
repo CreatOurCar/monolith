@@ -1,52 +1,51 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <sys/time.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-#include "esp_err.h"
-#include "esp_http_server.h"
 #include "esp_log.h"
-#include "esp_mac.h"
-#include "esp_netif.h"
 #include "esp_timer.h"
-#include "esp_vfs_fat.h"
-#include "esp_wifi.h"
 #include "mqtt_client.h"
-
-#include "driver/gpio.h"
-#include "driver/i2c_master.h"
-#include "driver/sdmmc_host.h"
-#include "driver/temperature_sensor.h"
-#include "driver/twai.h"
-
 #include "nvs.h"
-#include "nvs_flash.h"
 
 #define TRUE (1)
 #define FALSE (0)
 
-#define DEFAULT_SERVER "v2.monolith.luftaquila.io"
-
-/***** system state (LED blink interval) *****/
-typedef enum {
-  STATE_OK    = 3000,
-  STATE_ERR   = 500,
-  STATE_FATAL = 100,
-} state_t;
-
 /***** shared global variables *****/
-extern TaskHandle_t ledtask;
-extern QueueHandle_t ledqueue;
+extern char ssid[32];
+extern char passwd[32];
+extern char server[64];
+extern char name[32];
+extern char key[32];
+extern uint8_t mac[6];
+
 extern QueueHandle_t logqueue;
+
+extern uint32_t state;
+extern EventGroupHandle_t led;
+
+extern esp_mqtt_client_handle_t mqtt;
+
+/***** system state *****/
+extern const char components[][8];
+
+typedef enum {
+  CORE,
+  NVS,
+  RTC,
+  SD,
+  WIFI,
+  MQTT,
+  CAN,
+  GPS,
+  ANALOG,
+  DIGITAL,
+  GYRO,
+} state_component_t;
+
+typedef enum {
+  STATE_OK    = 1000,
+  STATE_ERROR = 250,
+  STATE_FATAL = 100,
+} state_led_interval_t;
 
 /***** log protocol *****/
 #define PROTOCOL_VERSION 1
@@ -136,22 +135,25 @@ typedef struct {
   } payload;  // 16 bytes
 } log_t;
 
-/***** function prototypes *****/
-BaseType_t LOG(uint8_t type, log_t *log);
+static inline int LOG(uint8_t type, log_t *log) {
+  uint32_t *ptr   = (uint32_t *)log;
+  uint32_t chksum = 0;
 
-void task_can(void *pvParameters);
-void task_gps(void *pvParameters);
-void task_analog(void *pvParameters);
-void task_digital(void *pvParameters);
-void task_gyroscope(void *pvParameters);
+  // set log header
+  log->magic     = LOG_MAGIC;
+  log->checksum  = 0;
+  log->type      = type;
+  log->timestamp = (uint32_t)(esp_timer_get_time() / 1000);
 
-httpd_handle_t webserver(void);
-void task_network(void *pvParameters);
+  // calculate checksum
+  for (size_t i = 0; i < sizeof(log_t) / sizeof(uint32_t); i++) {
+    chksum ^= ptr[i];
+  }
 
-/***** utility functions *****/
-static inline void SET_STATE(state_t state) {
-  xQueueSend(ledqueue, &state, 0);
-  xTaskAbortDelay(ledtask);
+  // fold to 16 bit
+  log->checksum = (chksum & 0xFFFF) + (chksum >> 16);
+
+  return xQueueSend(logqueue, log, 0);
 }
 
 static inline void SYSLOG(const char *msg) {
@@ -160,22 +162,44 @@ static inline void SYSLOG(const char *msg) {
   LOG(LOG_TYPE_SYSTEM, &log);
 }
 
-static inline void STATE_ESPLOG(state_t state, const char *tag, const char *msg) {
-  SET_STATE(state);
-
-  if (state == STATE_FATAL) {
-    ESP_LOGE(tag, "%s", msg);
-  } else if (state == STATE_ERR) {
-    ESP_LOGW(tag, "%s", msg);
-  }
+static inline void SET_ERROR(state_component_t component) {
+  state |= (1 << component);
+  xEventGroupSetBits(led, 1);
 }
 
-static inline void STATE_SYSLOG(state_t state, const char *tag, const char *msg, const char *log) {
+static inline void SET_FATAL(state_component_t component) {
+  state |= (1 << (component + 16));
+  xEventGroupSetBits(led, 1);
+}
+
+static inline void CLEAR_ERROR(state_component_t component) {
+  state &= ~(1 << component);
+  xEventGroupClearBits(led, 1);
+}
+
+static inline void CLEAR_FATAL(state_component_t component) {
+  state &= ~(1 << (component + 16));
+  xEventGroupClearBits(led, 1);
+}
+
+static inline void ERROR_LOG(state_component_t component, const char *msg) {
+  SET_ERROR(component);
+  ESP_LOGW(components[component], "%s", msg);
+}
+
+static inline void FATAL_LOG(state_component_t component, const char *msg) {
+  SET_FATAL(component);
+  ESP_LOGE(components[component], "%s", msg);
+}
+
+static inline void ERROR_SYSLOG(state_component_t component, const char *msg, const char *log) {
   SYSLOG(log);
-  STATE_ESPLOG(state, tag, msg);
+  ERROR_LOG(component, msg);
 }
 
-static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
-static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
+static inline void FATAL_SYSLOG(state_component_t component, const char *msg, const char *log) {
+  SYSLOG(log);
+  FATAL_LOG(component, msg);
+}
 
 #endif  // MAIN_H

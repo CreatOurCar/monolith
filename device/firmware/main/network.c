@@ -1,5 +1,9 @@
 #include "main.h"
 
+#include "esp_http_server.h"
+#include "esp_mac.h"
+#include "esp_wifi.h"
+
 char ssid[32];
 char passwd[32];
 char server[64];
@@ -21,10 +25,12 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t e
   } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
     char buf[16];
     snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t*)event_data)->reason);
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "Wi-Fi disconnected", buf);
+    ERROR_SYSLOG(WIFI, "disconnected", buf);
     esp_wifi_connect();
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     xEventGroupSetBits(wifi_evtgrp, WIFI_CONNECTED_BIT);
+    CLEAR_ERROR(WIFI);
+    SYSLOG("WIFI_CONN");
   }
 }
 
@@ -35,7 +41,7 @@ void task_network(void* pvParameters) {
 
   // read and save default values
   if (nvs_open("network", NVS_READWRITE, &nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "nvs open failure", "NET_NVS_FAIL");
+    ERROR_SYSLOG(NVS, "open failure: network", "NET_NVS_O_FAIL");
   }
 
   size_t len = sizeof(ssid);
@@ -57,7 +63,7 @@ void task_network(void* pvParameters) {
   len = sizeof(server);
 
   if (nvs_get_str(nvs, "server", server, &len) != ESP_OK) {
-    nvs_set_str(nvs, "server", DEFAULT_SERVER);
+    nvs_set_str(nvs, "server", "v2.monolith.luftaquila.io");
     len = sizeof(server);
     nvs_get_str(nvs, "server", server, &len);
   }
@@ -80,7 +86,7 @@ void task_network(void* pvParameters) {
   }
 
   if (nvs_commit(nvs) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "nvs commit failure", "NVS_COMMIT_FAIL");
+    ERROR_SYSLOG(NVS, "commit failure: network", "NET_NVS_C_FAIL");
   }
 
   nvs_close(nvs);
@@ -88,7 +94,7 @@ void task_network(void* pvParameters) {
   // no SSID or proper password set, init AP mode
   if (strlen(ssid) == 0 || strlen(passwd) < 8) {
     if (webserver() == NULL) {
-      STATE_SYSLOG(STATE_ERR, "NETWORK", "HTTP server start failure", "WEBSERVER_FAIL");
+      ERROR_SYSLOG(WIFI, "HTTP server init failure", "WEBSERVER_FAIL");
     }
 
     // won't proceed further on AP mode
@@ -101,18 +107,18 @@ void task_network(void* pvParameters) {
   wifi_evtgrp = xEventGroupCreate();
 
   if (wifi_evtgrp == NULL) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "Event group creation failure", "WIFI_EVTGRP_FAIL");
+    ERROR_SYSLOG(WIFI, "event group creation failure", "WIFI_EVTGRP_FAIL");
   }
 
   if (esp_netif_init() != ESP_OK || esp_event_loop_create_default() != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "NETIF init failure", "NETIF_INIT_FAIL");
+    ERROR_SYSLOG(WIFI, "netif init failure", "NETIF_INIT_FAIL");
   }
 
   esp_netif_create_default_wifi_sta();
   wifi_init_config_t wifi_cfg = WIFI_INIT_CONFIG_DEFAULT();
 
   if (esp_wifi_init(&wifi_cfg) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "esp_wifi_init failed", "WIFI_INIT_FAIL");
+    ERROR_SYSLOG(WIFI, "init failure", "WIFI_INIT_FAIL");
   }
 
   esp_event_handler_instance_t instance_any_id;
@@ -127,17 +133,17 @@ void task_network(void* pvParameters) {
   wifi.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
   if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wifi) != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "STA config failure", "STA_CONFIG_FAIL");
+    ERROR_SYSLOG(WIFI, "STA config failure", "STA_CFG_FAIL");
   }
 
   if (esp_wifi_start() != ESP_OK) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "STA start failure", "STA_START_FAIL");
+    ERROR_SYSLOG(WIFI, "STA start failure", "STA_START_FAIL");
   }
 
   EventBits_t bits = xEventGroupWaitBits(wifi_evtgrp, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, FALSE, FALSE, portMAX_DELAY);
 
   if (!(bits & WIFI_CONNECTED_BIT)) {
-    STATE_SYSLOG(STATE_ERR, "NETWORK", "Wi-Fi connection failed", "STA_CONN_FAIL");
+    ERROR_SYSLOG(WIFI, "connection failed", "STA_CONN_FAIL");
   }
 
   mqtt_client();
