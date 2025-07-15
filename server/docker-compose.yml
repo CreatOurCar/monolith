@@ -12,10 +12,13 @@ services:
       - --certificatesresolvers.le.acme.tlschallenge=true
       - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - "--accessLog.format=json"
+      - "--accessLog.filePath=/log/traefik.log"
     ports:
       - "80:80"
       - "443:443"
     volumes:
+      - ./log/traefik:/log:rw
       - ./letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -28,7 +31,6 @@ services:
     image: eclipse-mosquitto:2.0
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mqtt.priority=10"
       - "traefik.http.routers.mqtt.rule=Host(`${DOMAIN_NAME}`) && Header(`Upgrade`,`websocket`)"
       - "traefik.http.routers.mqtt.entrypoints=websecure"
       - "traefik.http.routers.mqtt.tls=true"

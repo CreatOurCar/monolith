@@ -20,6 +20,7 @@
 #include "esp_timer.h"
 #include "esp_vfs_fat.h"
 #include "esp_wifi.h"
+#include "mqtt_client.h"
 
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
@@ -33,7 +34,7 @@
 #define TRUE (1)
 #define FALSE (0)
 
-#define DEFAULT_SERVER "monolith.luftaquila.io"
+#define DEFAULT_SERVER "v2.monolith.luftaquila.io"
 
 /***** system state (LED blink interval) *****/
 typedef enum {

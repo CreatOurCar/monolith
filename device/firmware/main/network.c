@@ -10,9 +10,12 @@ uint8_t mac[6];
 #define WIFI_FAIL_BIT (1 << 0)
 #define WIFI_CONNECTED_BIT (1 << 1)
 
+void mqtt_client(void);
+httpd_handle_t webserver(void);
+
 static EventGroupHandle_t wifi_evtgrp;
 
-static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
+static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
   if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
     esp_wifi_connect();
   } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
@@ -136,6 +139,8 @@ void task_network(void* pvParameters) {
   if (!(bits & WIFI_CONNECTED_BIT)) {
     STATE_SYSLOG(STATE_ERR, "NETWORK", "Wi-Fi connection failed", "STA_CONN_FAIL");
   }
+
+  mqtt_client();
 
   while (1) {
     vTaskDelay(pdMS_TO_TICKS(1000));
