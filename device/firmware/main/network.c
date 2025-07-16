@@ -19,12 +19,12 @@ httpd_handle_t webserver(void);
 
 static EventGroupHandle_t wifi_evtgrp;
 
-static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
+static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
   if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
     esp_wifi_connect();
   } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
     char buf[16];
-    snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t*)event_data)->reason);
+    snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t *)event_data)->reason);
     ERROR_SYSLOG(WIFI, "disconnected", buf);
     esp_wifi_connect();
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
@@ -34,7 +34,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t e
   }
 }
 
-void task_network(void* pvParameters) {
+void task_network(void *pvParameters) {
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
 
   nvs_handle_t nvs;
@@ -127,8 +127,8 @@ void task_network(void* pvParameters) {
   esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, &instance_got_ip);
 
   wifi_config_t wifi = { 0 };
-  snprintf((char*)wifi.sta.ssid, sizeof(wifi.sta.ssid), "%s", ssid);
-  snprintf((char*)wifi.sta.password, sizeof(wifi.sta.password), "%s", passwd);
+  snprintf((char *)wifi.sta.ssid, sizeof(wifi.sta.ssid), "%s", ssid);
+  snprintf((char *)wifi.sta.password, sizeof(wifi.sta.password), "%s", passwd);
   wifi.sta.scan_method        = WIFI_ALL_CHANNEL_SCAN;
   wifi.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 

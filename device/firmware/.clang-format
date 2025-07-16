@@ -5,3 +5,5 @@ Cpp11BracedListStyle: false
 ContinuationIndentWidth: 2
 AlignAfterOpenBracket: DontAlign
 AlignConsecutiveAssignments: true
+DerivePointerAlignment: false
+PointerAlignment: Right

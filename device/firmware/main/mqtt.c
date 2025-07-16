@@ -5,7 +5,7 @@ esp_mqtt_client_handle_t mqtt = NULL;
 extern const uint8_t isrgrootx1_pem_start[] asm("_binary_isrgrootx1_pem_start");
 extern const uint8_t isrgrootx1_pem_end[] asm("_binary_isrgrootx1_pem_end");
 
-static void mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data) {
+static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
   esp_mqtt_event_handle_t event = event_data;
 
   switch (event_id) {
@@ -32,7 +32,7 @@ void mqtt_client(void) {
 
   esp_mqtt_client_config_t mqtt_cfg = {
     .broker.address.uri              = mqtt_url,
-    .broker.verification.certificate = (const char*)isrgrootx1_pem_start,
+    .broker.verification.certificate = (const char *)isrgrootx1_pem_start,
   };
 
   mqtt = esp_mqtt_client_init(&mqtt_cfg);
@@ -51,4 +51,3 @@ void mqtt_client(void) {
     return;
   }
 }
-
