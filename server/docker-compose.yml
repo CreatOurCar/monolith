@@ -18,8 +18,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./log/traefik:/log:rw
-      - ./letsencrypt:/letsencrypt
+      - ./_log/traefik:/log:rw
+      - ./_data/letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - traefik
@@ -36,9 +36,9 @@ services:
       - "traefik.http.routers.mqtt.tls=true"
       - "traefik.http.services.mqtt.loadbalancer.server.port=9001"
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./data/mosquitto:/mosquitto/data:rw
-      - ./log/mosquitto:/mosquitto/log:rw
+      - ./config:/mosquitto/config:ro
+      - ./_log/mosquitto:/mosquitto/log:rw
+      - ./_data/mosquitto:/mosquitto/data:rw
     networks:
       - traefik
     restart: unless-stopped
