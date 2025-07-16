@@ -1,26 +1,24 @@
-#include <fcntl.h>
 #include <sys/time.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "main.h"
 
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
-#include "driver/sdmmc_host.h"
 #include "esp_mac.h"
-#include "esp_vfs_fat.h"
 #include "nvs_flash.h"
 
 struct timeval boot;
 
-QueueHandle_t logqueue;
 nvs_handle_t nvs;
+QueueHandle_t logqueue;
+
 uint32_t state;
 EventGroupHandle_t led;
 
 const char components[][8] = { "CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO" };
 
+void sdcard_init(void);
 void task_can(void *pvParameters);
 void task_gps(void *pvParameters);
 void task_analog(void *pvParameters);
@@ -28,13 +26,10 @@ void task_digital(void *pvParameters);
 void task_gyroscope(void *pvParameters);
 void task_network(void *pvParameters);
 
-static void rtc_init(void);
-static void sdcard_init(void);
-static void peripheral_task_init(void);
-
 static void reset_isr(void *arg);
 static void task_led(void *pvParameters);
-static void task_sdcard(void *pvParameters);
+static void rtc_init(void);
+static void peripheral_task_init(void);
 
 /*******************************************************************************
  * core system initialization entry point
@@ -69,8 +64,6 @@ void app_main(void) {
   if (ret != ESP_OK) {
     ERROR_LOG(CORE, "RST config failure");
   }
-
-  INFO(CORE, "RST: %d", gpio_get_level(GPIO_NUM_21));
 
   /*** NVS ***/
   if (nvs_flash_init() != ESP_OK) {
@@ -111,7 +104,47 @@ void app_main(void) {
 }
 
 /*******************************************************************************
- * rtc_init(): init RTC and set system time
+ * configuration reset button handler
+ ******************************************************************************/
+static void reset_isr(void *arg) {
+  static int64_t press = 0;
+
+  if (gpio_get_level(GPIO_NUM_21) == TRUE) {
+    press = esp_timer_get_time();
+  } else if (esp_timer_get_time() - press > 3000000) {
+    nvs_erase_all(nvs);
+    nvs_commit(nvs);
+    esp_restart();
+  }
+}
+
+/*******************************************************************************
+ * system status LED indicator
+ ******************************************************************************/
+static void task_led(void *pvParameters) {
+  int32_t led_state             = TRUE;
+  state_led_interval_t interval = STATE_OK;
+
+  while (TRUE) {
+    xEventGroupWaitBits(led, 1, TRUE, FALSE, 0);
+
+    if (state & (0xFFFF << 12)) {
+      interval = STATE_FATAL;
+    } else if (state & 0xFFFF) {
+      interval = STATE_ERROR;
+    } else {
+      interval = STATE_OK;
+    }
+
+    led_state = !led_state;
+    gpio_set_level(GPIO_NUM_5, led_state);
+
+    vTaskDelay(pdMS_TO_TICKS(interval));
+  }
+}
+
+/*******************************************************************************
+ * init RTC and set system time
  ******************************************************************************/
 static void rtc_init(void) {
   i2c_master_bus_handle_t i2c0_handle;
@@ -180,61 +213,7 @@ static void rtc_init(void) {
 }
 
 /*******************************************************************************
- * sdcard_init(): init SDIO, mount filesystem and create task
- ******************************************************************************/
-static void sdcard_init(void) {
-  esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-    .format_if_mount_failed   = false,
-    .max_files                = 4,
-    .allocation_unit_size     = 32 * 512,
-    .disk_status_check_enable = false,
-    .use_one_fat              = false,
-  };
-
-  sdmmc_card_t *card;
-  sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-
-  sdmmc_slot_config_t slot_config = {
-    .clk   = GPIO_NUM_39,
-    .cmd   = GPIO_NUM_40,
-    .d0    = GPIO_NUM_38,
-    .d1    = GPIO_NUM_37,
-    .d2    = GPIO_NUM_42,
-    .d3    = GPIO_NUM_41,
-    .cd    = SDMMC_SLOT_NO_CD,
-    .wp    = SDMMC_SLOT_NO_WP,
-    .width = 4,
-    .flags = 0,
-  };
-
-  if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
-    FATAL_LOG(SD, "mount failure");
-  }
-
-  // set log file
-  char logpath[64];
-  struct tm tp;
-  struct tm *tm = gmtime_r(&boot.tv_sec, &tp);
-  strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm);
-
-  int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
-
-  if (fd < 0) {
-    FATAL_LOG(SD, "file open failure");
-  }
-
-  // create log queue and sdcard task
-  logqueue = xQueueCreate(32, sizeof(log_t));
-
-  if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0) != pdPASS) {
-    FATAL_LOG(SD, "task create failure");
-  }
-
-  INFO(SD, "log file: %s", logpath);
-}
-
-/*******************************************************************************
- * peripheral_task_init(): create peripheral recorder tasks
+ create peripheral recorder tasks
  ******************************************************************************/
 static void peripheral_task_init(void) {
   uint8_t enabled = TRUE;
@@ -294,73 +273,5 @@ static void peripheral_task_init(void) {
 
   if (nvs_commit(nvs) != ESP_OK) {
     ERROR_SYSLOG(NVS, "commit failure", "NVS_COMMIT_FAIL");
-  }
-}
-
-/*******************************************************************************
- * configuration reset button handler
- ******************************************************************************/
-static void reset_isr(void *arg) {
-  static int64_t press = 0;
-
-  if (gpio_get_level(GPIO_NUM_21) == TRUE) {
-    press = esp_timer_get_time();
-  } else if (esp_timer_get_time() - press > 3000000) {
-    nvs_erase_all(nvs);
-    nvs_commit(nvs);
-    esp_restart();
-  }
-}
-
-/*******************************************************************************
- * system status LED indicator
- ******************************************************************************/
-static void task_led(void *pvParameters) {
-  int32_t led_state             = TRUE;
-  state_led_interval_t interval = STATE_OK;
-
-  while (TRUE) {
-    xEventGroupWaitBits(led, 1, TRUE, FALSE, 0);
-
-    if (state & (0xFFFF << 12)) {
-      interval = STATE_FATAL;
-    } else if (state & 0xFFFF) {
-      interval = STATE_ERROR;
-    } else {
-      interval = STATE_OK;
-    }
-
-    led_state = !led_state;
-    gpio_set_level(GPIO_NUM_5, led_state);
-
-    vTaskDelay(pdMS_TO_TICKS(interval));
-  }
-}
-
-/*******************************************************************************
- * save log queue to SD card every 1000 ms
- ******************************************************************************/
-static void task_sdcard(void *pvParameters) {
-  int fd = (int)pvParameters;
-  int ret;
-  log_t log;
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
-  while (TRUE) {
-    do {
-      if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
-        write(fd, &log, sizeof(log));
-      }
-    } while (ret == pdTRUE);
-
-    if (ret == pdTRUE) {
-      if (fsync(fd) != 0 && !IS_FATAL(SD)) {
-        FATAL_LOG(SD, "fsync failure");
-      }
-
-      INFO(SD, "log sync complete");
-    }
-
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
   }
 }

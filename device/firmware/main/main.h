@@ -109,13 +109,13 @@ typedef struct {
 } digital_record_t;
 
 typedef struct {
-  uint16_t accel_x;
-  uint16_t accel_y;
-  uint16_t accel_z;
-  uint16_t gyro_x;
-  uint16_t gyro_y;
-  uint16_t gyro_z;
-  uint16_t temperature;
+  int16_t accel_x;
+  int16_t accel_y;
+  int16_t accel_z;
+  int16_t temperature;
+  int16_t gyro_x;
+  int16_t gyro_y;
+  int16_t gyro_z;
   uint8_t _reserved[2];
 } gyroscope_record_t;
 
@@ -213,6 +213,30 @@ static inline void FATAL_SYSLOG(state_component_t component, const char *msg, co
 
 #define IS_ERROR(component) (state & (1 << component))
 #define IS_FATAL(component) (state & (1 << (component + 16)))
+
+/***** peripheral config *****/
+enum {
+  CAN_BPS_1K,
+  CAN_BPS_5K,
+  CAN_BPS_10K,
+  CAN_BPS_12_5K,
+  CAN_BPS_16K,
+  CAN_BPS_20K,
+  CAN_BPS_25K,
+  CAN_BPS_50K,
+  CAN_BPS_100K,
+  CAN_BPS_125K,
+  CAN_BPS_250K,
+  CAN_BPS_500K,
+  CAN_BPS_800K,
+  CAN_BPS_1M,
+  CAN_BPS_MAX,
+};
+
+enum {
+  GPS_DEV_UBLOX,
+  GPS_DEV_MAX,
+};
 
 /***** utility functions *****/
 static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }

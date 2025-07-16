@@ -67,8 +67,8 @@ static void sntp_sync_callback(struct timeval *tv) {
   tx[1] = DEC_TO_BCD(tm->tm_sec);         // seconds
   tx[2] = DEC_TO_BCD(tm->tm_min);         // minutes
   tx[3] = DEC_TO_BCD(tm->tm_hour);        // hours
-  tx[4] = DEC_TO_BCD(tm->tm_wday);        // day of week
-  tx[5] = DEC_TO_BCD(tm->tm_mday);        // day of month
+  tx[4] = DEC_TO_BCD(tm->tm_mday);        // day of month
+  tx[5] = DEC_TO_BCD(tm->tm_wday);        // day of week
   tx[6] = DEC_TO_BCD(tm->tm_mon + 1);     // month
   tx[7] = DEC_TO_BCD(tm->tm_year - 100);  // year
 
