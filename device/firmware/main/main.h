@@ -16,6 +16,7 @@ extern char server[64];
 extern char name[32];
 extern char key[32];
 extern uint8_t mac[6];
+extern uint32_t name_len;
 
 extern QueueHandle_t logqueue;
 

@@ -8,7 +8,7 @@
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_end");
 
-esp_err_t htmlprovider(httpd_req_t *req) {
+static esp_err_t htmlprovider(httpd_req_t *req) {
   httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
   return ESP_OK;
 }
@@ -34,6 +34,7 @@ static esp_err_t getconf(httpd_req_t *req) {
 
   len = sizeof(name);
   nvs_get_str(nvs, "name", name, &len);
+  name_len = strlen(name);
 
   len = sizeof(key);
   nvs_get_str(nvs, "key", key, &len);
@@ -119,6 +120,7 @@ static esp_err_t setconf(httpd_req_t *req) {
 
   len = sizeof(name);
   nvs_get_str(nvs, "name", name, &len);
+  name_len = strlen(name);
 
   len = sizeof(key);
   nvs_get_str(nvs, "key", key, &len);

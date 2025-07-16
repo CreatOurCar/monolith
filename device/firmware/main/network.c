@@ -10,6 +10,7 @@ char server[64];
 char name[32];
 char key[32];
 uint8_t mac[6];
+uint32_t name_len;
 
 #define WIFI_FAIL_BIT (1 << 0)
 #define WIFI_CONNECTED_BIT (1 << 1)
@@ -25,7 +26,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
   } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
     char buf[16];
     snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t *)event_data)->reason);
-    ERROR_SYSLOG(WIFI, "disconnected", buf);
+    ERROR_SYSLOG(WIFI, buf, buf);
     esp_wifi_connect();
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     xEventGroupSetBits(wifi_evtgrp, WIFI_CONNECTED_BIT);
@@ -76,6 +77,8 @@ void task_network(void *pvParameters) {
     len = sizeof(name);
     nvs_get_str(nvs, "name", name, &len);
   }
+
+  name_len = strlen(name);
 
   len = sizeof(key);
 

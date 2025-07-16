@@ -14,7 +14,7 @@ void task_can(void *pvParameters) {
     ERROR_SYSLOG(NVS, "open failure: can", "CAN_NVS_O_FAIL");
   }
 
-  // TODO: check send enabled, bps, filter
+  // TODO: check bps, filter
 
   if (nvs_commit(nvs) != ESP_OK) {
     ERROR_SYSLOG(CAN, "commit failure: can", "CAN_NVS_C_FAIL");
@@ -43,7 +43,7 @@ void task_can(void *pvParameters) {
 void task_gps(void *pvParameters) {
   nvs_handle_t nvs;
 
-  if (nvs_open("GPS", NVS_READWRITE, &nvs) != ESP_OK) {
+  if (nvs_open("gps", NVS_READWRITE, &nvs) != ESP_OK) {
     ERROR_SYSLOG(NVS, "open failure: GPS", "GPS_NVS_O_FAIL");
   }
 
