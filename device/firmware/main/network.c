@@ -2,6 +2,7 @@
 
 #include "esp_http_server.h"
 #include "esp_mac.h"
+#include "esp_netif_sntp.h"
 #include "esp_wifi.h"
 
 char ssid[32];
@@ -33,6 +34,10 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     CLEAR_ERROR(WIFI);
     SYSLOG("WIFI_CONN");
   }
+}
+
+static void sntp_sync_callback(struct timeval *tv) {
+  SYSLOG("SNTP_SYNC");
 }
 
 void task_network(void *pvParameters) {
@@ -148,6 +153,11 @@ void task_network(void *pvParameters) {
   if (!(bits & WIFI_CONNECTED_BIT)) {
     ERROR_SYSLOG(WIFI, "connection failed", "STA_CONN_FAIL");
   }
+
+  // SNTP time sync service
+  esp_sntp_config_t sntp = ESP_NETIF_SNTP_DEFAULT_CONFIG("time.google.com");
+  sntp.sync_cb           = sntp_sync_callback;
+  esp_netif_sntp_init(&sntp);
 
   mqtt_client();
 
