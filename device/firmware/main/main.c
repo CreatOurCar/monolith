@@ -104,6 +104,8 @@ void app_main(void) {
   }
 
   peripheral_task_init();
+
+  INFO(CORE, "initialization complete");
 }
 
 /*******************************************************************************
@@ -169,6 +171,7 @@ static void rtc_init(void) {
     };
 
     settimeofday(&tv, NULL);
+    INFO(RTC, "time set to %s", ctime(&tv.tv_sec));
   } else {
     ERROR_LOG(RTC, "no valid time set");
   }
@@ -224,6 +227,8 @@ static void sdcard_init(void) {
   if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0) != pdPASS) {
     FATAL_LOG(SD, "task create failure");
   }
+
+  INFO(SD, "log file: %s", logpath);
 }
 
 /*******************************************************************************
@@ -332,15 +337,17 @@ static void task_sdcard(void *pvParameters) {
 
   while (TRUE) {
     do {
-      ret = xQueueReceive(logqueue, &log, 0);
-
-      if (ret == pdTRUE) {
+      if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
         write(fd, &log, sizeof(log));
       }
     } while (ret == pdTRUE);
 
-    if (fsync(fd) != 0 && !(state & (1 << (SD + 16)))) {
-      FATAL_LOG(SD, "fsync failure");
+    if (ret == pdTRUE) {
+      if (fsync(fd) != 0 && !IS_FATAL(SD)) {
+        FATAL_LOG(SD, "fsync failure");
+      }
+
+      INFO(SD, "log sync complete");
     }
 
     vTaskDelay(pdMS_TO_TICKS(1000));

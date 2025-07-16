@@ -36,6 +36,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     xEventGroupSetBits(wifi_evtgrp, WIFI_CONNECTED_BIT);
     CLEAR_ERROR(WIFI);
     SYSLOG("WIFI_CONN");
+    INFO(WIFI, "connected to %s:" IPSTR, ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
   }
 }
 
@@ -77,8 +78,7 @@ static void sntp_sync_callback(struct timeval *tv) {
 
   i2c_master_bus_rm_device(rtc_handle);
   SYSLOG("SNTP_SYNC");
-  ESP_LOGE("SNTP", "Time synchronized: %04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-    tm->tm_hour, tm->tm_min, tm->tm_sec);
+  INFO(RTC, "SNTP time set to %s", ctime(&tv->tv_sec));
 }
 
 void task_network(void *pvParameters) {
