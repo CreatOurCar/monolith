@@ -88,9 +88,6 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     if (STREQL(dir[2], "rbt")) {
-      // reboot
-      SYSLOG("MQTT_REBOOT");
-      vTaskDelay(pdMS_TO_TICKS(3000));
       esp_restart();
     } else if (STREQL(dir[2], "evt")) {
       // user event
@@ -116,7 +113,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
   esp_mqtt_event_handle_t event = event_data;
 
-  INFO(MQTT, "event %ld at topic: %.*s, data: %.*s", event_id, event->topic_len, event->topic, event->data_len, event->data);
+  INFO(MQTT, "event %ld at topic: %.*s data: %.*s", event_id, event->topic_len, event->topic, event->data_len, event->data);
 
   switch (event_id) {
     char buf[16];

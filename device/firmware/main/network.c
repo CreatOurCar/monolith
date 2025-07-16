@@ -36,7 +36,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     xEventGroupSetBits(wifi_evtgrp, WIFI_CONNECTED_BIT);
     CLEAR_ERROR(WIFI);
     SYSLOG("WIFI_CONN");
-    INFO(WIFI, "connected to %s:" IPSTR, ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
+    INFO(WIFI, "connected to %s (" IPSTR ")", ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
   }
 }
 
@@ -131,10 +131,7 @@ void task_network(void *pvParameters) {
       ERROR_SYSLOG(WIFI, "HTTP server init failure", "WEBSERVER_FAIL");
     }
 
-    // won't proceed further on AP mode
-    while (TRUE) {
-      vTaskDelay(pdMS_TO_TICKS(10000));
-    }
+    vTaskDelete(NULL);
   }
 
   // start Wi-Fi connection
@@ -187,7 +184,5 @@ void task_network(void *pvParameters) {
 
   mqtt_client();
 
-  while (1) {
-    vTaskDelay(pdMS_TO_TICKS(1000));
-  }
+  vTaskDelete(NULL);
 }

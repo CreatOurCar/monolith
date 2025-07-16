@@ -344,6 +344,7 @@ static void task_sdcard(void *pvParameters) {
   int fd = (int)pvParameters;
   int ret;
   log_t log;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (TRUE) {
     do {
@@ -360,6 +361,6 @@ static void task_sdcard(void *pvParameters) {
       INFO(SD, "log sync complete");
     }
 
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
   }
 }

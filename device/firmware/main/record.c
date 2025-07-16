@@ -23,9 +23,10 @@ void task_can(void *pvParameters) {
   }
 
   // TODO: set can ISR
+  TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (TRUE) {
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }
 }
 
@@ -39,8 +40,10 @@ void task_gps(void *pvParameters) {
     ERROR_SYSLOG(GPS, "commit failure: GPS", "GPS_NVS_FAIL");
   }
 
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
   while (TRUE) {
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }
 }
 
@@ -91,16 +94,16 @@ void task_analog(void *pvParameters) {
     ERROR_SYSLOG(ANALOG, "temperature sensor init failure", "TMP_INIT_FAIL");
   }
 
-  float temperature;
+  TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (TRUE) {
-    // TODO: record
+    float temperature;
 
     if (temperature_sensor_get_celsius(sensor, &temperature) != ESP_OK) {
       // TODO: error handling
     }
 
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }
 }
 
@@ -121,9 +124,10 @@ void task_digital(void *pvParameters) {
   }
 
   // TODO: set ISR
+  TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (TRUE) {
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }
 }
 
@@ -150,8 +154,17 @@ void task_gyroscope(void *pvParameters) {
     ERROR_SYSLOG(GYRO, "device init failure", "GYR_DEV_FAIL");
   }
 
+  log_t log;
+  uint8_t tx[1] = { 0x3B };  // ACCEL_XOUT_H register address
+  uint8_t rx[14] = { 0 };    // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+
   while (TRUE) {
-    vTaskDelay(pdMS_TO_TICKS(100));
-    // TODO: read analog values
+    if (i2c_master_transmit_receive(dev_handle, tx, sizeof(tx), rx, sizeof(rx), 100) != ESP_OK) {
+      ERROR_SYSLOG(GYRO, "read transfer failure", "GYR_READ_FAIL");
+      continue;
+    }
+
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }
 }
