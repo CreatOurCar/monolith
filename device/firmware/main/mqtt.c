@@ -21,7 +21,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     dir[cnt++] = tok;
   }
 
-  if (cnt < 2 || !STREQL(dir[0], name)) {
+  if (cnt < 2 || !STREQL(dir[0], name) || evt->data_len == 0) {
     return;
   }
 
@@ -30,7 +30,6 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       return;
     }
 
-    // TODO: publish ack
     if (STREQL(dir[2], "net")) {
       if (STREQL(dir[3], "ssid")) {
         snprintf(ssid, sizeof(ssid), "%.*s", evt->data_len, evt->data);
@@ -39,35 +38,48 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
         snprintf(passwd, sizeof(passwd), "%.*s", evt->data_len, evt->data);
         nvs_set_str(nvs, "passwd", passwd);
       }
-    } else if (STREQL(dir[2], "can")) {
+    }
+
+    else if (STREQL(dir[2], "can")) {
       if (STREQL(dir[3], "en")) {
-        // TODO:  set CAN enable
+        nvs_set_u8(nvs, "can_en", evt->data[0] != 0);
       } else if (STREQL(dir[3], "bps")) {
-        // TODO:  set CAN bus speed
+        nvs_set_u8(nvs, "can_bps", evt->data[0]);
       } else if (STREQL(dir[3], "filter")) {
-        // TODO:  set CAN filter
+        nvs_set_u32(nvs, "can_filter", *(uint32_t *)(evt->data));
       } else if (STREQL(dir[3], "mask")) {
-        // TODO:  set CAN mask
+        nvs_set_u32(nvs, "can_mask", *(uint32_t *)(evt->data));
       }
-    } else if (STREQL(dir[2], "gps")) {
+    }
+
+    else if (STREQL(dir[2], "gps")) {
       if (STREQL(dir[3], "en")) {
-        // TODO:  set GPS enable
+        nvs_set_u8(nvs, "gps_en", evt->data[0] != 0);
       } else if (STREQL(dir[3], "dev")) {
-        // TODO:  set GPS device type
+        nvs_set_u8(nvs, "gps_dev", evt->data[0]);
       }
-    } else if (STREQL(dir[2], "anl")) {
+    }
+
+    else if (STREQL(dir[2], "anl")) {
       if (STREQL(dir[3], "en")) {
-        // TODO:  set analog input enable
+        nvs_set_u8(nvs, "anl_en", evt->data[0] != 0);
       }
-    } else if (STREQL(dir[2], "dgt")) {
+    }
+
+    else if (STREQL(dir[2], "dgt")) {
       if (STREQL(dir[3], "en")) {
-        // TODO:  set digital input enable
+        nvs_set_u8(nvs, "dgt_en", evt->data[0] != 0);
       }
     }
 
     if (nvs_commit(nvs) != ESP_OK) {
       ERROR_SYSLOG(NVS, "commit failure", "MQTT_NVS_FAIL");
+      return;
     }
+
+    char ack[40];
+    snprintf(topic, sizeof(topic), "%s/ack", name);
+    esp_mqtt_client_publish(mqtt, ack, topic, 0, MQTT_QOS_2, false);
   }
 
   else if (STREQL(dir[1], "cmd")) {
