@@ -3,6 +3,8 @@ name: monolith
 services:
   traefik:
     image: traefik:3.4
+    profiles:
+      - with_traefik
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
@@ -36,7 +38,7 @@ services:
       - "traefik.http.routers.mqtt.tls=true"
       - "traefik.http.services.mqtt.loadbalancer.server.port=9001"
     volumes:
-      - ./config:/mosquitto/config:ro
+      - ./config:/mosquitto/config
       - ./_log/mosquitto:/mosquitto/log:rw
       - ./_data/mosquitto:/mosquitto/data:rw
     networks:
