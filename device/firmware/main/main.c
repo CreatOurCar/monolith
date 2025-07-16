@@ -70,6 +70,8 @@ void app_main(void) {
     ERROR_LOG(CORE, "RST config failure");
   }
 
+  INFO(CORE, "RST: %d", gpio_get_level(GPIO_NUM_21));
+
   /*** NVS ***/
   if (nvs_flash_init() != ESP_OK) {
     FATAL_LOG(NVS, "NVS flash init failure");
@@ -296,10 +298,18 @@ static void peripheral_task_init(void) {
 }
 
 /*******************************************************************************
- * network configuration reset button handler
+ * configuration reset button handler
  ******************************************************************************/
-static void IRAM_ATTR reset_isr(void *arg) {
-  // TODO: reset AP logic
+static void reset_isr(void *arg) {
+  static int64_t press = 0;
+
+  if (gpio_get_level(GPIO_NUM_21) == TRUE) {
+    press = esp_timer_get_time();
+  } else if (esp_timer_get_time() - press > 3000000) {
+    nvs_erase_all(nvs);
+    nvs_commit(nvs);
+    esp_restart();
+  }
 }
 
 /*******************************************************************************
