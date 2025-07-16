@@ -1,3 +1,6 @@
+_data/
+_log/
+*.db
+*.log
+*.passwd
 acme.json
-data/
-log/
