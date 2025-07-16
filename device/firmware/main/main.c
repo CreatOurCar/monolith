@@ -36,9 +36,6 @@ static void reset_isr(void *arg);
 static void task_led(void *pvParameters);
 static void task_sdcard(void *pvParameters);
 
-static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
-static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
-
 /*******************************************************************************
  * core system initialization entry point
  ******************************************************************************/
@@ -146,6 +143,8 @@ static void rtc_init(void) {
     ERROR_LOG(RTC, "read time transfer failure");
   }
 
+  i2c_master_bus_rm_device(rtc_handle);
+
   // rtc has valid time set
   if (rx[6] != 0x00) {
     struct tm tm = {
@@ -153,6 +152,7 @@ static void rtc_init(void) {
       .tm_min  = BCD_TO_DEC(rx[1] & 0x7F),
       .tm_hour = BCD_TO_DEC(rx[2] & 0x3F),
       .tm_mday = BCD_TO_DEC(rx[3] & 0x3F),
+      .tm_wday = BCD_TO_DEC(rx[4] & 0x07),
       .tm_mon  = BCD_TO_DEC(rx[5] & 0x1F) - 1,
       .tm_year = BCD_TO_DEC(rx[6]) + 100  // from 2000
     };
@@ -208,7 +208,8 @@ static void sdcard_init(void) {
 
   // set log file
   char logpath[64];
-  struct tm *tm = localtime(&boot.tv_sec);
+  struct tm tp;
+  struct tm *tm = gmtime_r(&boot.tv_sec, &tp);
   strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm);
 
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);

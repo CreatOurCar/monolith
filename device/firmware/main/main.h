@@ -209,4 +209,8 @@ static inline void FATAL_SYSLOG(state_component_t component, const char *msg, co
   FATAL_LOG(component, msg);
 }
 
+/***** utility functions *****/
+static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
+static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
+
 #endif  // MAIN_H
