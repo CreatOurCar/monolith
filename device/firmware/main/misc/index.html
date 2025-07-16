@@ -25,7 +25,9 @@
   <div><p>Server Address</p><input id='server' maxlength='50' placeholder=''></div>
   <div><p>Device Name</p><input id='name' maxlength='30' placeholder=''></div>
   <div><p>Device Key</p><input id='key' maxlength='30' placeholder=''></div>
-  <div style='margin-top: 2.5rem;'><button id='save'>Save</button></div>
+  <div style='margin-top: 2.5rem; display: flex; gap: 2rem;'>
+    <button id='reboot'>Reboot</button><button id='save'>Save</button>
+  </div>
     <script>
     document.addEventListener('DOMContentLoaded', async () => {
       try {
@@ -41,6 +43,10 @@
       } catch (e) {
         alert(e.toString());
       }
+      document.getElementById('reboot').addEventListener('click', () => {
+        fetch('/reboot');
+        alert(`Device rebooting...`);
+      });
       document.getElementById('save').addEventListener('click', async () => {
         const payload = {
           ssid:   document.getElementById('ssid').value.trim(),

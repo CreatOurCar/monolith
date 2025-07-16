@@ -8,8 +8,14 @@
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_end");
 
-static esp_err_t htmlprovider(httpd_req_t *req) {
+static esp_err_t html(httpd_req_t *req) {
   httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
+  return ESP_OK;
+}
+
+static esp_err_t reboot(httpd_req_t *req) {
+  httpd_resp_sendstr(req, "rebooting...");
+  esp_restart();
   return ESP_OK;
 }
 
@@ -142,12 +148,14 @@ httpd_handle_t webserver(void) {
   config.server_port      = 80;
   config.lru_purge_enable = true;
 
-  httpd_uri_t root      = { .uri = "/", .method = HTTP_GET, .handler = htmlprovider, .user_ctx = NULL };
+  httpd_uri_t root      = { .uri = "/", .method = HTTP_GET, .handler = html, .user_ctx = NULL };
+  httpd_uri_t restart   = { .uri = "/reboot", .method = HTTP_GET, .handler = reboot, .user_ctx = NULL };
   httpd_uri_t getconfig = { .uri = "/config", .method = HTTP_GET, .handler = getconf, .user_ctx = NULL };
   httpd_uri_t setconfig = { .uri = "/config", .method = HTTP_POST, .handler = setconf, .user_ctx = NULL };
 
   if (httpd_start(&server, &config) == ESP_OK) {
     httpd_register_uri_handler(server, &root);
+    httpd_register_uri_handler(server, &restart);
     httpd_register_uri_handler(server, &getconfig);
     httpd_register_uri_handler(server, &setconfig);
     SYSLOG("WEB_SVR_START");
