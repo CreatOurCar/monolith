@@ -25,6 +25,12 @@ extern EventGroupHandle_t led;
 
 extern esp_mqtt_client_handle_t mqtt;
 
+enum {
+  MQTT_QOS_0,
+  MQTT_QOS_1,
+  MQTT_QOS_2,
+};
+
 /***** system state *****/
 extern const char components[][8];
 

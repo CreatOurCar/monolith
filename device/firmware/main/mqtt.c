@@ -1,6 +1,8 @@
 #include "main.h"
 
 esp_mqtt_client_handle_t mqtt = NULL;
+
+extern struct timeval boot;
 extern const uint8_t isrgrootx1_pem_start[] asm("_binary_isrgrootx1_pem_start");
 
 #define STREQL(str1, str2) (strcmp((str1), (str2)) == 0)
@@ -30,25 +32,33 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 
     if (STREQL(dir[2], "net")) {
       if (STREQL(dir[3], "ssid")) {
+        // set Wi-Fi Hotspot SSID
       } else if (STREQL(dir[3], "passwd")) {
+        // set Wi-Fi Hotspot Password
       }
     } else if (STREQL(dir[2], "can")) {
       if (STREQL(dir[3], "en")) {
+        // set CAN enable
       } else if (STREQL(dir[3], "bps")) {
+        // set CAN bus speed
       } else if (STREQL(dir[3], "filter")) {
+        // set CAN filter
+      } else if (STREQL(dir[3], "mask")) {
+        // set CAN mask
       }
     } else if (STREQL(dir[2], "gps")) {
       if (STREQL(dir[3], "en")) {
+        // set GPS enable
       } else if (STREQL(dir[3], "dev")) {
+        // set GPS device type
       }
     } else if (STREQL(dir[2], "anl")) {
       if (STREQL(dir[3], "en")) {
+        // set analog input enable
       }
     } else if (STREQL(dir[2], "dgt")) {
       if (STREQL(dir[3], "en")) {
-      }
-    } else if (STREQL(dir[2], "gyr")) {
-      if (STREQL(dir[3], "en")) {
+        // set digital input enable
       }
     }
   }
@@ -58,22 +68,28 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       return;
     }
 
-    if (STREQL(dir[2], "can")) {
-      // TODO: transmit CAN message
-    } else if (STREQL(dir[2], "ls")) {
-      // TODO: list all files
-    } else if (STREQL(dir[2], "del")) {
-      // TODO: delete file(s)
-    } else if (STREQL(dir[2], "get")) {
-      // TODO: download file
-    } else if (STREQL(dir[2], "evt")) {
-      log_t log;
-      strncpy(log.payload.user_event.msg, evt->data, sizeof(log.payload.user_event.msg));
-      LOG(LOG_TYPE_USER_EVENT, &log);
-    } else if (STREQL(dir[2], "rbt")) {
+    if (STREQL(dir[2], "rbt")) {
+      // reboot
       SYSLOG("MQTT_REBOOT");
       vTaskDelay(pdMS_TO_TICKS(3000));
       esp_restart();
+    } else if (STREQL(dir[2], "evt")) {
+      // user event
+      log_t log;
+      strncpy(log.payload.user_event.msg, evt->data, sizeof(log.payload.user_event.msg));
+      LOG(LOG_TYPE_USER_EVENT, &log);
+    } else if (STREQL(dir[2], "ls")) {
+      // list files
+      // TODO:
+    } else if (STREQL(dir[2], "del")) {
+      // delete file(s)
+      // TODO:
+    } else if (STREQL(dir[2], "get")) {
+      // download file
+      // TODO:
+    } else if (STREQL(dir[2], "can")) {
+      // transmit CAN message
+      // TODO:
     }
   }
 }
@@ -87,9 +103,14 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
     case MQTT_EVENT_CONNECTED:
       snprintf(topic, sizeof(topic), "%s/set/#", name);
-      esp_mqtt_client_subscribe(mqtt, topic, 2);
+      esp_mqtt_client_subscribe(mqtt, topic, MQTT_QOS_2);
+
       snprintf(topic, sizeof(topic), "%s/cmd/#", name);
-      esp_mqtt_client_subscribe(mqtt, topic, 1);
+      esp_mqtt_client_subscribe(mqtt, topic, MQTT_QOS_2);
+
+      snprintf(topic, sizeof(topic), "%s/d/boot", name);
+      esp_mqtt_client_publish(mqtt, topic, (char *)&boot.tv_sec, sizeof(boot.tv_sec), MQTT_QOS_1, true);
+
       CLEAR_ERROR(MQTT);
       SYSLOG("MQTT_CONN");
       break;
@@ -112,11 +133,18 @@ void mqtt_client(void) {
   char mqtt_url[80];
   snprintf(mqtt_url, sizeof(mqtt_url), "wss://%s:443", server);
 
+  char topic[40];
+  snprintf(topic, sizeof(topic), "%s/d/boot", name);
+
   esp_mqtt_client_config_t mqtt_cfg = {
     .broker.address.uri                  = mqtt_url,
     .broker.verification.certificate     = (const char *)isrgrootx1_pem_start,
     .credentials.username                = name,
     .credentials.authentication.password = key,
+    .session.last_will.topic             = topic,
+    .session.last_will.msg               = "OFFLINE",
+    .session.last_will.qos               = MQTT_QOS_1,
+    .session.last_will.retain            = true,
   };
 
   mqtt = esp_mqtt_client_init(&mqtt_cfg);

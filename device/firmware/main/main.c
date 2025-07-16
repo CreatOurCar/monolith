@@ -12,6 +12,7 @@
 #include "esp_vfs_fat.h"
 #include "nvs_flash.h"
 
+struct timeval boot;
 QueueHandle_t logqueue;
 
 uint32_t state;
@@ -27,7 +28,7 @@ void task_gyroscope(void *pvParameters);
 void task_network(void *pvParameters);
 
 static void rtc_init(void);
-static void sdcard_init(struct timeval *tv);
+static void sdcard_init(void);
 static void peripheral_task_init(void);
 
 static void reset_isr(void *arg);
@@ -80,16 +81,15 @@ void app_main(void) {
   rtc_init();
 
   // read boot time
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
+  gettimeofday(&boot, NULL);
 
   /*** SDIO ***/
-  sdcard_init(&tv);
+  sdcard_init();
 
   // save boot record
   log_t boot_record;
   boot_record.payload.boot.protocol_version = PROTOCOL_VERSION;
-  boot_record.payload.boot.boot_time        = (uint64_t)tv.tv_sec;
+  boot_record.payload.boot.boot_time        = (uint64_t)boot.tv_sec;
   esp_read_mac(boot_record.payload.boot.mac, ESP_MAC_WIFI_STA);
 
   if (LOG(LOG_TYPE_BOOT, &boot_record) != pdTRUE) {
@@ -172,7 +172,7 @@ static void rtc_init(void) {
 /*******************************************************************************
  * sdcard_init(): init SDIO, mount filesystem and create task
  ******************************************************************************/
-static void sdcard_init(struct timeval *tv) {
+static void sdcard_init(void) {
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
     .format_if_mount_failed   = false,
     .max_files                = 4,
@@ -203,7 +203,7 @@ static void sdcard_init(struct timeval *tv) {
 
   // set log file
   char logpath[64];
-  struct tm *tm = localtime(&tv->tv_sec);
+  struct tm *tm = localtime(&boot.tv_sec);
   strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm);
 
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
@@ -280,16 +280,9 @@ static void peripheral_task_init(void) {
     }
   }
 
-  /***** GYROSCOPE *****/
-  if (nvs_get_u8(nvs, "GYRO", &enabled) != ESP_OK) {
-    nvs_set_u8(nvs, "GYRO", TRUE);
-    enabled = TRUE;
-  }
-
-  if (enabled) {
-    if (xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1) != pdPASS) {
-      ERROR_SYSLOG(GYRO, "task create failure", "GYR_TASK_FAIL");
-    }
+  /***** GYROSCOPE (always enabled) *****/
+  if (xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    ERROR_SYSLOG(GYRO, "task create failure", "GYR_TASK_FAIL");
   }
 
   if (nvs_commit(nvs) != ESP_OK) {
