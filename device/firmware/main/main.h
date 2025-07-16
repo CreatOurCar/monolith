@@ -19,7 +19,7 @@ extern uint8_t mac[6];
 extern uint32_t name_len;
 
 extern QueueHandle_t logqueue;
-
+extern nvs_handle_t nvs;
 extern uint32_t state;
 extern EventGroupHandle_t led;
 

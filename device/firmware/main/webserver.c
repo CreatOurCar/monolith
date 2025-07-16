@@ -14,15 +14,6 @@ static esp_err_t htmlprovider(httpd_req_t *req) {
 }
 
 static esp_err_t getconf(httpd_req_t *req) {
-  nvs_handle_t nvs;
-
-  if (nvs_open("network", NVS_READONLY, &nvs) != ESP_OK) {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "WEB_NVS_O_FAIL");
-    ERROR_SYSLOG(NVS, "open failure: network", "WEB_NVS_O_FAIL");
-    nvs_close(nvs);
-    return ESP_FAIL;
-  }
-
   size_t len = sizeof(ssid);
   nvs_get_str(nvs, "ssid", ssid, &len);
 
@@ -39,8 +30,6 @@ static esp_err_t getconf(httpd_req_t *req) {
   len = sizeof(key);
   nvs_get_str(nvs, "key", key, &len);
 
-  nvs_close(nvs);
-
   char res[288];
   snprintf(res, sizeof(res),
     "{\"id\":\"%02X:%02X:%02X:%02X:%02X:%02X\", "
@@ -53,20 +42,11 @@ static esp_err_t getconf(httpd_req_t *req) {
 }
 
 static esp_err_t setconf(httpd_req_t *req) {
-  nvs_handle_t nvs;
-
-  if (nvs_open("network", NVS_READWRITE, &nvs) != ESP_OK) {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "WEB_NVS_O_FAIL");
-    ERROR_SYSLOG(NVS, "open failure: network", "WEB_NVS_O_FAIL");
-    return ESP_FAIL;
-  }
-
   char buf[256];
   size_t len = httpd_req_recv(req, buf, sizeof(buf) - 1);
 
   if (len <= 0) {
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "REQ_RECV_FAIL");
-    nvs_close(nvs);
     return ESP_FAIL;
   }
 
@@ -75,7 +55,6 @@ static esp_err_t setconf(httpd_req_t *req) {
 
   if (!json) {
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "INVALID_JSON");
-    nvs_close(nvs);
     return ESP_FAIL;
   }
 
@@ -87,7 +66,6 @@ static esp_err_t setconf(httpd_req_t *req) {
     } else {                                                        \
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "BAD_FIELD"); \
       cJSON_Delete(json);                                           \
-      nvs_close(nvs);                                               \
       return ESP_FAIL;                                              \
     }                                                               \
   } while (FALSE)
@@ -102,8 +80,7 @@ static esp_err_t setconf(httpd_req_t *req) {
 
   if (nvs_commit(nvs) != ESP_OK) {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "NVS_COMMIT_FAIL");
-    ERROR_SYSLOG(NVS, "commit failure: network", "WEB_NVS_C_FAIL");
-    nvs_close(nvs);
+    ERROR_SYSLOG(NVS, "commit failure: network", "WEB_NVS_FAIL");
     return ESP_FAIL;
   }
 
@@ -124,8 +101,6 @@ static esp_err_t setconf(httpd_req_t *req) {
 
   len = sizeof(key);
   nvs_get_str(nvs, "key", key, &len);
-
-  nvs_close(nvs);
 
   httpd_resp_set_type(req, "application/json");
   httpd_resp_sendstr(req, "{\"status\":\"OK\"}");

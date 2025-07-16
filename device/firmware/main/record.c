@@ -8,19 +8,11 @@
  * CAN traffic monitor / transmitter task
  ******************************************************************************/
 void task_can(void *pvParameters) {
-  nvs_handle_t nvs;
-
-  if (nvs_open("can", NVS_READWRITE, &nvs) != ESP_OK) {
-    ERROR_SYSLOG(NVS, "open failure: can", "CAN_NVS_O_FAIL");
-  }
-
   // TODO: check bps, filter
 
   if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(CAN, "commit failure: can", "CAN_NVS_C_FAIL");
+    ERROR_SYSLOG(CAN, "commit failure: can", "CAN_NVS_FAIL");
   }
-
-  nvs_close(nvs);
 
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_7, GPIO_NUM_6, TWAI_MODE_NORMAL);
   twai_timing_config_t t_config  = TWAI_TIMING_CONFIG_500KBITS();
@@ -41,19 +33,11 @@ void task_can(void *pvParameters) {
  * GPS NMEA GPRMC message monitor task
  ******************************************************************************/
 void task_gps(void *pvParameters) {
-  nvs_handle_t nvs;
-
-  if (nvs_open("gps", NVS_READWRITE, &nvs) != ESP_OK) {
-    ERROR_SYSLOG(NVS, "open failure: GPS", "GPS_NVS_O_FAIL");
-  }
-
   // TODO: check GPS conf, set uart and ISR
 
   if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(GPS, "commit failure: GPS", "GPS_NVS_C_FAIL");
+    ERROR_SYSLOG(GPS, "commit failure: GPS", "GPS_NVS_FAIL");
   }
-
-  nvs_close(nvs);
 
   while (TRUE) {
     vTaskDelay(pdMS_TO_TICKS(100));

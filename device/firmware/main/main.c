@@ -13,8 +13,9 @@
 #include "nvs_flash.h"
 
 struct timeval boot;
-QueueHandle_t logqueue;
 
+QueueHandle_t logqueue;
+nvs_handle_t nvs;
 uint32_t state;
 EventGroupHandle_t led;
 
@@ -75,6 +76,10 @@ void app_main(void) {
   /*** NVS ***/
   if (nvs_flash_init() != ESP_OK) {
     FATAL_LOG(NVS, "NVS flash init failure");
+  }
+
+  if (nvs_open("storage", NVS_READWRITE, &nvs) != ESP_OK) {
+    FATAL_LOG(NVS, "open failure");
   }
 
   /*** RTC ***/
@@ -224,17 +229,11 @@ static void sdcard_init(void) {
  * peripheral_task_init(): create peripheral recorder tasks
  ******************************************************************************/
 static void peripheral_task_init(void) {
-  nvs_handle_t nvs;
-
-  if (nvs_open("enabled", NVS_READWRITE, &nvs) != ESP_OK) {
-    ERROR_SYSLOG(NVS, "open failure: enabled", "NVS_OPEN_FAIL");
-  }
-
   uint8_t enabled = TRUE;
 
   /***** CAN *****/
-  if (nvs_get_u8(nvs, "CAN", &enabled) != ESP_OK) {
-    nvs_set_u8(nvs, "CAN", TRUE);
+  if (nvs_get_u8(nvs, "can_en", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "can_en", TRUE);
     enabled = TRUE;
   }
 
@@ -245,8 +244,8 @@ static void peripheral_task_init(void) {
   }
 
   /***** GPS *****/
-  if (nvs_get_u8(nvs, "GPS", &enabled) != ESP_OK) {
-    nvs_set_u8(nvs, "GPS", TRUE);
+  if (nvs_get_u8(nvs, "gps_en", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "gps_en", TRUE);
     enabled = TRUE;
   }
 
@@ -257,8 +256,8 @@ static void peripheral_task_init(void) {
   }
 
   /***** ANALOG *****/
-  if (nvs_get_u8(nvs, "ANALOG", &enabled) != ESP_OK) {
-    nvs_set_u8(nvs, "ANALOG", TRUE);
+  if (nvs_get_u8(nvs, "anl_en", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "anl_en", TRUE);
     enabled = TRUE;
   }
 
@@ -269,8 +268,8 @@ static void peripheral_task_init(void) {
   }
 
   /***** DIGITAL *****/
-  if (nvs_get_u8(nvs, "DIGITAL", &enabled) != ESP_OK) {
-    nvs_set_u8(nvs, "DIGITAL", TRUE);
+  if (nvs_get_u8(nvs, "dgt_en", &enabled) != ESP_OK) {
+    nvs_set_u8(nvs, "dgt_en", TRUE);
     enabled = TRUE;
   }
 
@@ -286,10 +285,8 @@ static void peripheral_task_init(void) {
   }
 
   if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(NVS, "commit failure: enabled", "NVS_COMMIT_FAIL");
+    ERROR_SYSLOG(NVS, "commit failure", "NVS_COMMIT_FAIL");
   }
-
-  nvs_close(nvs);
 }
 
 /*******************************************************************************

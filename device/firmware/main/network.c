@@ -43,35 +43,25 @@ static void sntp_sync_callback(struct timeval *tv) {
 void task_network(void *pvParameters) {
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
 
-  nvs_handle_t nvs;
-
-  // read and save default values
-  if (nvs_open("network", NVS_READWRITE, &nvs) != ESP_OK) {
-    ERROR_SYSLOG(NVS, "open failure: network", "NET_NVS_O_FAIL");
-  }
-
   size_t len = sizeof(ssid);
 
   if (nvs_get_str(nvs, "ssid", ssid, &len) != ESP_OK) {
+    ssid[0] = '\0';
     nvs_set_str(nvs, "ssid", "");
-    len = sizeof(ssid);
-    nvs_get_str(nvs, "ssid", ssid, &len);
   }
 
   len = sizeof(passwd);
 
   if (nvs_get_str(nvs, "passwd", passwd, &len) != ESP_OK) {
+    passwd[0] = '\0';
     nvs_set_str(nvs, "passwd", "");
-    len = sizeof(passwd);
-    nvs_get_str(nvs, "passwd", passwd, &len);
   }
 
   len = sizeof(server);
 
   if (nvs_get_str(nvs, "server", server, &len) != ESP_OK) {
-    nvs_set_str(nvs, "server", "v2.monolith.luftaquila.io");
-    len = sizeof(server);
-    nvs_get_str(nvs, "server", server, &len);
+    snprintf(server, sizeof(server), "v2.monolith.luftaquila.io");
+    nvs_set_str(nvs, "server", server);
   }
 
   len = sizeof(name);
@@ -79,8 +69,6 @@ void task_network(void *pvParameters) {
   if (nvs_get_str(nvs, "name", name, &len) != ESP_OK) {
     snprintf(name, sizeof(name), "%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     nvs_set_str(nvs, "name", name);
-    len = sizeof(name);
-    nvs_get_str(nvs, "name", name, &len);
   }
 
   name_len = strlen(name);
@@ -88,16 +76,13 @@ void task_network(void *pvParameters) {
   len = sizeof(key);
 
   if (nvs_get_str(nvs, "key", key, &len) != ESP_OK) {
-    nvs_set_str(nvs, "key", "monolith");
-    len = sizeof(key);
-    nvs_get_str(nvs, "key", key, &len);
+    snprintf(key, sizeof(key), "monolith");
+    nvs_set_str(nvs, "key", key);
   }
 
   if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(NVS, "commit failure: network", "NET_NVS_C_FAIL");
+    ERROR_SYSLOG(NVS, "commit failure: network", "NET_NVS_FAIL");
   }
-
-  nvs_close(nvs);
 
   // no SSID or proper password set, init AP mode
   if (strlen(ssid) == 0 || strlen(passwd) < 8) {

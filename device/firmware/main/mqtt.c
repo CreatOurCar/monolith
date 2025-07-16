@@ -1,3 +1,5 @@
+#include <sys/time.h>
+
 #include "main.h"
 
 esp_mqtt_client_handle_t mqtt = NULL;
@@ -28,38 +30,43 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       return;
     }
 
-    // TODO: impl
-
+    // TODO: publish ack
     if (STREQL(dir[2], "net")) {
       if (STREQL(dir[3], "ssid")) {
-        // set Wi-Fi Hotspot SSID
+        snprintf(ssid, sizeof(ssid), "%.*s", evt->data_len, evt->data);
+        nvs_set_str(nvs, "ssid", ssid);
       } else if (STREQL(dir[3], "passwd")) {
-        // set Wi-Fi Hotspot Password
+        snprintf(passwd, sizeof(passwd), "%.*s", evt->data_len, evt->data);
+        nvs_set_str(nvs, "passwd", passwd);
       }
     } else if (STREQL(dir[2], "can")) {
       if (STREQL(dir[3], "en")) {
-        // set CAN enable
+        // TODO:  set CAN enable
       } else if (STREQL(dir[3], "bps")) {
-        // set CAN bus speed
+        // TODO:  set CAN bus speed
       } else if (STREQL(dir[3], "filter")) {
-        // set CAN filter
+        // TODO:  set CAN filter
       } else if (STREQL(dir[3], "mask")) {
-        // set CAN mask
+        // TODO:  set CAN mask
       }
     } else if (STREQL(dir[2], "gps")) {
       if (STREQL(dir[3], "en")) {
-        // set GPS enable
+        // TODO:  set GPS enable
       } else if (STREQL(dir[3], "dev")) {
-        // set GPS device type
+        // TODO:  set GPS device type
       }
     } else if (STREQL(dir[2], "anl")) {
       if (STREQL(dir[3], "en")) {
-        // set analog input enable
+        // TODO:  set analog input enable
       }
     } else if (STREQL(dir[2], "dgt")) {
       if (STREQL(dir[3], "en")) {
-        // set digital input enable
+        // TODO:  set digital input enable
       }
+    }
+
+    if (nvs_commit(nvs) != ESP_OK) {
+      ERROR_SYSLOG(NVS, "commit failure", "MQTT_NVS_FAIL");
     }
   }
 
