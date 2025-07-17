@@ -44,10 +44,9 @@ void app_main(void) {
   gpio.pull_up_en   = GPIO_PULLUP_DISABLE;
   gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
 
-  esp_err_t ret = gpio_config(&gpio);
-  led           = xEventGroupCreate();
+  led = xEventGroupCreate();
 
-  if (ret != ESP_OK || xTaskCreatePinnedToCore(task_led, "led", 1024, NULL, 5, NULL, 0) != pdPASS) {
+  if (gpio_config(&gpio) != ESP_OK || xTaskCreatePinnedToCore(task_led, "led", 1024, NULL, 5, NULL, 0) != pdPASS) {
     ERROR_LOG(CORE, "LED config failure");
   }
 
@@ -57,7 +56,7 @@ void app_main(void) {
   gpio.intr_type    = GPIO_INTR_ANYEDGE;
   gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
-  ret = gpio_config(&gpio);
+  esp_err_t ret = gpio_config(&gpio);
   ret |= gpio_install_isr_service(0);
   ret |= gpio_isr_handler_add(GPIO_NUM_21, reset_isr, NULL);
 
@@ -122,7 +121,7 @@ static void reset_isr(void *arg) {
  * system status LED indicator
  ******************************************************************************/
 static void task_led(void *pvParameters) {
-  int32_t led_state             = TRUE;
+  uint32_t led_state            = TRUE;
   state_led_interval_t interval = STATE_OK;
 
   while (TRUE) {

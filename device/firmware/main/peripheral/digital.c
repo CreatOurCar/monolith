@@ -2,6 +2,11 @@
 
 #include "driver/gpio.h"
 
+static void din1_isr(void *arg);
+static void din2_isr(void *arg);
+static void din3_isr(void *arg);
+static void din4_isr(void *arg);
+
 /*******************************************************************************
  * Digital input interrupt monitor task
  ******************************************************************************/
@@ -14,16 +19,46 @@ void task_digital(void *pvParameters) {
   gpio.pull_up_en   = GPIO_PULLUP_DISABLE;
   gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
-  if (gpio_config(&gpio) != ESP_OK) {
+  esp_err_t ret = gpio_config(&gpio);
+  ret |= gpio_isr_handler_add(GPIO_NUM_11, din1_isr, NULL);
+  ret |= gpio_isr_handler_add(GPIO_NUM_12, din2_isr, NULL);
+  ret |= gpio_isr_handler_add(GPIO_NUM_13, din3_isr, NULL);
+  ret |= gpio_isr_handler_add(GPIO_NUM_14, din4_isr, NULL);
+
+  if (ret != ESP_OK) {
     ERROR_SYSLOG(DIGITAL, "GPIO init failure", "DGT_INIT_FAIL");
   }
 
-  // TODO: set ISR
-  TickType_t xLastWakeTime = xTaskGetTickCount();
-
   while (TRUE) {
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
+    // TODO: publish digital state to MQTT
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
+static void din1_isr(void *arg) {
+  log_t log;
+  log.payload.digital.channel = 1;
+  log.payload.digital.state   = gpio_get_level(GPIO_NUM_11);
+  LOG(LOG_TYPE_DIGITAL, &log);
+}
 
+static void din2_isr(void *arg) {
+  log_t log;
+  log.payload.digital.channel = 2;
+  log.payload.digital.state   = gpio_get_level(GPIO_NUM_12);
+  LOG(LOG_TYPE_DIGITAL, &log);
+}
+
+static void din3_isr(void *arg) {
+  log_t log;
+  log.payload.digital.channel = 3;
+  log.payload.digital.state   = gpio_get_level(GPIO_NUM_13);
+  LOG(LOG_TYPE_DIGITAL, &log);
+}
+
+static void din4_isr(void *arg) {
+  log_t log;
+  log.payload.digital.channel = 4;
+  log.payload.digital.state   = gpio_get_level(GPIO_NUM_14);
+  LOG(LOG_TYPE_DIGITAL, &log);
+}

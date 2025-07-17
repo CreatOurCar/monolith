@@ -130,7 +130,7 @@ typedef struct {
 
 typedef struct {
   uint8_t channel;
-  uint8_t value;
+  uint8_t state;
   uint8_t _reserved[14];
 } digital_record_t;
 
