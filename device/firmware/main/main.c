@@ -13,7 +13,7 @@ struct timeval boot;
 nvs_handle_t nvs;
 QueueHandle_t logqueue;
 
-uint32_t state;
+uint32_t state = 0x00FFFFFF;
 EventGroupHandle_t led;
 
 const char components[][8] = { "CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO" };
@@ -128,9 +128,9 @@ static void task_led(void *pvParameters) {
   while (TRUE) {
     xEventGroupWaitBits(led, 1, TRUE, FALSE, 0);
 
-    if (state & (0xFFFF << 12)) {
+    if (state & (0x0FFF << 12)) {
       interval = STATE_FATAL;
-    } else if (state & 0xFFFF) {
+    } else if (state & 0x0FFF) {
       interval = STATE_ERROR;
     } else {
       interval = STATE_OK;

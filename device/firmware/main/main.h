@@ -54,6 +54,29 @@ typedef enum {
   STATE_FATAL = 100,
 } state_led_interval_t;
 
+static inline void SET_ERROR(state_component_t component) {
+  state |= (1 << component);
+  xEventGroupSetBits(led, 1);
+}
+
+static inline void SET_FATAL(state_component_t component) {
+  state |= (1 << (component + 12));
+  xEventGroupSetBits(led, 1);
+}
+
+static inline void CLEAR_ERROR(state_component_t component) {
+  state &= ~(1 << component);
+  xEventGroupClearBits(led, 1);
+}
+
+static inline void CLEAR_FATAL(state_component_t component) {
+  state &= ~(1 << (component + 12));
+  xEventGroupClearBits(led, 1);
+}
+
+#define IS_ERROR(component) (state & (1 << component))
+#define IS_FATAL(component) (state & (1 << (component + 12)))
+
 /***** log protocol *****/
 #define PROTOCOL_VERSION 1
 #define LOG_MAGIC 0xAE
@@ -172,26 +195,6 @@ static inline void SYSLOG(const char *msg) {
   LOG(LOG_TYPE_SYSTEM, &log);
 }
 
-static inline void SET_ERROR(state_component_t component) {
-  state |= (1 << component);
-  xEventGroupSetBits(led, 1);
-}
-
-static inline void SET_FATAL(state_component_t component) {
-  state |= (1 << (component + 16));
-  xEventGroupSetBits(led, 1);
-}
-
-static inline void CLEAR_ERROR(state_component_t component) {
-  state &= ~(1 << component);
-  xEventGroupClearBits(led, 1);
-}
-
-static inline void CLEAR_FATAL(state_component_t component) {
-  state &= ~(1 << (component + 16));
-  xEventGroupClearBits(led, 1);
-}
-
 static inline void ERROR_LOG(state_component_t component, const char *msg) {
   SET_ERROR(component);
   ESP_LOGW(components[component], "%s", msg);
@@ -211,11 +214,6 @@ static inline void FATAL_SYSLOG(state_component_t component, const char *msg, co
   SYSLOG(log);
   FATAL_LOG(component, msg);
 }
-
-#define INFO(component, fmt, ...) ESP_LOGI(components[component], fmt, ##__VA_ARGS__)
-
-#define IS_ERROR(component) (state & (1 << component))
-#define IS_FATAL(component) (state & (1 << (component + 16)))
 
 /***** peripheral config *****/
 enum {
@@ -242,6 +240,8 @@ enum {
 };
 
 /***** utility functions *****/
+#define INFO(component, fmt, ...) ESP_LOGI(components[component], fmt, ##__VA_ARGS__)
+
 static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
 static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
 
