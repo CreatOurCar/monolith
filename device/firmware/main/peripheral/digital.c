@@ -26,7 +26,14 @@ void task_digital(void *pvParameters) {
   ret |= gpio_isr_handler_add(GPIO_NUM_14, din4_isr, NULL);
 
   if (ret != ESP_OK) {
-    ERROR_SYSLOG(DIGITAL, "GPIO init failure", "DGT_INIT_FAIL");
+    ERROR_SYSLOG(&init, DIGITAL, "GPIO init failure", "DGT_INIT_FAIL");
+  }
+
+  if (IS_OK(&init, DIGITAL)) {
+    CLEAR_ALL(&run, DIGITAL);
+    SYSLOG("DGT_RDY");
+  } else {
+    COPY_STATE(&run, &init, DIGITAL);
   }
 
   while (TRUE) {

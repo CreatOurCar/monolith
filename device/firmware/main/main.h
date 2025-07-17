@@ -18,11 +18,9 @@ extern char key[32];
 extern uint8_t mac[6];
 extern uint32_t name_len;
 
-extern QueueHandle_t logqueue;
 extern nvs_handle_t nvs;
-extern uint32_t state;
-extern EventGroupHandle_t led;
-
+extern TaskHandle_t led;
+extern QueueHandle_t logqueue;
 extern esp_mqtt_client_handle_t mqtt;
 
 enum {
@@ -32,6 +30,9 @@ enum {
 };
 
 /***** system state *****/
+typedef uint32_t state_t;
+extern state_t init;
+extern state_t run;
 extern const char components[][8];
 
 typedef enum {
@@ -46,7 +47,11 @@ typedef enum {
   ANALOG,
   DIGITAL,
   GYRO,
+  COMPONENT_MAX = 12,
+  COMPONENT_ALL = 0x07FF,
 } state_component_t;
+
+#define ALL_ERROR_FATAL (COMPONENT_ALL | (COMPONENT_ALL << COMPONENT_MAX))
 
 typedef enum {
   STATE_OK    = 1000,
@@ -54,28 +59,40 @@ typedef enum {
   STATE_FATAL = 100,
 } state_led_interval_t;
 
-static inline void SET_ERROR(state_component_t component) {
-  state |= (1 << component);
-  xEventGroupSetBits(led, 1);
+static inline void SET_ERROR(state_t *state, state_component_t component) {
+  *state |= (1 << component);
+  xTaskAbortDelay(led);
 }
 
-static inline void SET_FATAL(state_component_t component) {
-  state |= (1 << (component + 12));
-  xEventGroupSetBits(led, 1);
+static inline void SET_FATAL(state_t *state, state_component_t component) {
+  *state |= (1 << (component + COMPONENT_MAX));
+  xTaskAbortDelay(led);
 }
 
-static inline void CLEAR_ERROR(state_component_t component) {
-  state &= ~(1 << component);
-  xEventGroupClearBits(led, 1);
+static inline void CLEAR_ERROR(state_t *state, state_component_t component) {
+  *state &= ~(1 << component);
+  xTaskAbortDelay(led);
 }
 
-static inline void CLEAR_FATAL(state_component_t component) {
-  state &= ~(1 << (component + 12));
-  xEventGroupClearBits(led, 1);
+static inline void CLEAR_FATAL(state_t *state, state_component_t component) {
+  *state &= ~(1 << (component + COMPONENT_MAX));
+  xTaskAbortDelay(led);
 }
 
-#define IS_ERROR(component) (state & (1 << component))
-#define IS_FATAL(component) (state & (1 << (component + 12)))
+static inline void CLEAR_ALL(state_t *state, state_component_t component) {
+  *state &= ~((1 << component) | (1 << (component + COMPONENT_MAX)));
+  xTaskAbortDelay(led);
+}
+
+static inline void COPY_STATE(state_t *dest, state_t *src, state_component_t component) {
+  *dest = (*dest & ~(1 << component)) | (*src & (1 << component));
+  *dest = (*dest & ~(1 << (component + COMPONENT_MAX))) | (*src & (1 << (component + COMPONENT_MAX)));
+  xTaskAbortDelay(led);
+}
+
+#define IS_ERROR(state, component) (*state & (1 << component))
+#define IS_FATAL(state, component) (*state & (1 << (component + COMPONENT_MAX)))
+#define IS_OK(state, component) (!IS_ERROR(state, component) && !IS_FATAL(state, component))
 
 /***** log protocol *****/
 #define PROTOCOL_VERSION 1
@@ -195,24 +212,24 @@ static inline void SYSLOG(const char *msg) {
   LOG(LOG_TYPE_SYSTEM, &log);
 }
 
-static inline void ERROR_LOG(state_component_t component, const char *msg) {
-  SET_ERROR(component);
+static inline void ERROR_LOG(state_t *state, state_component_t component, const char *msg) {
+  SET_ERROR(state, component);
   ESP_LOGW(components[component], "%s", msg);
 }
 
-static inline void FATAL_LOG(state_component_t component, const char *msg) {
-  SET_FATAL(component);
+static inline void FATAL_LOG(state_t *state, state_component_t component, const char *msg) {
+  SET_FATAL(state, component);
   ESP_LOGE(components[component], "%s", msg);
 }
 
-static inline void ERROR_SYSLOG(state_component_t component, const char *msg, const char *log) {
+static inline void ERROR_SYSLOG(state_t *state, state_component_t component, const char *msg, const char *log) {
   SYSLOG(log);
-  ERROR_LOG(component, msg);
+  ERROR_LOG(state, component, msg);
 }
 
-static inline void FATAL_SYSLOG(state_component_t component, const char *msg, const char *log) {
+static inline void FATAL_SYSLOG(state_t *state, state_component_t component, const char *msg, const char *log) {
   SYSLOG(log);
-  FATAL_LOG(component, msg);
+  FATAL_LOG(state, component, msg);
 }
 
 /***** peripheral config *****/

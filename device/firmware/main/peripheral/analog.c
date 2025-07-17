@@ -46,7 +46,7 @@ void task_analog(void *pvParameters) {
   temperature_sensor_config_t sensor_cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 80);
 
   if (temperature_sensor_install(&sensor_cfg, &sensor) != ESP_OK || temperature_sensor_enable(sensor) != ESP_OK) {
-    ERROR_SYSLOG(ANALOG, "temperature sensor init failure", "TMP_INIT_FAIL");
+    ERROR_SYSLOG(&init, ANALOG, "temperature sensor init failure", "TMP_INIT_FAIL");
   }
 
   // initialize i2c bus and adc
@@ -62,7 +62,8 @@ void task_analog(void *pvParameters) {
   };
 
   if (i2c_new_master_bus(&i2c_config, &i2c1) != ESP_OK) {
-    ERROR_SYSLOG(ANALOG, "I2C init failure", "ANL_INIT_FAIL");
+    ERROR_SYSLOG(&init, ANALOG, "I2C init failure", "ANL_INIT_FAIL");
+    vTaskDelete(NULL);
   }
 
   i2c_master_dev_handle_t adc1;
@@ -89,7 +90,9 @@ void task_analog(void *pvParameters) {
   ret |= i2c_master_register_event_callbacks(adc2, &adc2_cbs, NULL);
 
   if (ret != ESP_OK) {
-    ERROR_SYSLOG(ANALOG, "device init failure", "ANL_DEV_FAIL");
+    i2c_del_master_bus(i2c1);
+    ERROR_SYSLOG(&init, ANALOG, "device init failure", "ANL_DEV_FAIL");
+    vTaskDelete(NULL);
   }
 
   esp_timer_create_args_t timer_args = {
@@ -98,11 +101,19 @@ void task_analog(void *pvParameters) {
   };
 
   if (esp_timer_create(&timer_args, &timer) != ESP_OK) {
-    ERROR_SYSLOG(ANALOG, "timer create failure", "TIMER_CR_FAIL");
+    ERROR_SYSLOG(&init, ANALOG, "timer create failure", "TIMER_CR_FAIL");
   }
 
-  i2c_evtgrp               = xEventGroupCreate();
-  timer_evtgrp             = xEventGroupCreate();
+  i2c_evtgrp   = xEventGroupCreate();
+  timer_evtgrp = xEventGroupCreate();
+
+  if (IS_OK(&init, ANALOG)) {
+    CLEAR_ALL(&run, ANALOG);
+    SYSLOG("ANL_RDY");
+  } else {
+    COPY_STATE(&run, &init, ANALOG);
+  }
+
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (TRUE) {
@@ -115,11 +126,11 @@ void task_analog(void *pvParameters) {
     err |= convert_2(adc1, adc2, ADS1115_MUX_AIN2, &log.payload.analog.ain3, &log.payload.analog.voltage);
 
     if (err != ESP_OK) {
-      ERROR_SYSLOG(ANALOG, "ADC read failure", "ADC_READ_FAIL");
+      ERROR_SYSLOG(&run, ANALOG, "ADC read failure", "ADC_READ_FAIL");
     }
 
     if (temperature_sensor_get_celsius(sensor, &temperature) != ESP_OK) {
-      ERROR_SYSLOG(ANALOG, "temperature sensor read failure", "TMP_READ_FAIL");
+      ERROR_SYSLOG(&run, ANALOG, "temperature sensor read failure", "TMP_READ_FAIL");
     }
 
     log.payload.analog.temperature = (int16_t)(temperature * 100);

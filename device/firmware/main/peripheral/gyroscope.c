@@ -10,7 +10,8 @@ void task_gyroscope(void *pvParameters) {
 
   // i2c0 already initalized by main thread
   if (i2c_master_get_bus_handle(I2C_NUM_0, &i2c0) != ESP_OK) {
-    ERROR_SYSLOG(GYRO, "I2C get bus failure", "GYR_INIT_FAIL");
+    ERROR_SYSLOG(&init, GYRO, "I2C get bus failure", "GYR_INIT_FAIL");
+    vTaskDelete(NULL);
   }
 
   i2c_device_config_t gyro_cfg = {
@@ -22,13 +23,21 @@ void task_gyroscope(void *pvParameters) {
   i2c_master_dev_handle_t gyro;
 
   if (i2c_master_bus_add_device(i2c0, &gyro_cfg, &gyro) != ESP_OK) {
-    ERROR_SYSLOG(GYRO, "device init failure", "GYR_DEV_FAIL");
+    ERROR_SYSLOG(&init, GYRO, "device init failure", "GYR_DEV_FAIL");
+    vTaskDelete(NULL);
   }
 
   uint8_t tx[3] = { 0x1B, 1 << 3, 1 << 4 };  // GYRO_CONFIG register address, 500dps and 8g full scale
 
   if (i2c_master_transmit(gyro, tx, sizeof(tx), 10) != ESP_OK) {
-    ERROR_SYSLOG(GYRO, "gyro init failure", "GYR_CFG_FAIL");
+    ERROR_SYSLOG(&init, GYRO, "gyro init failure", "GYR_CFG_FAIL");
+  }
+
+  if (IS_OK(&init, GYRO)) {
+    CLEAR_ALL(&run, GYRO);
+    SYSLOG("GYR_RDY");
+  } else {
+    COPY_STATE(&run, &init, GYRO);
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -39,7 +48,7 @@ void task_gyroscope(void *pvParameters) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
     if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) != ESP_OK) {
-      ERROR_SYSLOG(GYRO, "read transfer failure", "GYR_READ_FAIL");
+      ERROR_SYSLOG(&run, GYRO, "read transfer failure", "GYR_READ_FAIL");
       continue;
     }
 

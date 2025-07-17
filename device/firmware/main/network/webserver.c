@@ -86,7 +86,7 @@ static esp_err_t setconf(httpd_req_t *req) {
 
   if (nvs_commit(nvs) != ESP_OK) {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "NVS_COMMIT_FAIL");
-    ERROR_SYSLOG(NVS, "commit failure: network", "WEB_NVS_FAIL");
+    ERROR_SYSLOG(&run, NVS, "commit failure: network", "WEB_NVS_FAIL");
     return ESP_FAIL;
   }
 
@@ -113,16 +113,14 @@ static esp_err_t setconf(httpd_req_t *req) {
   return ESP_OK;
 }
 
-httpd_handle_t webserver(void) {
-  if (esp_netif_init() != ESP_OK || esp_event_loop_create_default() != ESP_OK) {
-    ERROR_SYSLOG(WIFI, "netif init failure", "NETIF_INIT_FAIL");
-  }
-
+void webserver(void) {
   esp_netif_create_default_wifi_ap();
+
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
   if (esp_wifi_init(&cfg) != ESP_OK) {
-    ERROR_SYSLOG(WIFI, "init failure", "WIFI_INIT_FAIL");
+    ERROR_SYSLOG(&init, WIFI, "init failure", "WIFI_INIT_FAIL");
+    return;
   }
 
   wifi_config_t wifi = {
@@ -133,14 +131,16 @@ httpd_handle_t webserver(void) {
     },
   };
 
-  sprintf((char *)wifi.ap.ssid, "Monolith v2 %02X%02X%02X", mac[3], mac[4], mac[5]);
+  snprintf((char *)wifi.ap.ssid, sizeof(wifi.ap.ssid),"Monolith v2 %02X%02X%02X", mac[3], mac[4], mac[5]);
 
   if (esp_wifi_set_mode(WIFI_MODE_AP) != ESP_OK || esp_wifi_set_config(WIFI_IF_AP, &wifi) != ESP_OK) {
-    ERROR_SYSLOG(WIFI, "AP config failure", "AP_CFG_FAIL");
+    ERROR_SYSLOG(&init, WIFI, "AP config failure", "AP_CFG_FAIL");
+    return;
   }
 
   if (esp_wifi_start() != ESP_OK) {
-    ERROR_SYSLOG(WIFI, "AP start failure", "AP_START_FAIL");
+    ERROR_SYSLOG(&init, WIFI, "AP start failure", "AP_START_FAIL");
+    return;
   }
 
   httpd_handle_t server   = NULL;
@@ -153,14 +153,13 @@ httpd_handle_t webserver(void) {
   httpd_uri_t getconfig = { .uri = "/config", .method = HTTP_GET, .handler = getconf, .user_ctx = NULL };
   httpd_uri_t setconfig = { .uri = "/config", .method = HTTP_POST, .handler = setconf, .user_ctx = NULL };
 
-  if (httpd_start(&server, &config) == ESP_OK) {
-    httpd_register_uri_handler(server, &root);
-    httpd_register_uri_handler(server, &restart);
-    httpd_register_uri_handler(server, &getconfig);
-    httpd_register_uri_handler(server, &setconfig);
-    SYSLOG("WEB_SVR_START");
-    return server;
+  if (httpd_start(&server, &config) != ESP_OK) {
+    ERROR_SYSLOG(&init, WIFI, "HTTP server init failure", "WEBSERVER_FAIL");
+    return;
   }
 
-  return NULL;
+  httpd_register_uri_handler(server, &root);
+  httpd_register_uri_handler(server, &restart);
+  httpd_register_uri_handler(server, &getconfig);
+  httpd_register_uri_handler(server, &setconfig);
 }

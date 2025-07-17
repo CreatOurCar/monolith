@@ -26,8 +26,8 @@ static void task_sdcard(void *pvParameters) {
     } while (ret == pdTRUE);
 
     if (ret == pdTRUE) {
-      if (fsync(fd) != 0 && !IS_FATAL(SD)) {
-        FATAL_LOG(SD, "fsync failure");
+      if (fsync(fd) != 0 && !IS_FATAL(&run, SD)) {
+        FATAL_LOG(&run, SD, "fsync failure");
       }
 
       INFO(SD, "log sync complete");
@@ -66,7 +66,7 @@ void sdcard_init(void) {
   };
 
   if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
-    FATAL_LOG(SD, "mount failure");
+    FATAL_LOG(&init, SD, "mount failure");
   }
 
   // set log file
@@ -78,14 +78,14 @@ void sdcard_init(void) {
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
 
   if (fd < 0) {
-    FATAL_LOG(SD, "file open failure");
+    FATAL_LOG(&init, SD, "file open failure");
   }
 
   // create log queue and sdcard task
   logqueue = xQueueCreate(32, sizeof(log_t));
 
   if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, 0) != pdPASS) {
-    FATAL_LOG(SD, "task create failure");
+    FATAL_LOG(&init, SD, "task create failure");
   }
 
   INFO(SD, "log file: %s", logpath);

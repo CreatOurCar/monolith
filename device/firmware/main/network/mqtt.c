@@ -73,7 +73,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     if (nvs_commit(nvs) != ESP_OK) {
-      ERROR_SYSLOG(NVS, "commit failure", "MQTT_NVS_FAIL");
+      ERROR_SYSLOG(&run, NVS, "commit failure", "MQTT_NVS_FAIL");
       return;
     }
 
@@ -129,18 +129,18 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
       snprintf(topic, sizeof(topic), "%s/d/boot", name);
       esp_mqtt_client_publish(mqtt, topic, (char *)&boot.tv_sec, sizeof(boot.tv_sec), MQTT_QOS_1, true);
 
-      CLEAR_ERROR(MQTT);
+      CLEAR_ALL(&run, MQTT);
       SYSLOG("MQTT_CONN");
       break;
     case MQTT_EVENT_DISCONNECTED:
-      ERROR_SYSLOG(MQTT, "disconnected", "MQTT_DISCONN");
+      ERROR_SYSLOG(&run, MQTT, "disconnected", "MQTT_DISCONN");
       break;
     case MQTT_EVENT_DATA:
       mqtt_handle_data(event);
       break;
     case MQTT_EVENT_ERROR:
       snprintf(buf, sizeof(buf), "MQTT_ERR:%d", event->error_handle->error_type);
-      ERROR_SYSLOG(MQTT, buf, buf);
+      ERROR_SYSLOG(&run, MQTT, buf, buf);
       break;
     default:
       break;
@@ -168,16 +168,16 @@ void mqtt_client(void) {
   mqtt = esp_mqtt_client_init(&mqtt_cfg);
 
   if (mqtt == NULL) {
-    ERROR_SYSLOG(MQTT, "client create failure", "MQTT_INIT_FAIL");
+    ERROR_SYSLOG(&init, MQTT, "client create failure", "MQTT_INIT_FAIL");
     return;
   }
 
   esp_mqtt_client_register_event(mqtt, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
 
   if (esp_mqtt_client_start(mqtt) != ESP_OK) {
-    ERROR_SYSLOG(MQTT, "client start failure", "MQTT_START_FAIL");
     esp_mqtt_client_destroy(mqtt);
     mqtt = NULL;
+    ERROR_SYSLOG(&init, MQTT, "client start failure", "MQTT_START_FAIL");
     return;
   }
 }
