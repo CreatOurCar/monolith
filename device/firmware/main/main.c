@@ -147,8 +147,8 @@ static void task_led(void *pvParameters) {
  * init RTC and set system time
  ******************************************************************************/
 static void rtc_init(void) {
-  i2c_master_bus_handle_t i2c0_handle;
-  i2c_master_bus_config_t i2c_mst_config = {
+  i2c_master_bus_handle_t i2c0;
+  i2c_master_bus_config_t i2c_config = {
     .clk_source                   = I2C_CLK_SRC_DEFAULT,
     .i2c_port                     = I2C_NUM_0,
     .scl_io_num                   = GPIO_NUM_10,
@@ -157,30 +157,30 @@ static void rtc_init(void) {
     .flags.enable_internal_pullup = false,
   };
 
-  if (i2c_new_master_bus(&i2c_mst_config, &i2c0_handle) != ESP_OK) {
+  if (i2c_new_master_bus(&i2c_config, &i2c0) != ESP_OK) {
     ERROR_LOG(RTC, "I2C init failure");
   }
 
-  i2c_master_dev_handle_t rtc_handle;
+  i2c_master_dev_handle_t rtc;
   i2c_device_config_t rtc_cfg = {
     .dev_addr_length = I2C_ADDR_BIT_LEN_7,
     .device_address  = 0x51,
     .scl_speed_hz    = 100000,
   };
 
-  if (i2c_master_bus_add_device(i2c0_handle, &rtc_cfg, &rtc_handle) != ESP_OK) {
+  if (i2c_master_bus_add_device(i2c0, &rtc_cfg, &rtc) != ESP_OK) {
     ERROR_LOG(RTC, "device init failure");
   }
 
   uint8_t tx[1] = { 0x02 };  // VL_seconds register address
   uint8_t rx[7] = { 0 };     // 0x02 VL_seconds to 0x08 Years register
 
-  if (i2c_master_transmit_receive(rtc_handle, tx, sizeof(tx), rx, sizeof(rx), 100) != ESP_OK) {
+  if (i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), 10) != ESP_OK) {
     memset(rx, 0, sizeof(rx));
     ERROR_LOG(RTC, "read time transfer failure");
   }
 
-  i2c_master_bus_rm_device(rtc_handle);
+  i2c_master_bus_rm_device(rtc);
 
   // rtc has valid time set
   if (rx[6] != 0x00) {

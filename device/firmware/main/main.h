@@ -65,8 +65,7 @@ typedef enum {
   LOG_TYPE_USER_EVENT,
   LOG_TYPE_CAN,
   LOG_TYPE_GPS,
-  LOG_TYPE_ANALOG_1234,
-  LOG_TYPE_ANALOG_56VT,
+  LOG_TYPE_ANALOG,
   LOG_TYPE_DIGITAL,
   LOG_TYPE_GYROSCOPE,
 } log_type_t;
@@ -96,10 +95,14 @@ typedef struct {
 } gps_record_t;
 
 typedef struct {
-  float data1;
-  float data2;
-  float data3;
-  float data4;
+  int16_t ain1;
+  int16_t ain2;
+  int16_t ain3;
+  int16_t ain4;
+  int16_t ain5;
+  int16_t ain6;
+  int16_t voltage;
+  int16_t temperature;
 } analog_record_t;
 
 typedef struct {

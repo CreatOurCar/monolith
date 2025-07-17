@@ -6,10 +6,10 @@
  * Gyroscope monitor task
  ******************************************************************************/
 void task_gyroscope(void *pvParameters) {
-  i2c_master_bus_handle_t i2c0_handle;
+  i2c_master_bus_handle_t i2c0;
 
   // i2c0 already initalized by main thread
-  if (i2c_master_get_bus_handle(I2C_NUM_0, &i2c0_handle) != ESP_OK) {
+  if (i2c_master_get_bus_handle(I2C_NUM_0, &i2c0) != ESP_OK) {
     ERROR_SYSLOG(GYRO, "I2C get bus failure", "GYR_INIT_FAIL");
   }
 
@@ -19,15 +19,15 @@ void task_gyroscope(void *pvParameters) {
     .scl_speed_hz    = 100000,
   };
 
-  i2c_master_dev_handle_t dev_handle;
+  i2c_master_dev_handle_t gyro;
 
-  if (i2c_master_bus_add_device(i2c0_handle, &gyro_cfg, &dev_handle) != ESP_OK) {
+  if (i2c_master_bus_add_device(i2c0, &gyro_cfg, &gyro) != ESP_OK) {
     ERROR_SYSLOG(GYRO, "device init failure", "GYR_DEV_FAIL");
   }
 
   uint8_t tx[3] = { 0x1B, 1 << 3, 1 << 4 };  // GYRO_CONFIG register address, 500dps and 8g full scale
 
-  if (i2c_master_transmit(dev_handle, tx, sizeof(tx), 100) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, sizeof(tx), 10) != ESP_OK) {
     ERROR_SYSLOG(GYRO, "gyro init failure", "GYR_CFG_FAIL");
   }
 
@@ -38,7 +38,7 @@ void task_gyroscope(void *pvParameters) {
   while (TRUE) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
-    if (i2c_master_transmit_receive(dev_handle, tx, 1, rx, sizeof(rx), 100) != ESP_OK) {
+    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) != ESP_OK) {
       ERROR_SYSLOG(GYRO, "read transfer failure", "GYR_READ_FAIL");
       continue;
     }
@@ -52,6 +52,10 @@ void task_gyroscope(void *pvParameters) {
     log.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
     log.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
     LOG(LOG_TYPE_GYROSCOPE, &log);
+
+    INFO(GYRO, "Ax: %d Ay: %d Az: %d Gx: %d Gy: %d Gz: %d T: %d", log.payload.gyroscope.accel_x,
+      log.payload.gyroscope.accel_y, log.payload.gyroscope.accel_z, log.payload.gyroscope.gyro_x,
+      log.payload.gyroscope.gyro_y, log.payload.gyroscope.gyro_z, log.payload.gyroscope.temperature);
 
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }

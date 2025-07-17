@@ -41,21 +41,21 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
 }
 
 static void sntp_sync_callback(struct timeval *tv) {
-  i2c_master_bus_handle_t i2c0_handle;
+  i2c_master_bus_handle_t i2c0;
 
   // i2c0 already initalized
-  if (i2c_master_get_bus_handle(I2C_NUM_0, &i2c0_handle) != ESP_OK) {
+  if (i2c_master_get_bus_handle(I2C_NUM_0, &i2c0) != ESP_OK) {
     ERROR_SYSLOG(RTC, "I2C get bus failure", "RTC_I2C_FAIL");
   }
 
-  i2c_master_dev_handle_t rtc_handle;
+  i2c_master_dev_handle_t rtc;
   i2c_device_config_t rtc_cfg = {
     .dev_addr_length = I2C_ADDR_BIT_LEN_7,
     .device_address  = 0x51,
     .scl_speed_hz    = 100000,
   };
 
-  if (i2c_master_bus_add_device(i2c0_handle, &rtc_cfg, &rtc_handle) != ESP_OK) {
+  if (i2c_master_bus_add_device(i2c0, &rtc_cfg, &rtc) != ESP_OK) {
     ERROR_SYSLOG(RTC, "device init failure", "RTC_DEV_FAIL");
   }
 
@@ -72,11 +72,11 @@ static void sntp_sync_callback(struct timeval *tv) {
   tx[6] = DEC_TO_BCD(tm->tm_mon + 1);     // month
   tx[7] = DEC_TO_BCD(tm->tm_year - 100);  // year
 
-  if (i2c_master_transmit(rtc_handle, tx, sizeof(tx), 100) != ESP_OK) {
+  if (i2c_master_transmit(rtc, tx, sizeof(tx), 10) != ESP_OK) {
     ERROR_SYSLOG(RTC, "write time transfer failure", "RTC_WRITE_FAIL");
   }
 
-  i2c_master_bus_rm_device(rtc_handle);
+  i2c_master_bus_rm_device(rtc);
   SYSLOG("SNTP_SYNC");
   INFO(RTC, "SNTP time set to %s", ctime(&tv->tv_sec));
 }
