@@ -119,8 +119,10 @@ typedef struct {
 
 typedef struct {
   uint32_t id;
+  uint8_t extended;
+  uint8_t remote;
   uint8_t len;
-  uint8_t _reserved[3];
+  uint8_t _reserved[1];
   uint8_t data[8];
 } can_record_t;
 
@@ -231,30 +233,6 @@ static inline void FATAL_SYSLOG(state_t *state, state_component_t component, con
   SYSLOG(log);
   FATAL_LOG(state, component, msg);
 }
-
-/***** peripheral config *****/
-enum {
-  CAN_BPS_1K,
-  CAN_BPS_5K,
-  CAN_BPS_10K,
-  CAN_BPS_12_5K,
-  CAN_BPS_16K,
-  CAN_BPS_20K,
-  CAN_BPS_25K,
-  CAN_BPS_50K,
-  CAN_BPS_100K,
-  CAN_BPS_125K,
-  CAN_BPS_250K,
-  CAN_BPS_500K,
-  CAN_BPS_800K,
-  CAN_BPS_1M,
-  CAN_BPS_MAX,
-};
-
-enum {
-  GPS_DEV_UBLOX,
-  GPS_DEV_MAX,
-};
 
 /***** utility functions *****/
 #define INFO(component, fmt, ...) ESP_LOGI(components[component], fmt, ##__VA_ARGS__)

@@ -116,7 +116,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
   INFO(MQTT, "event %ld at topic: %.*s data: %.*s", event_id, event->topic_len, event->topic, event->data_len, event->data);
 
   switch (event_id) {
-    char buf[16];
+    char buf[sizeof(system_event_t)];
     char topic[40];
 
     case MQTT_EVENT_CONNECTED:

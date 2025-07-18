@@ -38,7 +38,7 @@ void task_digital(void *pvParameters) {
 
   while (TRUE) {
     // TODO: publish digital state to MQTT
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
 
