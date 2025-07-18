@@ -46,7 +46,7 @@ void app_main(void) {
   gpio.pull_up_en   = GPIO_PULLUP_DISABLE;
   gpio.pull_down_en = GPIO_PULLDOWN_DISABLE;
 
-  if (gpio_config(&gpio) != ESP_OK || xTaskCreatePinnedToCore(task_led, "led", 2048, NULL, 5, &led, 0) != pdPASS) {
+  if (gpio_config(&gpio) != ESP_OK || xTaskCreatePinnedToCore(task_led, "led", 2048, NULL, 5, &led, CORE0) != pdPASS) {
     ERROR_LOG(&init, CORE, "LED config failure");
   }
 
@@ -258,7 +258,7 @@ static void peripheral_task_init(void) {
   }
 
   if (enabled) {
-    if (xTaskCreatePinnedToCore(task_can, "can", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    if (xTaskCreatePinnedToCore(task_can, "can", 4096, NULL, 5, NULL, CORE1) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "CAN task create failure", "CAN_TASK_FAIL");
     }
   }
@@ -270,7 +270,7 @@ static void peripheral_task_init(void) {
   }
 
   if (enabled) {
-    if (xTaskCreatePinnedToCore(task_gps, "gps", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    if (xTaskCreatePinnedToCore(task_gps, "gps", 4096, NULL, 5, NULL, CORE1) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "GPS task create failure", "GPS_TASK_FAIL");
     }
   }
@@ -282,7 +282,7 @@ static void peripheral_task_init(void) {
   }
 
   if (enabled) {
-    if (xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    if (xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, CORE1) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "ANALOG task create failure", "ANL_TASK_FAIL");
     }
   }
@@ -294,13 +294,13 @@ static void peripheral_task_init(void) {
   }
 
   if (enabled) {
-    if (xTaskCreatePinnedToCore(task_digital, "digital", 4096, NULL, 5, NULL, 1) != pdPASS) {
+    if (xTaskCreatePinnedToCore(task_digital, "digital", 4096, NULL, 5, NULL, CORE1) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "DIGITAL task create failure", "DGT_TASK_FAIL");
     }
   }
 
   /***** GYROSCOPE (always enabled) *****/
-  if (xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, 1) != pdPASS) {
+  if (xTaskCreatePinnedToCore(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL, CORE1) != pdPASS) {
     ERROR_SYSLOG(&init, CORE, "GYROSCOPE task create failure", "GYR_TASK_FAIL");
   }
 

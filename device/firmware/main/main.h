@@ -9,6 +9,9 @@
 #define TRUE (1)
 #define FALSE (0)
 
+enum { CORE0, CORE1 };
+enum { MQTT_QOS_0, MQTT_QOS_1, MQTT_QOS_2 };
+
 /***** shared global variables *****/
 extern char ssid[32];
 extern char passwd[32];
@@ -22,12 +25,6 @@ extern nvs_handle_t nvs;
 extern TaskHandle_t led;
 extern QueueHandle_t logqueue;
 extern esp_mqtt_client_handle_t mqtt;
-
-enum {
-  MQTT_QOS_0,
-  MQTT_QOS_1,
-  MQTT_QOS_2,
-};
 
 /***** system state *****/
 typedef uint32_t state_t;
