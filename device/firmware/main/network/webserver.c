@@ -19,7 +19,14 @@ static esp_err_t reboot(httpd_req_t *req) {
   return ESP_OK;
 }
 
+// should return the value stored in NVS
 static esp_err_t getconf(httpd_req_t *req) {
+  char ssid[32];
+  char passwd[32];
+  char server[64];
+  char name[32];
+  char key[32];
+
   size_t len = sizeof(ssid);
   nvs_get_str(nvs, "ssid", ssid, &len);
 
@@ -31,16 +38,14 @@ static esp_err_t getconf(httpd_req_t *req) {
 
   len = sizeof(name);
   nvs_get_str(nvs, "name", name, &len);
-  name_len = strlen(name);
 
   len = sizeof(key);
   nvs_get_str(nvs, "key", key, &len);
 
   char res[288];
   snprintf(res, sizeof(res),
-    "{\"id\":\"%02X:%02X:%02X:%02X:%02X:%02X\", "
-    "\"ssid\":\"%s\", \"passwd\":\"%s\", \"server\":\"%s\", \"name\":\"%s\", \"key\":\"%s\"}",
-    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], ssid, passwd, server, name, key);
+    "{\"id\":\"%s\", \"ssid\":\"%s\", \"passwd\":\"%s\", \"server\":\"%s\", \"name\":\"%s\", \"key\":\"%s\"}",
+    storage.wifi.macaddr, ssid, passwd, server, name, key);
 
   httpd_resp_set_type(req, "application/json");
   httpd_resp_send(req, res, strlen(res));
@@ -64,26 +69,54 @@ static esp_err_t setconf(httpd_req_t *req) {
     return ESP_FAIL;
   }
 
-#define WRITE_STR_FIELD(field)                                      \
-  do {                                                              \
-    cJSON *item = cJSON_GetObjectItem(json, #field);                \
-    if (cJSON_IsString(item) && item->valuestring) {                \
-      nvs_set_str(nvs, #field, item->valuestring);                  \
-    } else {                                                        \
-      httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "BAD_FIELD"); \
-      cJSON_Delete(json);                                           \
-      return ESP_FAIL;                                              \
-    }                                                               \
-  } while (FALSE)
+  esp_err_t ret = ESP_OK;
+  cJSON *item   = cJSON_GetObjectItem(json, "ssid");
 
-  WRITE_STR_FIELD(ssid);
-  WRITE_STR_FIELD(passwd);
-  WRITE_STR_FIELD(server);
-  WRITE_STR_FIELD(name);
-  WRITE_STR_FIELD(key);
+  if (cJSON_IsString(item) && item->valuestring) {
+    nvs_set_str(nvs, "ssid", item->valuestring);
+  } else {
+    ret = ESP_ERR_INVALID_ARG;
+  }
 
-#undef WRITE_STR_FIELD
+  item = cJSON_GetObjectItem(json, "passwd");
 
+  if (cJSON_IsString(item) && item->valuestring) {
+    nvs_set_str(nvs, "passwd", item->valuestring);
+  } else {
+    ret = ESP_ERR_INVALID_ARG;
+  }
+
+  item = cJSON_GetObjectItem(json, "server");
+
+  if (cJSON_IsString(item) && item->valuestring) {
+    nvs_set_str(nvs, "server", item->valuestring);
+  } else {
+    ret = ESP_ERR_INVALID_ARG;
+  }
+
+  item = cJSON_GetObjectItem(json, "name");
+
+  if (cJSON_IsString(item) && item->valuestring) {
+    nvs_set_str(nvs, "name", item->valuestring);
+  } else {
+    ret = ESP_ERR_INVALID_ARG;
+  }
+
+  item = cJSON_GetObjectItem(json, "key");
+
+  if (cJSON_IsString(item) && item->valuestring) {
+    nvs_set_str(nvs, "key", item->valuestring);
+  } else {
+    ret = ESP_ERR_INVALID_ARG;
+  }
+
+  if (ret != ESP_OK) {
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "BAD_FIELD");
+    cJSON_Delete(json);
+    return ret;
+  }
+
+  // only update NVS and do not update memory; new values will be used on next boot
   if (nvs_commit(nvs) != ESP_OK) {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "NVS_COMMIT_FAIL");
     ERROR_SYSLOG(&run, NVS, "commit failure: network", "WEB_NVS_FAIL");
@@ -91,23 +124,6 @@ static esp_err_t setconf(httpd_req_t *req) {
   }
 
   cJSON_Delete(json);
-
-  len = sizeof(ssid);
-  nvs_get_str(nvs, "ssid", ssid, &len);
-
-  len = sizeof(passwd);
-  nvs_get_str(nvs, "passwd", passwd, &len);
-
-  len = sizeof(server);
-  nvs_get_str(nvs, "server", server, &len);
-
-  len = sizeof(name);
-  nvs_get_str(nvs, "name", name, &len);
-  name_len = strlen(name);
-
-  len = sizeof(key);
-  nvs_get_str(nvs, "key", key, &len);
-
   httpd_resp_set_type(req, "application/json");
   httpd_resp_sendstr(req, "{\"status\":\"OK\"}");
   return ESP_OK;
@@ -131,7 +147,8 @@ void webserver(void) {
     },
   };
 
-  snprintf((char *)wifi.ap.ssid, sizeof(wifi.ap.ssid),"Monolith v2 %02X%02X%02X", mac[3], mac[4], mac[5]);
+  snprintf((char *)wifi.ap.ssid, sizeof(wifi.ap.ssid), "Monolith v2 %02X%02X%02X", storage.wifi.mac[3],
+    storage.wifi.mac[4], storage.wifi.mac[5]);
 
   if (esp_wifi_set_mode(WIFI_MODE_AP) != ESP_OK || esp_wifi_set_config(WIFI_IF_AP, &wifi) != ESP_OK) {
     ERROR_SYSLOG(&init, WIFI, "AP config failure", "AP_CFG_FAIL");

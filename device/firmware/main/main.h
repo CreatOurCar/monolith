@@ -10,21 +10,43 @@
 #define FALSE (0)
 
 enum { CORE0, CORE1 };
-enum { MQTT_QOS_0, MQTT_QOS_1, MQTT_QOS_2 };
 
 /***** shared global variables *****/
-extern char ssid[32];
-extern char passwd[32];
-extern char server[64];
-extern char name[32];
-extern char key[32];
-extern uint8_t mac[6];
-extern uint32_t name_len;
-
 extern nvs_handle_t nvs;
 extern TaskHandle_t led;
 extern QueueHandle_t logqueue;
 extern esp_mqtt_client_handle_t mqtt;
+
+/***** nvs storage *****/
+typedef struct {
+  struct {
+    uint8_t mac[6];
+    char macaddr[18];
+    char ssid[32];
+    char passwd[32];
+  } wifi;
+  struct {
+    char server[64];
+    char name[32];
+    char key[32];
+  } device;
+  struct {
+    uint8_t can;
+    uint8_t gps;
+    uint8_t analog;
+    uint8_t digital;
+  } enabled;
+  struct {
+    uint8_t bps;
+    uint32_t filter;
+    uint32_t mask;
+  } can;
+  struct {
+    uint8_t dev;
+  } gps;
+} nvs_storage_t;
+
+extern nvs_storage_t storage;
 
 /***** system state *****/
 typedef uint32_t state_t;
@@ -236,5 +258,35 @@ static inline void FATAL_SYSLOG(state_t *state, state_component_t component, con
 
 static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
 static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
+
+/***** peripheral configs *****/
+enum {
+  MQTT_QOS_0,
+  MQTT_QOS_1,
+  MQTT_QOS_2,
+};
+
+enum {
+  CAN_BPS_1K,
+  CAN_BPS_5K,
+  CAN_BPS_10K,
+  CAN_BPS_12_5K,
+  CAN_BPS_16K,
+  CAN_BPS_20K,
+  CAN_BPS_25K,
+  CAN_BPS_50K,
+  CAN_BPS_100K,
+  CAN_BPS_125K,
+  CAN_BPS_250K,
+  CAN_BPS_500K,
+  CAN_BPS_800K,
+  CAN_BPS_1M,
+  CAN_BPS_MAX
+};
+
+enum {
+  GPS_DEV_UBLOX,
+  GPS_DEV_MAX,
+};
 
 #endif  // MAIN_H

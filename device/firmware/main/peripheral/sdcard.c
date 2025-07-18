@@ -67,6 +67,7 @@ void sdcard_init(void) {
 
   if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
     FATAL_LOG(&init, SD, "mount failure");
+    goto finish;
   }
 
   // set log file
@@ -86,7 +87,25 @@ void sdcard_init(void) {
 
   if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, CORE0) != pdPASS) {
     FATAL_LOG(&init, SD, "task create failure");
+    goto finish;
   }
 
   INFO(SD, "log file: %s", logpath);
+
+  log_t boot_record;
+  boot_record.payload.boot.protocol_version = PROTOCOL_VERSION;
+  boot_record.payload.boot.boot_time        = (uint64_t)boot.tv_sec;
+  memcpy(boot_record.payload.boot.mac, storage.wifi.mac, sizeof(storage.wifi.mac));
+
+  if (LOG(LOG_TYPE_BOOT, &boot_record) != pdTRUE) {
+    FATAL_LOG(&init, SD, "boot record failure");
+    goto finish;
+  }
+
+finish:
+  if (IS_OK(&init, SD)) {
+    CLEAR_ALL(&run, SD);
+  } else {
+    COPY_STATE(&run, &init, SD);
+  }
 }

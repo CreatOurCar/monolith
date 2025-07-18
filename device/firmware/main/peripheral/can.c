@@ -9,24 +9,6 @@
 
 #define CAN_ALERT_ENABLED (CAN_ALERT_ERROR | TWAI_ALERT_RX_DATA | TWAI_ALERT_TX_SUCCESS)
 
-enum {
-  CAN_BPS_1K,
-  CAN_BPS_5K,
-  CAN_BPS_10K,
-  CAN_BPS_12_5K,
-  CAN_BPS_16K,
-  CAN_BPS_20K,
-  CAN_BPS_25K,
-  CAN_BPS_50K,
-  CAN_BPS_100K,
-  CAN_BPS_125K,
-  CAN_BPS_250K,
-  CAN_BPS_500K,
-  CAN_BPS_800K,
-  CAN_BPS_1M,
-  CAN_BPS_MAX,
-};
-
 static inline twai_timing_config_t select_baud(uint8_t can_bps) {
   switch (can_bps) {
     case CAN_BPS_1K:
@@ -66,36 +48,13 @@ static inline twai_timing_config_t select_baud(uint8_t can_bps) {
  * CAN traffic monitor / transmitter task
  ******************************************************************************/
 void task_can(void *pvParameters) {
-  uint8_t can_bps;
-  uint32_t can_filter;
-  uint32_t can_mask;
-
-  if (nvs_get_u8(nvs, "can_bps", &can_bps) != ESP_OK) {
-    nvs_set_u8(nvs, "can_en", CAN_BPS_500K);
-    can_bps = CAN_BPS_500K;
-  }
-
-  if (nvs_get_u32(nvs, "can_filter", &can_filter) != ESP_OK) {
-    can_filter = 0x0;
-    nvs_set_u32(nvs, "can_en", can_filter);
-  }
-
-  if (nvs_get_u32(nvs, "can_mask", &can_mask) != ESP_OK) {
-    can_mask = 0xFFFFFFFF;
-    nvs_set_u32(nvs, "can_en", can_mask);
-  }
-
-  if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(&run, NVS, "commit failure: can", "CAN_NVS_FAIL");
-  }
-
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_7, GPIO_NUM_6, TWAI_MODE_NORMAL);
   g_config.alerts_enabled        = CAN_ALERT_ENABLED;
-  twai_timing_config_t t_config  = select_baud(can_bps);
+  twai_timing_config_t t_config  = select_baud(storage.can.bps);
   twai_filter_config_t f_config  = {
      .single_filter   = true,
-     .acceptance_code = can_filter,
-     .acceptance_mask = can_mask,
+     .acceptance_code = storage.can.filter,
+     .acceptance_mask = storage.can.mask,
   };
 
   if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK || twai_start() != ESP_OK) {
@@ -129,10 +88,10 @@ void task_can(void *pvParameters) {
     twai_receive(&msg, portMAX_DELAY);
 
     log_t log;
-    log.payload.can.id = msg.identifier;
+    log.payload.can.id       = msg.identifier;
     log.payload.can.extended = msg.extd;
-    log.payload.can.remote = msg.rtr;
-    log.payload.can.len = msg.data_length_code;
+    log.payload.can.remote   = msg.rtr;
+    log.payload.can.len      = msg.data_length_code;
     memcpy(log.payload.can.data, msg.data, msg.data_length_code);
     LOG(CAN, &log);
   }

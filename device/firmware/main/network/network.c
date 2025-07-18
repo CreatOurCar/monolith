@@ -4,22 +4,12 @@
 
 #include "driver/i2c_master.h"
 #include "esp_http_server.h"
-#include "esp_mac.h"
 #include "esp_netif_sntp.h"
 #include "esp_wifi.h"
-
-char ssid[32];
-char passwd[32];
-char server[64];
-char name[32];
-char key[32];
-uint8_t mac[6];
-uint32_t name_len;
 
 #define WIFI_FAIL_BIT (1 << 0)
 #define WIFI_CONNECTED_BIT (1 << 1)
 
-void mqtt_client(void);
 httpd_handle_t webserver(void);
 
 static EventGroupHandle_t wifi_evt;
@@ -27,16 +17,20 @@ static EventGroupHandle_t wifi_evt;
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
   if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
     esp_wifi_connect();
-  } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+  }
+
+  else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
     char buf[sizeof(system_event_t)];
     snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t *)event_data)->reason);
     ERROR_SYSLOG(&run, WIFI, buf, buf);
     esp_wifi_connect();
-  } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+  }
+
+  else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     xEventGroupSetBits(wifi_evt, WIFI_CONNECTED_BIT);
     CLEAR_ALL(&run, WIFI);
     SYSLOG("WIFI_CONN");
-    INFO(WIFI, "connected to %s (" IPSTR ")", ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
+    INFO(WIFI, "connected to %s(" IPSTR ")", storage.wifi.ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
   }
 }
 
@@ -85,56 +79,13 @@ static void sntp_sync_callback(struct timeval *tv) {
 }
 
 void network_init(void) {
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
-
-  size_t len = sizeof(ssid);
-
-  if (nvs_get_str(nvs, "ssid", ssid, &len) != ESP_OK) {
-    ssid[0] = '\0';
-    nvs_set_str(nvs, "ssid", "");
-  }
-
-  len = sizeof(passwd);
-
-  if (nvs_get_str(nvs, "passwd", passwd, &len) != ESP_OK) {
-    passwd[0] = '\0';
-    nvs_set_str(nvs, "passwd", "");
-  }
-
-  len = sizeof(server);
-
-  if (nvs_get_str(nvs, "server", server, &len) != ESP_OK) {
-    snprintf(server, sizeof(server), "v2.monolith.luftaquila.io");
-    nvs_set_str(nvs, "server", server);
-  }
-
-  len = sizeof(name);
-
-  if (nvs_get_str(nvs, "name", name, &len) != ESP_OK) {
-    snprintf(name, sizeof(name), "%02X%02X%02X%02X%02X%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    nvs_set_str(nvs, "name", name);
-  }
-
-  name_len = strlen(name);
-
-  len = sizeof(key);
-
-  if (nvs_get_str(nvs, "key", key, &len) != ESP_OK) {
-    snprintf(key, sizeof(key), "monolith");
-    nvs_set_str(nvs, "key", key);
-  }
-
-  if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(&run, NVS, "commit failure: network", "NET_NVS_FAIL");
-  }
-
   if (esp_netif_init() != ESP_OK || esp_event_loop_create_default() != ESP_OK) {
     ERROR_SYSLOG(&init, WIFI, "netif init failure", "NETIF_INIT_FAIL");
     return;
   }
 
   // no SSID or proper password set, init AP mode
-  if (strlen(ssid) == 0 || strlen(passwd) < 8) {
+  if (strlen(storage.wifi.ssid) == 0 || strlen(storage.wifi.passwd) < 8) {
     webserver();
     return;
   }
@@ -149,8 +100,8 @@ void network_init(void) {
   }
 
   wifi_config_t wifi = { 0 };
-  snprintf((char *)wifi.sta.ssid, sizeof(wifi.sta.ssid), "%s", ssid);
-  snprintf((char *)wifi.sta.password, sizeof(wifi.sta.password), "%s", passwd);
+  snprintf((char *)wifi.sta.ssid, sizeof(wifi.sta.ssid), "%s", storage.wifi.ssid);
+  snprintf((char *)wifi.sta.password, sizeof(wifi.sta.password), "%s", storage.wifi.passwd);
   wifi.sta.scan_method        = WIFI_ALL_CHANNEL_SCAN;
   wifi.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
@@ -184,13 +135,10 @@ void network_init(void) {
   sntp.sync_cb           = sntp_sync_callback;
   esp_netif_sntp_init(&sntp);
 
-  // start MQTT client
-  mqtt_client();
-
-  if (IS_OK(&init, MQTT)) {
-    CLEAR_ALL(&run, MQTT);
-    SYSLOG("MQTT_RDY");
+  if (IS_OK(&init, WIFI)) {
+    CLEAR_ALL(&run, WIFI);
+    SYSLOG("WIFI_RDY");
   } else {
-    COPY_STATE(&run, &init, MQTT);
+    COPY_STATE(&run, &init, WIFI);
   }
 }

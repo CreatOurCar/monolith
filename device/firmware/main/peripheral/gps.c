@@ -1,19 +1,10 @@
 #include "main.h"
 
-enum {
-  GPS_DEV_UBLOX,
-  GPS_DEV_MAX,
-};
-
 /*******************************************************************************
  * GPS NMEA GPRMC message monitor task
  ******************************************************************************/
 void task_gps(void *pvParameters) {
-  // TODO: check GPS conf, set uart and ISR
-
-  if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(&run, NVS, "commit failure: gps", "GPS_NVS_FAIL");
-  }
+  // TODO: impl
 
   if (IS_OK(&init, GPS)) {
     CLEAR_ALL(&run, GPS);
