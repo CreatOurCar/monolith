@@ -19,21 +19,21 @@
 #define VOLT(v) ((float)(v) * 2.048 / (1 << 15))
 
 static esp_timer_handle_t timer;
-static EventGroupHandle_t i2c_evtgrp;
-static EventGroupHandle_t timer_evtgrp;
+static EventGroupHandle_t i2c_evt;
+static EventGroupHandle_t timer_evt;
 
-void IRAM_ATTR timer_isr(void *arg) { xEventGroupSetBits(timer_evtgrp, BIT(1)); }
+void IRAM_ATTR timer_isr(void *arg) { xEventGroupSetBits(timer_evt, BIT(1)); }
 
 esp_err_t convert(i2c_master_dev_handle_t adc, uint8_t ch, int16_t *v);
 esp_err_t convert_2(i2c_master_dev_handle_t adc1, i2c_master_dev_handle_t adc2, uint8_t ch, int16_t *v1, int16_t *v2);
 
 static bool adc1_cb(i2c_master_dev_handle_t dev, const i2c_master_event_data_t *evt_data, void *arg) {
-  xEventGroupSetBits(i2c_evtgrp, BIT(1));
+  xEventGroupSetBits(i2c_evt, BIT(1));
   return true;
 }
 
 static bool adc2_cb(i2c_master_dev_handle_t dev, const i2c_master_event_data_t *evt_data, void *arg) {
-  xEventGroupSetBits(i2c_evtgrp, BIT(2));
+  xEventGroupSetBits(i2c_evt, BIT(2));
   return true;
 }
 
@@ -104,8 +104,8 @@ void task_analog(void *pvParameters) {
     ERROR_SYSLOG(&init, ANALOG, "timer create failure", "TIMER_CR_FAIL");
   }
 
-  i2c_evtgrp   = xEventGroupCreate();
-  timer_evtgrp = xEventGroupCreate();
+  i2c_evt   = xEventGroupCreate();
+  timer_evt = xEventGroupCreate();
 
   if (IS_OK(&init, ANALOG)) {
     CLEAR_ALL(&run, ANALOG);
@@ -151,14 +151,14 @@ esp_err_t convert(i2c_master_dev_handle_t adc, uint8_t ch, int16_t *v) {
   uint8_t rx[2]   = { 0 };
 
   esp_err_t ret = i2c_master_transmit(adc, tx, sizeof(tx), 10);
-  xEventGroupWaitBits(i2c_evtgrp, BIT(1), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1), TRUE, TRUE, portMAX_DELAY);
 
   // wat for conversion to finish
   esp_timer_start_once(timer, 1200);
-  xEventGroupWaitBits(timer_evtgrp, BIT(1), TRUE, FALSE, portMAX_DELAY);
+  xEventGroupWaitBits(timer_evt, BIT(1), TRUE, FALSE, portMAX_DELAY);
 
   ret |= i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), 10);
-  xEventGroupWaitBits(i2c_evtgrp, BIT(1), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1), TRUE, TRUE, portMAX_DELAY);
 
   *v = ((int16_t)rx[0] << 8) | rx[1];
 
@@ -173,14 +173,14 @@ esp_err_t convert_2(i2c_master_dev_handle_t adc1, i2c_master_dev_handle_t adc2, 
 
   esp_err_t ret = i2c_master_transmit(adc1, tx, sizeof(tx), 10);
   ret |= i2c_master_transmit(adc2, tx, sizeof(tx), 10);
-  xEventGroupWaitBits(i2c_evtgrp, BIT(1) | BIT(2), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1) | BIT(2), TRUE, TRUE, portMAX_DELAY);
 
   esp_timer_start_once(timer, 1200);
-  xEventGroupWaitBits(timer_evtgrp, BIT(1), TRUE, FALSE, portMAX_DELAY);
+  xEventGroupWaitBits(timer_evt, BIT(1), TRUE, FALSE, portMAX_DELAY);
 
   ret |= i2c_master_transmit_receive(adc1, &tx_conv, sizeof(tx_conv), rx1, sizeof(rx1), 10);
   ret |= i2c_master_transmit_receive(adc2, &tx_conv, sizeof(tx_conv), rx2, sizeof(rx2), 10);
-  xEventGroupWaitBits(i2c_evtgrp, BIT(1) | BIT(2), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1) | BIT(2), TRUE, TRUE, portMAX_DELAY);
 
   *v1 = ((int16_t)rx1[0] << 8) | rx1[1];
   *v2 = ((int16_t)rx2[0] << 8) | rx2[1];

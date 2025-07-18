@@ -22,7 +22,7 @@ uint32_t name_len;
 void mqtt_client(void);
 httpd_handle_t webserver(void);
 
-static EventGroupHandle_t wifi_evtgrp;
+static EventGroupHandle_t wifi_evt;
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
   if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
@@ -33,7 +33,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     ERROR_SYSLOG(&run, WIFI, buf, buf);
     esp_wifi_connect();
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-    xEventGroupSetBits(wifi_evtgrp, WIFI_CONNECTED_BIT);
+    xEventGroupSetBits(wifi_evt, WIFI_CONNECTED_BIT);
     CLEAR_ALL(&run, WIFI);
     SYSLOG("WIFI_CONN");
     INFO(WIFI, "connected to %s (" IPSTR ")", ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
@@ -160,11 +160,7 @@ void network_init(void) {
   }
 
   // start Wi-Fi connection
-  wifi_evtgrp = xEventGroupCreate();
-
-  if (wifi_evtgrp == NULL) {
-    ERROR_SYSLOG(&init, WIFI, "event group creation failure", "WIFI_EVTGRP_FAIL");
-  }
+  wifi_evt = xEventGroupCreate();
 
   esp_event_handler_instance_t instance_any_id;
   esp_event_handler_instance_t instance_got_ip;
@@ -176,7 +172,7 @@ void network_init(void) {
     return;
   }
 
-  EventBits_t bits = xEventGroupWaitBits(wifi_evtgrp, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, FALSE, FALSE, portMAX_DELAY);
+  EventBits_t bits = xEventGroupWaitBits(wifi_evt, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, FALSE, FALSE, portMAX_DELAY);
 
   if (!(bits & WIFI_CONNECTED_BIT)) {
     ERROR_SYSLOG(&init, WIFI, "connection failed", "STA_CONN_FAIL");
