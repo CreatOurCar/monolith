@@ -22,14 +22,24 @@ void task_digital(void *pvParameters) {
   gpio.pull_up_en   = GPIO_PULLUP_DISABLE;
   gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
-  esp_err_t ret = gpio_config(&gpio);
-  ret |= gpio_isr_handler_add(GPIO_NUM_11, digital_isr, NULL);
+  if (gpio_config(&gpio) != ESP_OK) {
+    ERROR_SYSLOG(&init, DIGITAL, "GPIO init failure", "DGT_INIT_FAIL");
+  }
+
+  // record initial state
+  logbuf.digital.payload.digital.din1 = gpio_get_level(GPIO_NUM_11);
+  logbuf.digital.payload.digital.din2 = gpio_get_level(GPIO_NUM_12);
+  logbuf.digital.payload.digital.din3 = gpio_get_level(GPIO_NUM_13);
+  logbuf.digital.payload.digital.din4 = gpio_get_level(GPIO_NUM_14);
+  LOG(LOG_TYPE_DIGITAL, &logbuf.digital);
+
+  esp_err_t ret = gpio_isr_handler_add(GPIO_NUM_11, digital_isr, NULL);
   ret |= gpio_isr_handler_add(GPIO_NUM_12, digital_isr, NULL);
   ret |= gpio_isr_handler_add(GPIO_NUM_13, digital_isr, NULL);
   ret |= gpio_isr_handler_add(GPIO_NUM_14, digital_isr, NULL);
 
   if (ret != ESP_OK) {
-    ERROR_SYSLOG(&init, DIGITAL, "GPIO init failure", "DGT_INIT_FAIL");
+    ERROR_SYSLOG(&init, DIGITAL, "GPIO isr install failure", "DGT_ISR_FAIL");
   }
 
   if (IS_OK(&init, DIGITAL)) {
