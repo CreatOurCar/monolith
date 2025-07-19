@@ -18,14 +18,14 @@ static void task_sdcard(void *pvParameters) {
   log_t log;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  while (TRUE) {
+  while (true) {
     do {
-      if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
+      if ((ret = xQueueReceive(logqueue, &log, 0)) == true) {
         write(fd, &log, sizeof(log));
       }
-    } while (ret == pdTRUE);
+    } while (ret == true);
 
-    if (ret == pdTRUE) {
+    if (ret == true) {
       if (fsync(fd) != 0 && !IS_FATAL(&logbuf.run, SD)) {
         FATAL_LOG(&logbuf.run, SD, "fsync failure");
       }
@@ -97,7 +97,7 @@ void sdcard_init(void) {
   boot_record.payload.boot.boot_time        = (uint64_t)boot.tv_sec;
   memcpy(boot_record.payload.boot.mac, storage.wifi.mac, sizeof(storage.wifi.mac));
 
-  if (LOG(LOG_TYPE_BOOT, &boot_record) != pdTRUE) {
+  if (LOG(LOG_TYPE_BOOT, &boot_record) != true) {
     FATAL_LOG(&init, SD, "boot record failure");
     goto finish;
   }

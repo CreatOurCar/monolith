@@ -68,7 +68,7 @@ void task_can(void *pvParameters) {
     COPY_STATE(&logbuf.run, &init, CAN);
   }
 
-  while (TRUE) {
+  while (true) {
     uint32_t alerts = 0;
     twai_read_alerts(&alerts, 0);
 

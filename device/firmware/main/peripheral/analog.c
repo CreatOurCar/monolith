@@ -116,7 +116,7 @@ void task_analog(void *pvParameters) {
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  while (TRUE) {
+  while (true) {
     float temperature;
 
     esp_err_t err = convert(adc1, MUX_AIN3, &logbuf.analog.payload.analog.ain4);
@@ -151,14 +151,14 @@ esp_err_t convert(i2c_master_dev_handle_t adc, uint8_t ch, int16_t *v) {
   uint8_t rx[2]   = { 0 };
 
   esp_err_t ret = i2c_master_transmit(adc, tx, sizeof(tx), 10);
-  xEventGroupWaitBits(i2c_evt, BIT(1), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1), true, true, portMAX_DELAY);
 
   // wat for conversion to finish
   esp_timer_start_once(timer, 1200);
-  xEventGroupWaitBits(timer_evt, BIT(1), TRUE, FALSE, portMAX_DELAY);
+  xEventGroupWaitBits(timer_evt, BIT(1), true, false, portMAX_DELAY);
 
   ret |= i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), 10);
-  xEventGroupWaitBits(i2c_evt, BIT(1), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1), true, true, portMAX_DELAY);
 
   *v = ((int16_t)rx[0] << 8) | rx[1];
 
@@ -173,14 +173,14 @@ esp_err_t convert_2(i2c_master_dev_handle_t adc1, i2c_master_dev_handle_t adc2, 
 
   esp_err_t ret = i2c_master_transmit(adc1, tx, sizeof(tx), 10);
   ret |= i2c_master_transmit(adc2, tx, sizeof(tx), 10);
-  xEventGroupWaitBits(i2c_evt, BIT(1) | BIT(2), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1) | BIT(2), true, true, portMAX_DELAY);
 
   esp_timer_start_once(timer, 1200);
-  xEventGroupWaitBits(timer_evt, BIT(1), TRUE, FALSE, portMAX_DELAY);
+  xEventGroupWaitBits(timer_evt, BIT(1), true, false, portMAX_DELAY);
 
   ret |= i2c_master_transmit_receive(adc1, &tx_conv, sizeof(tx_conv), rx1, sizeof(rx1), 10);
   ret |= i2c_master_transmit_receive(adc2, &tx_conv, sizeof(tx_conv), rx2, sizeof(rx2), 10);
-  xEventGroupWaitBits(i2c_evt, BIT(1) | BIT(2), TRUE, TRUE, portMAX_DELAY);
+  xEventGroupWaitBits(i2c_evt, BIT(1) | BIT(2), true, true, portMAX_DELAY);
 
   *v1 = ((int16_t)rx1[0] << 8) | rx1[1];
   *v2 = ((int16_t)rx2[0] << 8) | rx2[1];

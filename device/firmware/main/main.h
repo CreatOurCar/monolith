@@ -6,9 +6,6 @@
 #include "mqtt_client.h"
 #include "nvs.h"
 
-#define TRUE (1)
-#define FALSE (0)
-
 enum { CORE0, CORE1 };
 
 /***** shared global variables *****/

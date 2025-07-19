@@ -82,8 +82,8 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     char ack[40];
-    snprintf(topic, sizeof(topic), "%s/ack", storage.device.name);
-    esp_mqtt_client_publish(mqtt, ack, topic, 0, MQTT_QOS_2, false);
+    snprintf(ack, sizeof(ack), "%s/ack", storage.device.name);
+    esp_mqtt_client_publish(mqtt, ack, topic, strlen(topic), MQTT_QOS_2, false);
   }
 
   else if (STREQL(dir[1], "cmd")) {
@@ -155,10 +155,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 }
 
 static void mqtt_task(void *arg) {
-  while (TRUE) {
+  char topic[40];
+  snprintf(topic, sizeof(topic), "%s/d", storage.device.name);
+
+  while (true) {
     if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
-      // 1s frequency: core state, analog values, digital values, gps data, gyro data
-      // on demand: can event
+      esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, true);
+      // TODO: transmit can event on demand
     }
 
     vTaskDelay(pdMS_TO_TICKS(1000));

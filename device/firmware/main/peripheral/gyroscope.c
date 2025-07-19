@@ -44,7 +44,7 @@ void task_gyroscope(void *pvParameters) {
 
   tx[0] = 0x3B;  // ACCEL_XOUT_H register address
 
-  while (TRUE) {
+  while (true) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
     if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) != ESP_OK) {

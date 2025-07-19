@@ -13,7 +13,7 @@ void task_gps(void *pvParameters) {
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  while (TRUE) {
+  while (true) {
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }
 }

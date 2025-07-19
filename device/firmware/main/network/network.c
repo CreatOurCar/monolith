@@ -123,7 +123,7 @@ void network_init(void) {
     return;
   }
 
-  EventBits_t bits = xEventGroupWaitBits(wifi_evt, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, FALSE, FALSE, portMAX_DELAY);
+  EventBits_t bits = xEventGroupWaitBits(wifi_evt, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, false, false, portMAX_DELAY);
 
   if (!(bits & WIFI_CONNECTED_BIT)) {
     ERROR_SYSLOG(&init, WIFI, "connection failed", "STA_CONN_FAIL");

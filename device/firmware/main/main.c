@@ -74,7 +74,7 @@ void app_main(void) {
 static void reset_isr(void *arg) {
   static int64_t press = 0;
 
-  if (gpio_get_level(GPIO_NUM_21) == TRUE) {
+  if (gpio_get_level(GPIO_NUM_21) == true) {
     press = esp_timer_get_time();
   } else if (esp_timer_get_time() - press > 3000000) {
     nvs_erase_all(nvs);
@@ -87,10 +87,10 @@ static void reset_isr(void *arg) {
  * system status LED indicator
  ******************************************************************************/
 static void task_led(void *pvParameters) {
-  uint32_t led_state            = TRUE;
+  uint32_t led_state            = true;
   state_led_interval_t interval = STATE_OK;
 
-  while (TRUE) {
+  while (true) {
     if (logbuf.run & (COMPONENT_ALL << COMPONENT_MAX)) {
       interval = STATE_FATAL;
     } else if (logbuf.run & COMPONENT_ALL) {
@@ -203,23 +203,23 @@ static void nvs_init(void) {
 
   // set peripheral enabled default values
   if (nvs_get_u8(nvs, "can_en", &storage.enabled.can) != ESP_OK) {
-    nvs_set_u8(nvs, "can_en", TRUE);
-    storage.enabled.can = TRUE;
+    nvs_set_u8(nvs, "can_en", true);
+    storage.enabled.can = true;
   }
 
   if (nvs_get_u8(nvs, "gps_en", &storage.enabled.gps) != ESP_OK) {
-    nvs_set_u8(nvs, "gps_en", TRUE);
-    storage.enabled.gps = TRUE;
+    nvs_set_u8(nvs, "gps_en", true);
+    storage.enabled.gps = true;
   }
 
   if (nvs_get_u8(nvs, "anl_en", &storage.enabled.analog) != ESP_OK) {
-    nvs_set_u8(nvs, "anl_en", TRUE);
-    storage.enabled.analog = TRUE;
+    nvs_set_u8(nvs, "anl_en", true);
+    storage.enabled.analog = true;
   }
 
   if (nvs_get_u8(nvs, "dgt_en", &storage.enabled.digital) != ESP_OK) {
-    nvs_set_u8(nvs, "dgt_en", TRUE);
-    storage.enabled.digital = TRUE;
+    nvs_set_u8(nvs, "dgt_en", true);
+    storage.enabled.digital = true;
   }
 
   // set CAN default values
@@ -261,6 +261,7 @@ finish:
  * init RTC and set system time
  ******************************************************************************/
 static void rtc_init(void) {
+  // TODO: fix bus collision
   i2c_master_bus_handle_t i2c0;
   i2c_master_bus_config_t i2c_config = {
     .clk_source                   = I2C_CLK_SRC_DEFAULT,
