@@ -4,13 +4,11 @@
  * GPS NMEA GPRMC message monitor task
  ******************************************************************************/
 void task_gps(void *pvParameters) {
-  // TODO: impl
-
   if (IS_OK(&init, GPS)) {
-    CLEAR_ALL(&run, GPS);
+    CLEAR_ALL(&logbuf.run, GPS);
     SYSLOG("GPS_RDY");
   } else {
-    COPY_STATE(&run, &init, GPS);
+    COPY_STATE(&logbuf.run, &init, GPS);
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();

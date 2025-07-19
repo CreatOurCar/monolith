@@ -51,7 +51,6 @@ extern nvs_storage_t storage;
 /***** system state *****/
 typedef uint32_t state_t;
 extern state_t init;
-extern state_t run;
 extern const char components[][8];
 
 typedef enum {
@@ -167,9 +166,10 @@ typedef struct {
 } analog_record_t;
 
 typedef struct {
-  uint8_t channel;
-  uint8_t state;
-  uint8_t _reserved[14];
+  uint32_t din1;
+  uint32_t din2;
+  uint32_t din3;
+  uint32_t din4;
 } digital_record_t;
 
 typedef struct {
@@ -205,6 +205,16 @@ typedef struct {
     user_event_t user_event;
   } payload;  // 16 bytes
 } log_t;
+
+typedef struct {
+  state_t run;
+  log_t gps;
+  log_t gyro;
+  log_t analog;
+  log_t digital;
+} log_buf_t;
+
+extern log_buf_t logbuf;
 
 static inline int LOG(uint8_t type, log_t *log) {
   uint32_t *ptr   = (uint32_t *)log;

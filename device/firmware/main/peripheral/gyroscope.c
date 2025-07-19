@@ -34,10 +34,10 @@ void task_gyroscope(void *pvParameters) {
   }
 
   if (IS_OK(&init, GYRO)) {
-    CLEAR_ALL(&run, GYRO);
+    CLEAR_ALL(&logbuf.run, GYRO);
     SYSLOG("GYR_RDY");
   } else {
-    COPY_STATE(&run, &init, GYRO);
+    COPY_STATE(&logbuf.run, &init, GYRO);
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -48,23 +48,23 @@ void task_gyroscope(void *pvParameters) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
     if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) != ESP_OK) {
-      ERROR_SYSLOG(&run, GYRO, "read transfer failure", "GYR_READ_FAIL");
+      ERROR_SYSLOG(&logbuf.run, GYRO, "read transfer failure", "GYR_READ_FAIL");
       continue;
     }
 
-    log_t log;
-    log.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[1] << 8) | rx[1]);
-    log.payload.gyroscope.accel_y     = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
-    log.payload.gyroscope.accel_z     = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
-    log.payload.gyroscope.temperature = (int16_t)(((uint16_t)rx[6] << 8) | rx[7]);
-    log.payload.gyroscope.gyro_x      = (int16_t)(((uint16_t)rx[8] << 8) | rx[9]);
-    log.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
-    log.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
-    LOG(LOG_TYPE_GYROSCOPE, &log);
+    logbuf.gyro.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[1] << 8) | rx[1]);
+    logbuf.gyro.payload.gyroscope.accel_y     = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
+    logbuf.gyro.payload.gyroscope.accel_z     = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
+    logbuf.gyro.payload.gyroscope.temperature = (int16_t)(((uint16_t)rx[6] << 8) | rx[7]);
+    logbuf.gyro.payload.gyroscope.gyro_x      = (int16_t)(((uint16_t)rx[8] << 8) | rx[9]);
+    logbuf.gyro.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
+    logbuf.gyro.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
+    LOG(LOG_TYPE_GYROSCOPE, &logbuf.gyro);
 
-    INFO(GYRO, "Ax: %d Ay: %d Az: %d Gx: %d Gy: %d Gz: %d T: %d", log.payload.gyroscope.accel_x,
-      log.payload.gyroscope.accel_y, log.payload.gyroscope.accel_z, log.payload.gyroscope.gyro_x,
-      log.payload.gyroscope.gyro_y, log.payload.gyroscope.gyro_z, log.payload.gyroscope.temperature);
+    INFO(GYRO, "Ax: %d Ay: %d Az: %d Gx: %d Gy: %d Gz: %d T: %d", logbuf.gyro.payload.gyroscope.accel_x,
+      logbuf.gyro.payload.gyroscope.accel_y, logbuf.gyro.payload.gyroscope.accel_z,
+      logbuf.gyro.payload.gyroscope.gyro_x, logbuf.gyro.payload.gyroscope.gyro_y, logbuf.gyro.payload.gyroscope.gyro_z,
+      logbuf.gyro.payload.gyroscope.temperature);
 
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }

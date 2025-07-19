@@ -119,7 +119,7 @@ static esp_err_t setconf(httpd_req_t *req) {
   // only update NVS and do not update memory; new values will be used on next boot
   if (nvs_commit(nvs) != ESP_OK) {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "NVS_COMMIT_FAIL");
-    ERROR_SYSLOG(&run, NVS, "commit failure: network", "WEB_NVS_FAIL");
+    ERROR_SYSLOG(&logbuf.run, NVS, "commit failure: network", "WEB_NVS_FAIL");
     return ESP_FAIL;
   }
 

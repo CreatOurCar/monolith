@@ -2,10 +2,13 @@
 
 #include "driver/gpio.h"
 
-static void din1_isr(void *arg);
-static void din2_isr(void *arg);
-static void din3_isr(void *arg);
-static void din4_isr(void *arg);
+static void digital_isr(void *arg) {
+  logbuf.digital.payload.digital.din1 = gpio_get_level(GPIO_NUM_11);
+  logbuf.digital.payload.digital.din2 = gpio_get_level(GPIO_NUM_12);
+  logbuf.digital.payload.digital.din3 = gpio_get_level(GPIO_NUM_13);
+  logbuf.digital.payload.digital.din4 = gpio_get_level(GPIO_NUM_14);
+  LOG(LOG_TYPE_DIGITAL, &logbuf.digital);
+}
 
 /*******************************************************************************
  * Digital input interrupt monitor task
@@ -20,52 +23,21 @@ void task_digital(void *pvParameters) {
   gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
 
   esp_err_t ret = gpio_config(&gpio);
-  ret |= gpio_isr_handler_add(GPIO_NUM_11, din1_isr, NULL);
-  ret |= gpio_isr_handler_add(GPIO_NUM_12, din2_isr, NULL);
-  ret |= gpio_isr_handler_add(GPIO_NUM_13, din3_isr, NULL);
-  ret |= gpio_isr_handler_add(GPIO_NUM_14, din4_isr, NULL);
+  ret |= gpio_isr_handler_add(GPIO_NUM_11, digital_isr, NULL);
+  ret |= gpio_isr_handler_add(GPIO_NUM_12, digital_isr, NULL);
+  ret |= gpio_isr_handler_add(GPIO_NUM_13, digital_isr, NULL);
+  ret |= gpio_isr_handler_add(GPIO_NUM_14, digital_isr, NULL);
 
   if (ret != ESP_OK) {
     ERROR_SYSLOG(&init, DIGITAL, "GPIO init failure", "DGT_INIT_FAIL");
   }
 
   if (IS_OK(&init, DIGITAL)) {
-    CLEAR_ALL(&run, DIGITAL);
+    CLEAR_ALL(&logbuf.run, DIGITAL);
     SYSLOG("DGT_RDY");
   } else {
-    COPY_STATE(&run, &init, DIGITAL);
+    COPY_STATE(&logbuf.run, &init, DIGITAL);
   }
 
-  while (TRUE) {
-    // TODO: publish digital state to MQTT
-    vTaskDelay(pdMS_TO_TICKS(500));
-  }
-}
-
-static void din1_isr(void *arg) {
-  log_t log;
-  log.payload.digital.channel = 1;
-  log.payload.digital.state   = gpio_get_level(GPIO_NUM_11);
-  LOG(LOG_TYPE_DIGITAL, &log);
-}
-
-static void din2_isr(void *arg) {
-  log_t log;
-  log.payload.digital.channel = 2;
-  log.payload.digital.state   = gpio_get_level(GPIO_NUM_12);
-  LOG(LOG_TYPE_DIGITAL, &log);
-}
-
-static void din3_isr(void *arg) {
-  log_t log;
-  log.payload.digital.channel = 3;
-  log.payload.digital.state   = gpio_get_level(GPIO_NUM_13);
-  LOG(LOG_TYPE_DIGITAL, &log);
-}
-
-static void din4_isr(void *arg) {
-  log_t log;
-  log.payload.digital.channel = 4;
-  log.payload.digital.state   = gpio_get_level(GPIO_NUM_14);
-  LOG(LOG_TYPE_DIGITAL, &log);
+  vTaskDelete(NULL);
 }

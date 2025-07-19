@@ -2,6 +2,7 @@
 
 #include "main.h"
 
+log_buf_t logbuf;
 esp_mqtt_client_handle_t mqtt = NULL;
 
 extern struct timeval boot;
@@ -76,7 +77,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     if (nvs_commit(nvs) != ESP_OK) {
-      ERROR_SYSLOG(&run, NVS, "commit failure", "MQTT_NVS_FAIL");
+      ERROR_SYSLOG(&logbuf.run, NVS, "commit failure", "MQTT_NVS_FAIL");
       return;
     }
 
@@ -116,7 +117,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
   esp_mqtt_event_handle_t event = event_data;
 
-  INFO(MQTT, "event %ld at topic: %.*s data: %.*s", event_id, event->topic_len, event->topic, event->data_len, event->data);
+  INFO(MQTT, "evt %ld topic: %.*s data: %.*s", event_id, event->topic_len, event->topic, event->data_len, event->data);
 
   switch (event_id) {
     char buf[sizeof(system_event_t)];
@@ -135,21 +136,32 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
       snprintf(topic, sizeof(topic), "%s/d/cfg", storage.device.name);
       esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, true);
 
-      CLEAR_ALL(&run, MQTT);
+      CLEAR_ALL(&logbuf.run, MQTT);
       SYSLOG("MQTT_CONN");
       break;
     case MQTT_EVENT_DISCONNECTED:
-      ERROR_SYSLOG(&run, MQTT, "disconnected", "MQTT_DISCONN");
+      ERROR_SYSLOG(&logbuf.run, MQTT, "disconnected", "MQTT_DISCONN");
       break;
     case MQTT_EVENT_DATA:
       mqtt_handle_data(event);
       break;
     case MQTT_EVENT_ERROR:
       snprintf(buf, sizeof(buf), "MQTT_ERR:%d", event->error_handle->error_type);
-      ERROR_SYSLOG(&run, MQTT, buf, buf);
+      ERROR_SYSLOG(&logbuf.run, MQTT, buf, buf);
       break;
     default:
       break;
+  }
+}
+
+static void mqtt_task(void *arg) {
+  while (TRUE) {
+    if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
+      // 1s frequency: core state, analog values, digital values, gps data, gyro data
+      // on demand: can event
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
@@ -187,11 +199,20 @@ void mqtt_init(void) {
     goto finish;
   }
 
+  // create mqtt publisher task
+  if (xTaskCreatePinnedToCore(mqtt_task, "mqtt", 4096, NULL, 5, NULL, CORE0) != pdPASS) {
+    ERROR_SYSLOG(&init, MQTT, "task create failure", "MQTT_TASK_FAIL");
+    esp_mqtt_client_stop(mqtt);
+    esp_mqtt_client_destroy(mqtt);
+    mqtt = NULL;
+    goto finish;
+  }
+
 finish:
   if (IS_OK(&init, MQTT)) {
-    CLEAR_ALL(&run, MQTT);
+    CLEAR_ALL(&logbuf.run, MQTT);
     SYSLOG("MQTT_RDY");
   } else {
-    COPY_STATE(&run, &init, MQTT);
+    COPY_STATE(&logbuf.run, &init, MQTT);
   }
 }

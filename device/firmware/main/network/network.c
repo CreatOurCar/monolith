@@ -22,13 +22,13 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
   else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
     char buf[sizeof(system_event_t)];
     snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t *)event_data)->reason);
-    ERROR_SYSLOG(&run, WIFI, buf, buf);
+    ERROR_SYSLOG(&logbuf.run, WIFI, buf, buf);
     esp_wifi_connect();
   }
 
   else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     xEventGroupSetBits(wifi_evt, WIFI_CONNECTED_BIT);
-    CLEAR_ALL(&run, WIFI);
+    CLEAR_ALL(&logbuf.run, WIFI);
     SYSLOG("WIFI_CONN");
     INFO(WIFI, "connected to %s(" IPSTR ")", storage.wifi.ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
   }
@@ -39,7 +39,7 @@ static void sntp_sync_callback(struct timeval *tv) {
 
   // i2c0 already initalized
   if (i2c_master_get_bus_handle(I2C_NUM_0, &i2c0) != ESP_OK) {
-    ERROR_SYSLOG(&run, RTC, "I2C get bus failure", "RTC_I2C_FAIL");
+    ERROR_SYSLOG(&logbuf.run, RTC, "I2C get bus failure", "RTC_I2C_FAIL");
     return;
   }
 
@@ -51,7 +51,7 @@ static void sntp_sync_callback(struct timeval *tv) {
   };
 
   if (i2c_master_bus_add_device(i2c0, &rtc_cfg, &rtc) != ESP_OK) {
-    ERROR_SYSLOG(&run, RTC, "device init failure", "RTC_DEV_FAIL");
+    ERROR_SYSLOG(&logbuf.run, RTC, "device init failure", "RTC_DEV_FAIL");
     return;
   }
 
@@ -69,7 +69,7 @@ static void sntp_sync_callback(struct timeval *tv) {
   tx[7] = DEC_TO_BCD(tm->tm_year - 100);  // year
 
   if (i2c_master_transmit(rtc, tx, sizeof(tx), 10) != ESP_OK) {
-    ERROR_SYSLOG(&run, RTC, "write time transfer failure", "RTC_WRITE_FAIL");
+    ERROR_SYSLOG(&logbuf.run, RTC, "write time transfer failure", "RTC_WRITE_FAIL");
   } else {
     SYSLOG("RTC_SNTP_SYNC");
   }
@@ -136,9 +136,9 @@ void network_init(void) {
   esp_netif_sntp_init(&sntp);
 
   if (IS_OK(&init, WIFI)) {
-    CLEAR_ALL(&run, WIFI);
+    CLEAR_ALL(&logbuf.run, WIFI);
     SYSLOG("WIFI_RDY");
   } else {
-    COPY_STATE(&run, &init, WIFI);
+    COPY_STATE(&logbuf.run, &init, WIFI);
   }
 }

@@ -6,10 +6,10 @@
 #define ADS1115_CONVERSION_REG_ADDR 0x00
 #define ADS1115_CONFIG_REG_ADDR 0x01
 
-#define ADS1115_MUX_AIN0 (0b100 << 4)
-#define ADS1115_MUX_AIN1 (0b101 << 4)
-#define ADS1115_MUX_AIN2 (0b110 << 4)
-#define ADS1115_MUX_AIN3 (0b111 << 4)
+#define MUX_AIN0 (0b100 << 4)
+#define MUX_AIN1 (0b101 << 4)
+#define MUX_AIN2 (0b110 << 4)
+#define MUX_AIN3 (0b111 << 4)
 #define ADS1115_OS (1 << 7)
 
 #define ADS1115_CONFIG_H 0x05  // +-2.048V FSR, single-shot mode
@@ -108,38 +108,38 @@ void task_analog(void *pvParameters) {
   timer_evt = xEventGroupCreate();
 
   if (IS_OK(&init, ANALOG)) {
-    CLEAR_ALL(&run, ANALOG);
+    CLEAR_ALL(&logbuf.run, ANALOG);
     SYSLOG("ANL_RDY");
   } else {
-    COPY_STATE(&run, &init, ANALOG);
+    COPY_STATE(&logbuf.run, &init, ANALOG);
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (TRUE) {
-    log_t log;
     float temperature;
 
-    esp_err_t err = convert(adc1, ADS1115_MUX_AIN3, &log.payload.analog.ain4);
-    err |= convert_2(adc1, adc2, ADS1115_MUX_AIN0, &log.payload.analog.ain1, &log.payload.analog.ain5);
-    err |= convert_2(adc1, adc2, ADS1115_MUX_AIN1, &log.payload.analog.ain2, &log.payload.analog.ain6);
-    err |= convert_2(adc1, adc2, ADS1115_MUX_AIN2, &log.payload.analog.ain3, &log.payload.analog.voltage);
+    esp_err_t err = convert(adc1, MUX_AIN3, &logbuf.analog.payload.analog.ain4);
+    err |= convert_2(adc1, adc2, MUX_AIN0, &logbuf.analog.payload.analog.ain1, &logbuf.analog.payload.analog.ain5);
+    err |= convert_2(adc1, adc2, MUX_AIN1, &logbuf.analog.payload.analog.ain2, &logbuf.analog.payload.analog.ain6);
+    err |= convert_2(adc1, adc2, MUX_AIN2, &logbuf.analog.payload.analog.ain3, &logbuf.analog.payload.analog.voltage);
 
     if (err != ESP_OK) {
-      ERROR_SYSLOG(&run, ANALOG, "ADC read failure", "ADC_READ_FAIL");
+      ERROR_SYSLOG(&logbuf.run, ANALOG, "ADC read failure", "ADC_READ_FAIL");
     }
 
     if (temperature_sensor_get_celsius(sensor, &temperature) != ESP_OK) {
-      ERROR_SYSLOG(&run, ANALOG, "temperature sensor read failure", "TMP_READ_FAIL");
+      ERROR_SYSLOG(&logbuf.run, ANALOG, "temperature sensor read failure", "TMP_READ_FAIL");
     }
 
-    log.payload.analog.temperature = (int16_t)(temperature * 100);
-    LOG(ANALOG, &log);
+    logbuf.analog.payload.analog.temperature = (int16_t)(temperature * 100);
+    LOG(ANALOG, &logbuf.analog);
 
-    INFO(ANALOG, "%f V, %f V, %f V, %f V, %f V, %f V, %f V, %f C", VOLT(log.payload.analog.ain1),
-      VOLT(log.payload.analog.ain2), VOLT(log.payload.analog.ain3), VOLT(log.payload.analog.ain4),
-      VOLT(log.payload.analog.ain5), VOLT(log.payload.analog.ain6), VOLT(log.payload.analog.voltage),
-      (float)log.payload.analog.temperature / 100);
+    INFO(ANALOG, "%f V, %f V, %f V, %f V, %f V, %f V, %f V, %f C", VOLT(logbuf.analog.payload.analog.ain1),
+      VOLT(logbuf.analog.payload.analog.ain2), VOLT(logbuf.analog.payload.analog.ain3),
+      VOLT(logbuf.analog.payload.analog.ain4), VOLT(logbuf.analog.payload.analog.ain5),
+      VOLT(logbuf.analog.payload.analog.ain6), VOLT(logbuf.analog.payload.analog.voltage),
+      (float)logbuf.analog.payload.analog.temperature / 100);
 
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
   }

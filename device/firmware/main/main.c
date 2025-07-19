@@ -17,7 +17,6 @@ QueueHandle_t logqueue;
 nvs_storage_t storage;
 
 state_t init = 0;
-state_t run  = ALL_ERROR_FATAL;
 
 const char components[][8] = { "CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO" };
 
@@ -43,6 +42,7 @@ static void reset_isr(void *arg);
  * main application entry point
  ******************************************************************************/
 void app_main(void) {
+  logbuf.run = ALL_ERROR_FATAL;
   /*** Core GPIO ***/
   core_init();
 
@@ -91,9 +91,9 @@ static void task_led(void *pvParameters) {
   state_led_interval_t interval = STATE_OK;
 
   while (TRUE) {
-    if (run & (COMPONENT_ALL << COMPONENT_MAX)) {
+    if (logbuf.run & (COMPONENT_ALL << COMPONENT_MAX)) {
       interval = STATE_FATAL;
-    } else if (run & COMPONENT_ALL) {
+    } else if (logbuf.run & COMPONENT_ALL) {
       interval = STATE_ERROR;
     } else {
       interval = STATE_OK;
@@ -102,7 +102,7 @@ static void task_led(void *pvParameters) {
     led_state = !led_state;
     gpio_set_level(GPIO_NUM_5, led_state);
 
-    INFO(CORE, "state: 0x%06lx", run);
+    INFO(CORE, "state: 0x%06lx", logbuf.run);
     vTaskDelay(pdMS_TO_TICKS(interval));
   }
 }
@@ -139,9 +139,9 @@ static void core_init(void) {
   }
 
   if (IS_OK(&init, CORE)) {
-    CLEAR_ALL(&run, CORE);
+    CLEAR_ALL(&logbuf.run, CORE);
   } else {
-    COPY_STATE(&run, &init, CORE);
+    COPY_STATE(&logbuf.run, &init, CORE);
   }
 }
 
@@ -246,14 +246,14 @@ static void nvs_init(void) {
 
   // commit changes
   if (nvs_commit(nvs) != ESP_OK) {
-    ERROR_SYSLOG(&run, NVS, "commit failure", "NVS_COMMIT_FAIL");
+    ERROR_SYSLOG(&logbuf.run, NVS, "commit failure", "NVS_COMMIT_FAIL");
   }
 
 finish:
   if (IS_OK(&init, NVS)) {
-    CLEAR_ALL(&run, NVS);
+    CLEAR_ALL(&logbuf.run, NVS);
   } else {
-    COPY_STATE(&run, &init, NVS);
+    COPY_STATE(&logbuf.run, &init, NVS);
   }
 }
 
@@ -332,9 +332,9 @@ static void rtc_init(void) {
 
 finish:
   if (IS_OK(&init, RTC)) {
-    CLEAR_ALL(&run, RTC);
+    CLEAR_ALL(&logbuf.run, RTC);
   } else {
-    COPY_STATE(&run, &init, RTC);
+    COPY_STATE(&logbuf.run, &init, RTC);
   }
 
   // read boot time

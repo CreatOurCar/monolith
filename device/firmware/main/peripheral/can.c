@@ -62,10 +62,10 @@ void task_can(void *pvParameters) {
   }
 
   if (IS_OK(&init, CAN)) {
-    CLEAR_ALL(&run, CAN);
+    CLEAR_ALL(&logbuf.run, CAN);
     SYSLOG("CAN_RDY");
   } else {
-    COPY_STATE(&run, &init, CAN);
+    COPY_STATE(&logbuf.run, &init, CAN);
   }
 
   while (TRUE) {
@@ -78,9 +78,9 @@ void task_can(void *pvParameters) {
       SYSLOG(buf);
 
       if (alerts & CAN_ALERT_ERROR) {
-        SET_ERROR(&run, CAN);
+        SET_ERROR(&logbuf.run, CAN);
       } else {
-        CLEAR_ERROR(&run, CAN);
+        CLEAR_ERROR(&logbuf.run, CAN);
       }
     }
 

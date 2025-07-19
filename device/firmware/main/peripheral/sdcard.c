@@ -26,8 +26,8 @@ static void task_sdcard(void *pvParameters) {
     } while (ret == pdTRUE);
 
     if (ret == pdTRUE) {
-      if (fsync(fd) != 0 && !IS_FATAL(&run, SD)) {
-        FATAL_LOG(&run, SD, "fsync failure");
+      if (fsync(fd) != 0 && !IS_FATAL(&logbuf.run, SD)) {
+        FATAL_LOG(&logbuf.run, SD, "fsync failure");
       }
 
       INFO(SD, "log sync complete");
@@ -104,8 +104,8 @@ void sdcard_init(void) {
 
 finish:
   if (IS_OK(&init, SD)) {
-    CLEAR_ALL(&run, SD);
+    CLEAR_ALL(&logbuf.run, SD);
   } else {
-    COPY_STATE(&run, &init, SD);
+    COPY_STATE(&logbuf.run, &init, SD);
   }
 }
