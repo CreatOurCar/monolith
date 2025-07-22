@@ -13,24 +13,27 @@ extern struct timeval boot;
  * save log queue to SD card every 1000 ms
  ******************************************************************************/
 static void task_sdcard(void *pvParameters) {
-  int fd = (int)pvParameters;
-  int ret;
-  log_t log;
+  int fd                   = (int)pvParameters;
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
   while (true) {
+    int ret;
+    log_t log;
+    int sync = false;
+
     do {
       if ((ret = xQueueReceive(logqueue, &log, 0)) == true) {
         write(fd, &log, sizeof(log));
+        sync = true;
       }
-    } while (ret == true);
+    } while (ret);
 
-    if (ret == true) {
+    if (sync) {
       if (fsync(fd) != 0 && !IS_FATAL(&logbuf.run, SD)) {
         FATAL_LOG(&logbuf.run, SD, "fsync failure");
       }
 
-      INFO(SD, "log sync complete");
+      INFO(SD, "log sync");
     }
 
     vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
