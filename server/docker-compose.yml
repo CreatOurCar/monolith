@@ -45,12 +45,10 @@ services:
       - traefik
     restart: unless-stopped
     env_file:
-        - .env
+      - .env
 
-  monolith:
-    build:
-      context: .
-    # image: luftaquila/monolith:latest
+  nginx:
+    image: nginx:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.monolith.rule=Host(`${DOMAIN_NAME}`)"
@@ -58,13 +56,14 @@ services:
       - "traefik.http.routers.monolith.tls=true"
       - "traefik.http.routers.monolith.tls.certresolver=le"
       - "traefik.http.services.monolith.loadbalancer.server.port=7000"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./web:/var/public
     networks:
       - traefik
-    depends_on:
-      - mosquitto
     restart: unless-stopped
     env_file:
-        - .env
+      - .env
 
 networks:
   traefik:
