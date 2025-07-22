@@ -48,6 +48,14 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       }
     }
 
+    else if (STREQL(dir[2], "dev")) {
+      if (STREQL(dir[3], "tz")) {
+        char tz[40];
+        snprintf(tz, sizeof(tz), "%.*s", evt->data_len, evt->data);
+        nvs_set_str(nvs, "tz", tz);
+      }
+    }
+
     else if (STREQL(dir[2], "can")) {
       if (STREQL(dir[3], "en")) {
         nvs_set_u8(nvs, "can_en", evt->data[0] != 0);
@@ -80,13 +88,17 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       }
     }
 
+    else {
+      return;
+    }
+
     if (nvs_commit(nvs) != ESP_OK) {
       ERROR_SYSLOG(&logbuf.run, NVS, "commit failure", "MQTT_NVS_FAIL");
       return;
     }
 
     snprintf(topic, sizeof(topic), "%s/ack/set", storage.device.name);
-    esp_mqtt_client_publish(mqtt, topic, dir[2], strlen(dir[2]), MQTT_QOS_2, false);
+    esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
   }
 
   else if (STREQL(dir[1], "cmd")) {

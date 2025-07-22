@@ -75,9 +75,17 @@ void sdcard_init(void) {
 
   // set log file
   char logpath[64];
+
+  setenv("TZ", storage.device.tz, 1);
+  tzset();
+
   struct tm tp;
-  struct tm *tm = gmtime_r(&boot.tv_sec, &tp);
+  struct tm *tm = localtime_r(&boot.tv_sec, &tp);
+
   strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm);
+
+  setenv("TZ", "UTC", 1);
+  tzset();
 
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
 

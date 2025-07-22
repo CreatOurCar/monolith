@@ -201,6 +201,14 @@ static void nvs_init(void) {
     nvs_set_str(nvs, "key", storage.device.key);
   }
 
+  len = sizeof(storage.device.key);
+
+  // set device timezone default value
+  if (nvs_get_str(nvs, "tz", storage.device.tz, &len) != ESP_OK) {
+    snprintf(storage.device.tz, sizeof(storage.device.tz), "KST-9");
+    nvs_set_str(nvs, "tz", storage.device.tz);
+  }
+
   // set peripheral enabled default values
   if (nvs_get_u8(nvs, "can_en", &storage.enabled.can) != ESP_OK) {
     nvs_set_u8(nvs, "can_en", true);
@@ -261,7 +269,10 @@ finish:
  * init RTC and set system time
  ******************************************************************************/
 static void rtc_init(void) {
-  // TODO: fix bus collision
+  // set timezone
+  setenv("TZ", "UTC", 1);
+  tzset();
+
   i2c_master_bus_handle_t i2c0;
   i2c_master_bus_config_t i2c_config = {
     .clk_source                   = I2C_CLK_SRC_DEFAULT,

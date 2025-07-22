@@ -26,6 +26,7 @@ typedef struct {
     char server[64];
     char name[32];
     char key[32];
+    char tz[40];
   } device;
   struct {
     uint8_t can;
