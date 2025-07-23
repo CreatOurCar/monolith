@@ -102,7 +102,6 @@ static void task_led(void *pvParameters) {
     led_state = !led_state;
     gpio_set_level(GPIO_NUM_5, led_state);
 
-    INFO(CORE, "state: 0x%06lx", logbuf.run);
     vTaskDelay(pdMS_TO_TICKS(interval));
   }
 }
