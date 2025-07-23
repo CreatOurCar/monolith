@@ -295,7 +295,8 @@ static void mqtt_task(void *arg) {
   while (true) {
     if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
       esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, true);
-      // TODO: transmit can event on demand
+      // TODO: publish can event on demand
+      // TODO: publish syslog events
     }
 
     vTaskDelay(pdMS_TO_TICKS(1000));

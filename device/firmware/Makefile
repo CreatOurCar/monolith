@@ -13,9 +13,6 @@ run: build
 	. $(IDF_PATH)/export.sh && \
 	idf.py -b 921600 flash monitor
 
-sim: build
-	wokwi-cli .
-
 clean:
 	rm -rf build
 
