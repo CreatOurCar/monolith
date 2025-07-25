@@ -214,7 +214,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
         return;
       }
 
-      int cnt = 0;
+      int cnt    = 0;
       char *data = malloc(1024);
 
       if (data == NULL) {
@@ -289,14 +289,25 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 }
 
 static void mqtt_task(void *arg) {
+  int ret;
+  log_t syslog;
   char topic[40];
+  char syslog_topic[40];
+
   snprintf(topic, sizeof(topic), "%s/d", storage.device.name);
+  snprintf(syslog_topic, sizeof(syslog_topic), "%s/d/sl", storage.device.name);
 
   while (true) {
     if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
       esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, true);
+
+      do {
+        if ((ret = xQueueReceive(syslogqueue, &syslog, 0)) == true) {
+          esp_mqtt_client_publish(mqtt, syslog_topic, (char *)&syslog, sizeof(syslog), MQTT_QOS_0, true);
+        }
+      } while (ret);
+
       // TODO: publish can event on demand
-      // TODO: publish syslog events
     }
 
     vTaskDelay(pdMS_TO_TICKS(1000));

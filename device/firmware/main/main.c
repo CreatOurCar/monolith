@@ -13,6 +13,7 @@ struct timeval boot;
 nvs_handle_t nvs;
 TaskHandle_t led;
 QueueHandle_t logqueue;
+QueueHandle_t syslogqueue;
 
 nvs_storage_t storage;
 

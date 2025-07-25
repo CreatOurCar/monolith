@@ -12,6 +12,7 @@ enum { CORE0, CORE1 };
 extern nvs_handle_t nvs;
 extern TaskHandle_t led;
 extern QueueHandle_t logqueue;
+extern QueueHandle_t syslogqueue;
 extern esp_mqtt_client_handle_t mqtt;
 
 /***** nvs storage *****/
@@ -239,6 +240,7 @@ static inline void SYSLOG(const char *msg) {
   log_t log;
   strncpy(log.payload.system_event.msg, msg, sizeof(log.payload.system_event.msg));  // no need to null-terminate
   LOG(LOG_TYPE_SYSTEM, &log);
+  xQueueSend(syslogqueue, &log, 0);
 }
 
 static inline void ERROR_LOG(state_t *state, state_component_t component, const char *msg) {
