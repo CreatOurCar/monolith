@@ -4,7 +4,7 @@ const layoutConfig = reactive({
     preset: 'Aura',
     primary: 'purple',
     surface: null,
-    darkTheme: true,
+    darkTheme: JSON.parse(localStorage.getItem('dark') ?? true),
     menuMode: 'static'
 });
 
@@ -35,6 +35,7 @@ export function useLayout() {
 
     const executeDarkModeToggle = () => {
         layoutConfig.darkTheme = !layoutConfig.darkTheme;
+        localStorage.setItem('dark', layoutConfig.darkTheme);
         document.documentElement.classList.toggle('app-dark');
     };
 

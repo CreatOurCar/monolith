@@ -10,13 +10,7 @@ const model = ref([
             { label: 'Live Telemetry', icon: 'pi pi-fw pi-wifi', to: '/' },
             { label: 'Data Viewer', icon: 'pi pi-fw pi-chart-bar', to: '/viewer' },
             { label: 'Console', icon: 'pi pi-fw pi-code', to: '/console' },
-        ]
-    },
-    {
-        label: 'Settings',
-        items: [
-            { label: 'Server', icon: 'pi pi-fw pi-server', to: '/server' },
-            { label: 'Device', icon: 'pi pi-fw pi-microchip', to: '/device' },
+            { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/settings' },
         ]
     },
     {
@@ -33,7 +27,13 @@ const model = ref([
                 icon: 'pi pi-fw pi-link',
                 url: 'https://dnf.luftaquila.io',
                 target: '_blank'
-            }
+            },
+            {
+                label: 'Documentation',
+                icon: 'pi pi-fw pi-book',
+                url: 'https://monolith.github.io',
+                target: '_blank'
+            },
         ]
     }
 ]);

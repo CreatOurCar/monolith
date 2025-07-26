@@ -2,3 +2,12 @@
 @use 'primeicons/primeicons.css';
 @use '@/assets/tailwind.css';
 @use '@/assets/layout/layout.scss';
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+
+@font-face {
+    font-family: 'Millennium';
+    src: url('/millennium bmp08.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}

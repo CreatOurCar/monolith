@@ -23,10 +23,12 @@
         display: inline-flex;
         align-items: center;
         font-size: 1.5rem;
+        font-family: 'Millennium', sans-serif;
+        letter-spacing: 0.2rem;
         border-radius: var(--content-border-radius);
         color: var(--text-color);
         font-weight: 500;
-        gap: 0.5rem;
+        gap: 0.1rem;
 
         svg {
             width: 3rem;
@@ -35,6 +37,11 @@
         &:focus-visible {
             @include focused();
         }
+    }
+
+    .layout-topbar-logo-image {
+        width: 3rem;
+        height: auto;
     }
 
     .layout-topbar-action {

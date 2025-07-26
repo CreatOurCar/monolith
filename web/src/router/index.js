@@ -24,14 +24,9 @@ const router = createRouter({
                     component: () => import('@/views/console.vue')
                 },
                 {
-                    path: '/server',
-                    name: 'server',
-                    component: () => import('@/views/server.vue')
-                },
-                {
-                    path: '/device',
-                    name: 'device',
-                    component: () => import('@/views/device.vue')
+                    path: '/settings',
+                    name: 'settings',
+                    component: () => import('@/views/settings.vue')
                 },
             ]
         },
