@@ -6,10 +6,16 @@ import Aura from '@primeuix/themes/aura';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
+import { useLayout } from '@/layout/composables/layout';
 
 import '@/assets/styles.scss';
 
 const app = createApp(App);
+const { layoutConfig } = useLayout();
+
+if (layoutConfig.darkTheme) {
+  document.documentElement.classList.add('app-dark');
+}
 
 app.use(router);
 app.use(PrimeVue, {
