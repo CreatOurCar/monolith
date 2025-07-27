@@ -110,6 +110,12 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       esp_restart();
     }
 
+    else if (STREQL(dir[2], "rst")) { // reset all configurations
+      nvs_erase_all(nvs);
+      nvs_commit(nvs);
+      esp_restart();
+    }
+
     else if (STREQL(dir[2], "evt")) {  // user event
       log_t log;
       strncpy(log.payload.user_event.msg, evt->data, sizeof(log.payload.user_event.msg));

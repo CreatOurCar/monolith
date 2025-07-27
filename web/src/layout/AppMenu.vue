@@ -9,7 +9,6 @@ const model = ref([
         items: [
             { label: 'Live Telemetry', icon: 'pi pi-fw pi-wifi', to: '/' },
             { label: 'Data Viewer', icon: 'pi pi-fw pi-chart-bar', to: '/viewer' },
-            { label: 'Console', icon: 'pi pi-fw pi-code', to: '/console' },
             { label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/settings' },
         ]
     },
