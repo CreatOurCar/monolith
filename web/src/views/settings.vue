@@ -212,7 +212,7 @@ const display_reset = ref(false);
                     <div class="font-semibold text-xl">Danger Zone</div>
                     <span>Restart the device for changes to take effect.</span>
                     <div class="flex flex-wrap gap-4">
-                        <Button label="Restart" icon="pi pi-refresh" class="mr-2 mb-2" severity="warn" :fluid="false" @click="display_restart = true" />
+                        <Button label="Restart" icon="pi pi-refresh" class="mr-2 mb-2" severity="warn" :fluid="false" @click="display_restart = true" raised />
                         <Dialog header="Restart Confirmation" v-model:visible="display_restart" :style="{ width: '350px' }" :modal="true">
                             <div class="flex items-center justify-center">
                                 <i class="pi pi-info-circle mr-2" style="font-size: 1.5rem" />
@@ -223,7 +223,7 @@ const display_reset = ref(false);
                             </template>
                         </Dialog>
 
-                        <Button label="Reset" icon="pi pi-sparkles" class="mr-2 mb-2" severity="danger" :fluid="false" @click="display_reset = true" />
+                        <Button label="Reset" icon="pi pi-sparkles" class="mr-2 mb-2" severity="danger" :fluid="false" @click="display_reset = true" raised />
                         <Dialog header="Reset Confirmation" v-model:visible="display_reset" :style="{ width: '350px' }" :modal="true">
                             <div class="flex items-center justify-center">
                                 <i class="pi pi-exclamation-triangle mr-6" style="font-size: 2.5rem" />
