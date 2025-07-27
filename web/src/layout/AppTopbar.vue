@@ -1,8 +1,16 @@
 <script setup>
+  import {ref} from 'vue';
   import {useLayout} from '@/layout/composables/layout';
   import AppConfigurator from './AppConfigurator.vue';
+  import {connection_status, connection_server, connection_device} from '@/service/topbar';
 
   const {toggleMenu, toggleDarkMode, isDarkTheme} = useLayout();
+
+  const popup_connections = ref();
+
+  const toggle_connections = (event) => {
+    popup_connections.value.toggle(event);
+  }
 </script>
 
 <template>
@@ -22,11 +30,24 @@
         <button type="button" class="layout-topbar-action" @click="toggleDarkMode">
           <i :class="['pi', { 'pi-moon': isDarkTheme, 'pi-sun': !isDarkTheme }]"></i>
         </button>
+
         <AppConfigurator />
-        <button type="button" class="layout-topbar-action">
-          <i class="pi pi-sitemap"></i>
-          <span>Calendar</span>
+
+        <button type="button" class="layout-topbar-action" @click="toggle_connections">
+          <i class="pi pi-sitemap" :class="connection_status"></i>
+          <span>Connections</span>
         </button>
+
+        <Popover ref="popup_connections">
+          <div class="flex flex-col gap-4">
+            <div>
+              Server <Tag :value="connection_server.value" :severity="connection_server.severity" class="ml-2"></Tag>
+            </div>
+            <div>
+              Device <Tag :value="connection_device.value" :severity="connection_device.severity" class="ml-2"></Tag>
+            </div>
+          </div>
+        </Popover>
       </div>
     </div>
   </div>

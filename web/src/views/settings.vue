@@ -1,5 +1,27 @@
 <script setup>
   import {ref} from 'vue';
+  import ToastEventBus from 'primevue/toasteventbus';
+
+  const canbps = [
+    {name: '1 kbit/s', value: 0},
+    {name: '5 kbit/s', value: 1},
+    {name: '10 kbit/s', value: 2},
+    {name: '12.5 kbit/s', value: 3},
+    {name: '16 kbit/s', value: 4},
+    {name: '20 kbit/s', value: 5},
+    {name: '25 kbit/s', value: 6},
+    {name: '50 kbit/s', value: 7},
+    {name: '100 kbit/s', value: 8},
+    {name: '125 kbit/s', value: 9},
+    {name: '250 kbit/s', value: 10},
+    {name: '500 kbit/s', value: 11},
+    {name: '800 kbit/s', value: 12},
+    {name: '1 Mbit/s', value: 13}
+  ];
+
+  const gpsdev = [
+    {name: 'UBLOX', value: 0},
+  ];
 
   const refs = {
     server: {
@@ -30,28 +52,27 @@
     },
   };
 
-  const canbps = [
-    {name: '1 kbit/s', value: 0},
-    {name: '5 kbit/s', value: 1},
-    {name: '10 kbit/s', value: 2},
-    {name: '12.5 kbit/s', value: 3},
-    {name: '16 kbit/s', value: 4},
-    {name: '20 kbit/s', value: 5},
-    {name: '25 kbit/s', value: 6},
-    {name: '50 kbit/s', value: 7},
-    {name: '100 kbit/s', value: 8},
-    {name: '125 kbit/s', value: 9},
-    {name: '250 kbit/s', value: 10},
-    {name: '500 kbit/s', value: 11},
-    {name: '800 kbit/s', value: 12},
-    {name: '1 Mbit/s', value: 13}
-  ];
-
-  const gpsdev = [
-    {name: 'UBLOX', value: 0},
-  ];
-
   const disabled = ref(false);
+
+  const display_restart = ref(false);
+  const display_reset = ref(false);
+
+  function save(event) {
+    const target = event.currentTarget.previousElementSibling.id;
+    const [section, field] = target.split("/");
+
+    refs[section][field].loading.value = true;
+    disabled.value = true;
+
+    localStorage.setItem(target, refs[section][field].value);
+
+    // TODO: reconnect to MQTT server
+
+    refs[section][field].loading.value = false;
+    disabled.value = false;
+
+    ToastEventBus.emit('add', {severity: 'success', summary: 'Success', detail: `Configuration saved`, group: 'br', life: 3000});
+  }
 
   function load(event) {
     const target = event.currentTarget.previousElementSibling.id.split('/');
@@ -63,9 +84,9 @@
     }, 1000);
   }
 
-  const display_restart = ref(false);
-  const display_reset = ref(false);
-
+  refs.server.addr.value = localStorage.getItem('server/addr');
+  refs.server.name.value = localStorage.getItem('server/name');
+  refs.server.key.value = localStorage.getItem('server/key');
 </script>
 
 <template>
@@ -81,7 +102,7 @@
                 <InputText id="server/addr" type="text" v-model="refs.server.addr.value"
                   placeholder="MQTT Server Address" />
                 <Button type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
-                  :loading="refs.server.addr.loading.value" @click="load($event)" />
+                  :loading="refs.server.addr.loading.value" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
@@ -91,7 +112,7 @@
               <InputGroup>
                 <InputText id="server/name" type="text" v-model="refs.server.name.value" placeholder="Device Name" />
                 <Button type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
-                  :loading="refs.server.name.loading.value" @click="load($event)" />
+                  :loading="refs.server.name.loading.value" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
@@ -101,7 +122,7 @@
               <InputGroup>
                 <InputText id="server/key" type="text" v-model="refs.server.key.value" placeholder="Device Key" />
                 <Button type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
-                  :loading="refs.server.key.loading.value" @click="load($event)" />
+                  :loading="refs.server.key.loading.value" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
