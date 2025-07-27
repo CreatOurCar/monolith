@@ -19,12 +19,12 @@ if (layoutConfig.darkTheme) {
 
 app.use(router);
 app.use(PrimeVue, {
-    theme: {
-        preset: Aura,
-        options: {
-            darkModeSelector: '.app-dark'
-        }
+  theme: {
+    preset: Aura,
+    options: {
+      darkModeSelector: '.app-dark'
     }
+  }
 });
 app.use(ToastService);
 app.use(ConfirmationService);
