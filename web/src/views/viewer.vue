@@ -4,6 +4,10 @@
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
 
+  function parse(file) {
+    console.log('Parsing file:', file);
+  }
+
   const display = reactive({
     digital: true,
     analog: true,
@@ -13,40 +17,42 @@
     system: true,
   });
 
-  function parse(file) {
-    console.log('Parsing file:', file);
-  }
-
   const data = [
-    [0, 1, 2, 3, 4],   // x 축
-    [10, 20, 15, 30, 25]  // y 축
+    [0, 1, 2, 3, 4],
+    [10, 20, 15, 30, 25]
   ];
-
-  // uPlot 옵션 예시
-  const opts = {
-    title: "Digital Signal",
-    width: 600,
-    height: 300,
-    scales: {
-      x: {time: false},
-      y: {auto: true},
-    },
-    axes: [
-      {stroke: "#888"},
-      {stroke: "#888"},
-    ],
-    series: [
-      {},
-      {label: "Value", stroke: "#1f77b4"},
-    ],
-  };
 
   const chartEl = ref(null)
   let chart = null
-
+  let resizeObserver = null;
 
   onMounted(() => {
+    const container = chartEl.value.parentElement;
+    const opts = {
+      width: container.clientWidth,
+      height: 300,
+      scales: {
+        x: {time: false},
+        y: {auto: true},
+      },
+      axes: [
+        {stroke: "#888"},
+        {stroke: "#888"},
+      ],
+      series: [
+        {},
+        {label: "Value", stroke: "#1f77b4"},
+      ],
+    };
+
     chart = new uPlot(opts, data, chartEl.value);
+
+    resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        chart.setSize({width: container.clientWidth, height: 300});
+      }
+    });
+    resizeObserver.observe(container);
   });
 
 </script>
@@ -67,12 +73,14 @@
           <div class="font-semibold text-xl">Digital</div>
           <ToggleButton v-model="display.digital" onLabel="Hide" offLabel="Show" />
         </div>
-
-        <div v-show="display.digital" class="flex justify-start mt-4">
+        <div v-show="display.digital" class="flex mt-4">
           <div ref="chartEl"></div>
         </div>
       </div>
 
+      <div class="card">
+        <div class="font-semibold text-xl">Download</div>
+      </div>
     </div>
   </div>
 </template>
