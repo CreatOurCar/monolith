@@ -106,11 +106,16 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       return;
     }
 
-    if (STREQL(dir[2], "rbt")) {  // restart
+    if (STREQL(dir[2], "cfg")) {  // get configuration
+      snprintf(topic, sizeof(topic), "%s/d/cfg", storage.device.name);
+      esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, true);
+    }
+
+    else if (STREQL(dir[2], "rbt")) {  // restart
       esp_restart();
     }
 
-    else if (STREQL(dir[2], "rst")) { // reset all configurations
+    else if (STREQL(dir[2], "rst")) {  // reset all configurations
       nvs_erase_all(nvs);
       nvs_commit(nvs);
       esp_restart();

@@ -37,11 +37,13 @@ typedef struct {
   } enabled;
   struct {
     uint8_t bps;
+    uint8_t _reserved[3];
     uint32_t filter;
     uint32_t mask;
   } can;
   struct {
     uint8_t dev;
+    uint8_t _reserved[3];
   } gps;
 } nvs_storage_t;
 

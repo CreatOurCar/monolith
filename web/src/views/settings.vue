@@ -1,8 +1,8 @@
 <script setup>
   import {ref} from 'vue';
   import ToastEventBus from 'primevue/toasteventbus';
-  import {init_mqtt} from '@/service/mqtt';
-  import {refs, disabled} from '@/service/state';
+  import {init_mqtt, publish} from '@/service/mqtt';
+  import {refs, current_loading, disabled} from '@/service/state';
 
   const canbps = [
     {name: '1 kbit/s', value: 0},
@@ -25,33 +25,75 @@
     {name: 'UBLOX', value: 0},
   ];
 
-  const display_restart = ref(false);
-  const display_reset = ref(false);
-
   function save(event) {
-    const target = event.currentTarget.previousElementSibling.id;
+    const target = event.currentTarget.id;
     const [section, field] = target.split("/");
 
-    refs[section][field].loading.value = true;
+    refs[section][field].loading = true;
     disabled.value = true;
 
     localStorage.setItem(target, refs[section][field].value.trim());
     init_mqtt();
 
-    refs[section][field].loading.value = false;
+    refs[section][field].loading = false;
     disabled.value = false;
 
     ToastEventBus.emit('add', {severity: 'success', summary: 'Success', detail: `Configuration saved`, group: 'br', life: 3000});
   }
 
-  function load(event) {
-    const target = event.currentTarget.previousElementSibling.id.split('/');
-    refs[target[0]][target[1]].loading.value = true;
+  function set_cfg(event) {
+    const target = event.currentTarget.id;
+    const [section, field] = target.split("/");
+
+    let payload = null;
+
+    switch (target) {
+      case 'net/ssid':
+      case 'net/passwd':
+      case 'dev/tz':
+        payload = refs[section][field].value.trim();
+        break;
+
+      case 'can/filter':
+      case 'can/mask':
+        const buf = new ArrayBuffer(4);
+        const view = new DataView(buf);
+        view.setUint32(0, parseInt(refs[section][field].value.trim(), 16), true);
+        payload = new Uint8Array(buf);
+        break;
+
+      case 'anl/en':
+      case 'dgt/en':
+      case 'can/en':
+      case 'gps/en':
+        refs[section][field].value = !refs[section][field].value; // toggle value
+        payload = new Uint8Array([refs[section][field].value ? 1 : 0]);
+        break;
+
+      default:
+        payload = new Uint8Array([refs[section][field].value]);
+        break;
+    }
+
+    refs[section][field].loading = true;
+    current_loading.value = target;
     disabled.value = true;
-    setTimeout(() => {
-      refs[target[0]][target[1]].loading.value = false;
-      disabled.value = false;
-    }, 1000);
+
+    publish(`set/${target}`, payload, 1);
+  }
+
+  const display_restart = ref(false);
+
+  function restart_device() {
+    publish('cmd/rbt', '!', 1);
+    display_restart.value = false;
+  }
+
+  const display_reset = ref(false);
+
+  function reset_device() {
+    publish('cmd/rst', '!', 1);
+    display_reset.value = false;
   }
 
   refs.server.addr.value = localStorage.getItem('server/addr');
@@ -66,33 +108,32 @@
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Server</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="server/addr" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Address</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="server/addr" class="flex items-center col-span-3">Address</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="server/addr" type="text" v-model="refs.server.addr.value"
-                  placeholder="MQTT Server Address" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
-                  :loading="refs.server.addr.loading.value" @click="save($event)" />
+                <InputText type="text" v-model="refs.server.addr.value" placeholder="MQTT Server Address" />
+                <Button id="server/addr" type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
+                  :loading="refs.server.addr.loading" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="server/name" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Name</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="server/name" class="flex items-center col-span-3">Name</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="server/name" type="text" v-model="refs.server.name.value" placeholder="Device Name" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
-                  :loading="refs.server.name.loading.value" @click="save($event)" />
+                <InputText type="text" v-model="refs.server.name.value" placeholder="Device Name" />
+                <Button id="server/name" type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
+                  :loading="refs.server.name.loading" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="server/key" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Key</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="server/key" class="flex items-center col-span-3">Key</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="server/key" type="text" v-model="refs.server.key.value" placeholder="Device Key" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
-                  :loading="refs.server.key.loading.value" @click="save($event)" />
+                <InputText type="text" v-model="refs.server.key.value" placeholder="Device Key" />
+                <Button id="server/key" type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="disabled"
+                  :loading="refs.server.key.loading" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
@@ -101,58 +142,47 @@
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Device</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="device/ssid" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">SSID</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="net/ssid" class="flex items-center col-span-3">SSID</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="device/ssid" type="text" v-model="refs.device.ssid.value" placeholder="Wi-Fi SSID" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
-                  :loading="refs.device.ssid.loading.value" @click="load($event)" />
+                <InputText type="text" v-model="refs.net.ssid.value" placeholder="Wi-Fi SSID" />
+                <Button id="net/ssid" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
+                  :loading="refs.net.ssid.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="device/password"
-              class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Password</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="net/passwd" class="flex items-center col-span-3">Password</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="device/password" type="text" v-model="refs.device.password.value"
-                  placeholder="Wi-Fi Password" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
-                  :loading="refs.device.password.loading.value" @click="load($event)" />
+                <InputText type="text" v-model="refs.net.passwd.value" placeholder="Wi-Fi Password" />
+                <Button id="net/passwd" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
+                  :loading="refs.net.passwd.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="device/timezone"
-              class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Timezone</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="dev/tz" class="flex items-center col-span-3">Timezone</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="device/timezone" type="text" v-model="refs.device.timezone.value"
-                  placeholder="POSIX timezone string" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
-                  :loading="refs.device.timezone.loading.value" @click="load($event)" />
+                <InputText type="text" v-model="refs.dev.tz.value" placeholder="POSIX timezone string" />
+                <Button id="dev/tz" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
+                  :loading="refs.dev.tz.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
         </div>
 
         <div class="card flex flex-col gap-4">
-          <div class="font-semibold text-xl">GPS</div>
-          <div class="grid grid-cols-12 gap-2">
-            <label for="gps_enabled" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Enabled</label>
-            <div class="col-span-12 md:col-span-9">
-              <ToggleSwitch id="gps_enabled" v-model="refs.gps.enabled.value" :disabled="disabled" />
+          <div class="font-semibold text-xl">Inputs</div>
+          <div class="grid grid-cols-12 gap-2 items-center">
+            <label for="anl/en" class="flex items-center col-span-3">Analog</label>
+            <div class="flex items-center col-span-3">
+              <ToggleSwitch id="anl/en" v-model="refs.anl.en.value" :disabled="disabled" @click="set_cfg($event)" />
             </div>
-          </div>
-          <div class="grid grid-cols-12 gap-2">
-            <label for="gps/dev" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Unit</label>
-            <div class="col-span-12 md:col-span-9">
-              <InputGroup>
-                <Select id="gps/dev" v-model="refs.gps.dev.value" :options="gpsdev" optionLabel="name"
-                  optionValue="value" placeholder="GPS device" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
-                  :loading="refs.gps.dev.loading.value" @click="load($event)" />
-              </InputGroup>
+            <label for="dgt/en" class="flex items-center col-span-3 col-start-7">Digital</label>
+            <div class="flex items-center col-span-3 col-start-10">
+              <ToggleSwitch id="dgt/en" v-model="refs.dgt.en.value" :disabled="disabled" @click="set_cfg($event)" />
             </div>
           </div>
         </div>
@@ -162,57 +192,61 @@
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">CAN</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/enabled" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Enabled</label>
-            <div class="col-span-12 md:col-span-9">
-              <ToggleSwitch id="can/enabled" v-model="refs.can.enabled.value" :disabled="disabled" />
+            <label for="can/en" class="flex items-center col-span-3">Enabled</label>
+            <div class="col-span-9">
+              <ToggleSwitch id="can/en" v-model="refs.can.en.value" :disabled="disabled" @click="set_cfg($event)" />
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/bps" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Bit rate</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="can/bps" class="flex items-center col-span-3">Bit rate</label>
+            <div class="col-span-9">
               <InputGroup>
-                <Select id="can/bps" v-model="refs.can.bps.value" :options="canbps" optionLabel="name"
-                  optionValue="value" placeholder="CAN bps" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
-                  :loading="refs.can.bps.loading.value" @click="load($event)" />
+                <Select v-model="refs.can.bps.value" :options="canbps" optionLabel="name" optionValue="value"
+                  placeholder="CAN bps" />
+                <Button id="can/bps" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
+                  :loading="refs.can.bps.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/filter" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Filter</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="can/filter" class="flex items-center col-span-3">Filter</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="can/filter" type="text" v-model="refs.can.filter.value" placeholder="CAN filter ID" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
-                  :loading="refs.can.filter.loading.value" @click="load($event)" />
+                <InputText type="text" v-model="refs.can.filter.value" placeholder="CAN filter ID" />
+                <Button id="can/filter" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
+                  :loading="refs.can.filter.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/mask" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Mask</label>
-            <div class="col-span-12 md:col-span-9">
+            <label for="can/mask" class="flex items-center col-span-3">Mask</label>
+            <div class="col-span-9">
               <InputGroup>
-                <InputText id="can/mask" type="text" v-model="refs.can.mask.value" placeholder="CAN filter mask" />
-                <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
-                  :loading="refs.can.mask.loading.value" @click="load($event)" />
+                <InputText type="text" v-model="refs.can.mask.value" placeholder="CAN filter mask" />
+                <Button id="can/mask" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
+                  :loading="refs.can.mask.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
         </div>
 
         <div class="card flex flex-col gap-4">
-          <div class="font-semibold text-xl">Inputs</div>
+          <div class="font-semibold text-xl">GPS</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="analog/enabled" class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Analog</label>
-            <div class="col-span-12 md:col-span-9">
-              <ToggleSwitch id="analog/enabled" v-model="refs.analog.enabled.value" :disabled="disabled" />
+            <label for="gps/en" class="flex items-center col-span-3">Enabled</label>
+            <div class="col-span-9">
+              <ToggleSwitch id="gps/en" v-model="refs.gps.en.value" :disabled="disabled" @click="set_cfg($event)" />
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="digital/enabled"
-              class="flex items-center col-span-12 mb-2 md:col-span-3 md:mb-0">Digital</label>
-            <div class="col-span-12 md:col-span-9">
-              <ToggleSwitch id="digital/enabled" v-model="refs.digital.enabled.value" :disabled="disabled" />
+            <label for="gps/dev" class="flex items-center col-span-3">Unit</label>
+            <div class="col-span-9">
+              <InputGroup>
+                <Select v-model="refs.gps.dev.value" :options="gpsdev" optionLabel="name" optionValue="value"
+                  placeholder="GPS device" />
+                <Button id="gps/dev" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
+                  :loading="refs.gps.dev.loading" @click="set_cfg($event)" />
+              </InputGroup>
             </div>
           </div>
         </div>

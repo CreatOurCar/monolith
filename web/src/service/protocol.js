@@ -97,11 +97,11 @@ const NVS_POS = {
   },
   CAN: {
     BPS: 260,
-    FILTER: 261,
-    MASK: 265,
+    FILTER: 264,
+    MASK: 268,
   },
   GPS: {
-    DEV: 269,
+    DEV: 272,
   },
 };
 
@@ -160,12 +160,12 @@ export function validate_checksum(buf) {
   return checksum === original;
 }
 
-function to_string(buffer, start, end) {
+export function to_string(buffer, start, end) {
   let str = String.fromCharCode(...buffer.slice(start, end));
   return str.slice(0, str.indexOf('\u0000')); // drop from the null character
 }
 
-function to_uint(bit, buffer, start) {
+export function to_uint(bit, buffer, start) {
   if (bit <= 0 || bit & (bit - 1) !== 0) {
     throw new Error("Invalid bit count: bit must be a power of two");
   }
@@ -179,7 +179,7 @@ function to_uint(bit, buffer, start) {
   return ret;
 }
 
-function to_int(bit, buffer, start) {
+export function to_int(bit, buffer, start) {
   return signed(to_uint(bit, buffer, start), bit);
 }
 
