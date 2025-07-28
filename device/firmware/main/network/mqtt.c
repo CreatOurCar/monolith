@@ -337,6 +337,7 @@ void mqtt_init(void) {
     .broker.verification.certificate     = (const char *)isrgrootx1_pem_start,
     .credentials.username                = storage.device.name,
     .credentials.authentication.password = storage.device.key,
+    .session.keepalive                   = 10,
     .session.last_will.topic             = topic,
     .session.last_will.msg               = "OFFLINE",
     .session.last_will.qos               = MQTT_QOS_1,

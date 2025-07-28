@@ -3,6 +3,7 @@
   import ToastEventBus from 'primevue/toasteventbus';
   import {init_mqtt, publish} from '@/service/mqtt';
   import {refs, current_loading, disabled} from '@/service/state';
+  import {connection_device} from '@/service/topbar';
 
   const canbps = [
     {name: '1 kbit/s', value: 0},
@@ -42,6 +43,11 @@
   }
 
   function set_cfg(event) {
+    if (connection_device.value.value !== 'Online') {
+      ToastEventBus.emit('add', {severity: 'error', summary: 'Configuration Failure', detail: 'Device is offline.', group: 'br', life: 5000});
+      return;
+    }
+
     const target = event.currentTarget.id;
     const [section, field] = target.split("/");
 
@@ -254,40 +260,40 @@
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Danger Zone</div>
           <span>Restart the device to apply changes.</span>
-          <div class="flex flex-wrap gap-4">
-            <Button label="Refresh" icon="pi pi-sync" severity="info" :fluid="false"
-              @click="publish('cmd/cfg', '!', 1)" raised />
-            <Button label="Restart" icon="pi pi-refresh" severity="warn" :fluid="false"
-              @click="display_restart = true" raised />
-            <Dialog header="Restart Confirmation" v-model:visible="display_restart" :style="{ width: '350px' }"
-              :modal="true">
-              <div class="flex items-center justify-center">
-                <i class="pi pi-info-circle mr-2" style="font-size: 1.5rem" />
-                <span>The device will be rebooted.</span>
-              </div>
-              <template #footer>
-                <Button label="Restart Device" icon="pi pi-check" @click="restart_device" severity="warn" outlined
-                  autofocus />
-              </template>
-            </Dialog>
 
-            <Button label="Reset" icon="pi pi-sparkles" severity="danger" :fluid="false"
-              @click="display_reset = true" raised />
-            <Dialog header="Reset Confirmation" v-model:visible="display_reset" :style="{ width: '350px' }"
-              :modal="true">
-              <div class="flex items-center justify-center">
-                <i class="pi pi-exclamation-triangle mr-6" style="font-size: 2.5rem" />
-                <span style="line-height: 1.5rem;">
-                  This button has the same effect as pressing the RST button on the device.<br>
-                  All configurations will be erased and you should set the device from the beginning.
-                </span>
-              </div>
-              <template #footer>
-                <Button label="RESET DEVICE" icon="pi pi-check" @click="reset_device" severity="danger" outlined
-                  autofocus />
-              </template>
-            </Dialog>
+          <div class="flex gap-4">
+            <Button class="flex-1" label="Refresh" icon="pi pi-sync" severity="info" @click="publish('cmd/cfg', '!', 1)"
+              raised />
+            <Button class="flex-1" label="Restart" icon="pi pi-refresh" severity="warn" @click="display_restart = true"
+              raised />
+            <Button class="flex-1" label="Reset" icon="pi pi-sparkles" severity="danger" @click="display_reset = true"
+              raised />
           </div>
+
+          <Dialog header="Restart Confirmation" v-model:visible="display_restart" :style="{ width: '350px' }" modal>
+            <div class="flex items-center justify-center">
+              <i class="pi pi-info-circle mr-2" style="font-size: 1.5rem" />
+              <span>The device will be rebooted.</span>
+            </div>
+            <template #footer>
+              <Button label="Restart Device" icon="pi pi-check" @click="restart_device" severity="warn" outlined
+                autofocus />
+            </template>
+          </Dialog>
+
+          <Dialog header="Reset Confirmation" v-model:visible="display_reset" :style="{ width: '350px' }" modal>
+            <div class="flex items-center justify-center">
+              <i class="pi pi-exclamation-triangle mr-6" style="font-size: 2.5rem" />
+              <span style="line-height: 1.5rem;">
+                This button has the same effect as pressing the RST button on the device.<br />
+                All configurations will be erased and you should set the device from the beginning.
+              </span>
+            </div>
+            <template #footer>
+              <Button label="RESET DEVICE" icon="pi pi-check" @click="reset_device" severity="danger" outlined
+                autofocus />
+            </template>
+          </Dialog>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import mqtt from 'mqtt';
 import { ref, watch } from 'vue'
 import ToastEventBus from 'primevue/toasteventbus';
 
-import { connection_server, update_connection_server, update_connection_device } from '@/service/topbar';
+import { connection_server, connection_device, update_connection_server, update_connection_device } from '@/service/topbar';
 import { parse_cfg, to_uint } from '@/service/protocol';
 import { refs, current_loading, disabled } from '@/service/state';
 
@@ -26,6 +26,7 @@ export function init_mqtt() {
     port: 443,
     username: localStorage.getItem('server/name') || '',
     password: localStorage.getItem('server/key') || '',
+    keepalive: 10,
   });
 
   mqtt_client.on('connect', () => {
@@ -67,6 +68,7 @@ export function init_mqtt() {
       case 'd/boot': {
         if (message.toString() === 'OFFLINE') {
           update_connection_device(false);
+          ToastEventBus.emit('add', { severity: 'error', summary: 'Device Offline', group: 'br', life: 5000 });
         } else {
           update_connection_device(true);
           const boot_sec = to_uint(32, message, 0);
@@ -76,6 +78,10 @@ export function init_mqtt() {
       }
 
       case 'd/cfg': {
+        if (connection_device.value.value !== 'Online') {
+          return;
+        }
+
         const cfg = parse_cfg(message);
         refs.net.ssid.value = cfg.wifi.ssid;
         refs.net.passwd.value = cfg.wifi.passwd;
@@ -88,7 +94,9 @@ export function init_mqtt() {
         refs.can.mask.value = '0x' + cfg.can.mask.toString(16).padStart(8, '0').toUpperCase();
         refs.anl.en.value = cfg.en.analog ? true : false;
         refs.dgt.en.value = cfg.en.digital ? true : false;
+
         ToastEventBus.emit('add', { severity: 'success', summary: 'Configuration Loaded', group: 'br', life: 3000 });
+        disabled.value = false;
         break;
       }
 
