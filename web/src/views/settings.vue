@@ -1,6 +1,8 @@
 <script setup>
   import {ref} from 'vue';
   import ToastEventBus from 'primevue/toasteventbus';
+  import {init_mqtt} from '@/service/mqtt';
+  import {refs, disabled} from '@/service/state';
 
   const canbps = [
     {name: '1 kbit/s', value: 0},
@@ -23,37 +25,6 @@
     {name: 'UBLOX', value: 0},
   ];
 
-  const refs = {
-    server: {
-      addr: {value: ref(""), loading: ref(false)},
-      name: {value: ref(""), loading: ref(false)},
-      key: {value: ref(""), loading: ref(false)},
-    },
-    device: {
-      ssid: {value: ref(""), loading: ref(false)},
-      password: {value: ref(""), loading: ref(false)},
-      timezone: {value: ref(""), loading: ref(false)},
-    },
-    can: {
-      enabled: {value: ref(false), loading: ref(false)},
-      bps: {value: ref(500000), loading: ref(false)},
-      filter: {value: ref(""), loading: ref(false)},
-      mask: {value: ref(""), loading: ref(false)},
-    },
-    gps: {
-      enabled: {value: ref(false), loading: ref(false)},
-      dev: {value: ref(""), loading: ref(false)},
-    },
-    analog: {
-      enabled: {value: ref(false), loading: ref(false)},
-    },
-    digital: {
-      enabled: {value: ref(false), loading: ref(false)},
-    },
-  };
-
-  const disabled = ref(false);
-
   const display_restart = ref(false);
   const display_reset = ref(false);
 
@@ -64,9 +35,8 @@
     refs[section][field].loading.value = true;
     disabled.value = true;
 
-    localStorage.setItem(target, refs[section][field].value);
-
-    // TODO: reconnect to MQTT server
+    localStorage.setItem(target, refs[section][field].value.trim());
+    init_mqtt();
 
     refs[section][field].loading.value = false;
     disabled.value = false;
@@ -179,7 +149,7 @@
             <div class="col-span-12 md:col-span-9">
               <InputGroup>
                 <Select id="gps/dev" v-model="refs.gps.dev.value" :options="gpsdev" optionLabel="name"
-                  placeholder="GPS device" />
+                  optionValue="value" placeholder="GPS device" />
                 <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
                   :loading="refs.gps.dev.loading.value" @click="load($event)" />
               </InputGroup>
@@ -202,7 +172,7 @@
             <div class="col-span-12 md:col-span-9">
               <InputGroup>
                 <Select id="can/bps" v-model="refs.can.bps.value" :options="canbps" optionLabel="name"
-                  placeholder="CAN bps" />
+                  optionValue="value" placeholder="CAN bps" />
                 <Button type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="disabled"
                   :loading="refs.can.bps.loading.value" @click="load($event)" />
               </InputGroup>
@@ -249,7 +219,7 @@
 
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Danger Zone</div>
-          <span>Restart the device for changes to take effect.</span>
+          <span>Restart the device for the changes to take effect.</span>
           <div class="flex flex-wrap gap-4">
             <Button label="Restart" icon="pi pi-refresh" class="mr-2 mb-2" severity="warn" :fluid="false"
               @click="display_restart = true" raised />
