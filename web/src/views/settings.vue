@@ -38,7 +38,7 @@
     refs[section][field].loading = false;
     disabled.value = false;
 
-    ToastEventBus.emit('add', {severity: 'success', summary: 'Success', detail: `Configuration saved`, group: 'br', life: 3000});
+    ToastEventBus.emit('add', {severity: 'success', summary: 'Configuration Saved', group: 'br', life: 3000});
   }
 
   function set_cfg(event) {
@@ -253,9 +253,11 @@
 
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Danger Zone</div>
-          <span>Restart the device for the changes to take effect.</span>
+          <span>Restart the device to apply changes.</span>
           <div class="flex flex-wrap gap-4">
-            <Button label="Restart" icon="pi pi-refresh" class="mr-2 mb-2" severity="warn" :fluid="false"
+            <Button label="Refresh" icon="pi pi-sync" severity="info" :fluid="false"
+              @click="publish('cmd/cfg', '!', 1)" raised />
+            <Button label="Restart" icon="pi pi-refresh" severity="warn" :fluid="false"
               @click="display_restart = true" raised />
             <Dialog header="Restart Confirmation" v-model:visible="display_restart" :style="{ width: '350px' }"
               :modal="true">
@@ -269,7 +271,7 @@
               </template>
             </Dialog>
 
-            <Button label="Reset" icon="pi pi-sparkles" class="mr-2 mb-2" severity="danger" :fluid="false"
+            <Button label="Reset" icon="pi pi-sparkles" severity="danger" :fluid="false"
               @click="display_reset = true" raised />
             <Dialog header="Reset Confirmation" v-model:visible="display_reset" :style="{ width: '350px' }"
               :modal="true">

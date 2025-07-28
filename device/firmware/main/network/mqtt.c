@@ -127,6 +127,10 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       LOG(LOG_TYPE_USER_EVENT, &log);
     }
 
+    else if (STREQL(dir[2], "can")) {  // transmit CAN message
+      // TODO:
+    }
+
     else if (STREQL(dir[2], "ls")) {  // list files
       DIR *d = opendir("/sdcard");
 
@@ -251,10 +255,6 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 
       snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
       esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
-    }
-
-    else if (STREQL(dir[2], "can")) {  // transmit CAN message
-      // TODO:
     }
   }
 }

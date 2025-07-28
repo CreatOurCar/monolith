@@ -40,16 +40,16 @@ export function init_mqtt() {
     if (e.message.includes('Not authorized')) {
       if (first_auth_fail) {
         first_auth_fail = false;
-        ToastEventBus.emit('add', { severity: 'error', summary: 'Authentication Failed', detail: `Invalid username or password`, group: 'br', life: 5000 });
+        ToastEventBus.emit('add', { severity: 'error', summary: 'Authentication Failed', group: 'br', life: 5000 });
       }
     } else {
-      ToastEventBus.emit('add', { severity: 'error', summary: 'Error', detail: `Server error: ${e}`, group: 'br', life: 5000 });
+      ToastEventBus.emit('add', { severity: 'error', summary: 'Server Error', detail: e, group: 'br', life: 5000 });
     }
   });
 
   mqtt_client.on('close', () => {
     if (connection_server.value.value !== 'Disconnected') {
-      ToastEventBus.emit('add', { severity: 'error', summary: 'Error', detail: `Server connection closed`, group: 'br', life: 5000 });
+      ToastEventBus.emit('add', { severity: 'error', summary: 'Server Connection Closed', group: 'br', life: 5000 });
     }
     update_connection_server(false);
   });
@@ -88,6 +88,7 @@ export function init_mqtt() {
         refs.can.mask.value = '0x' + cfg.can.mask.toString(16).padStart(8, '0').toUpperCase();
         refs.anl.en.value = cfg.en.analog ? true : false;
         refs.dgt.en.value = cfg.en.digital ? true : false;
+        ToastEventBus.emit('add', { severity: 'success', summary: 'Configuration Loaded', group: 'br', life: 3000 });
         break;
       }
 
@@ -110,7 +111,7 @@ export function init_mqtt() {
             current_loading.value = "";
           }
 
-          ToastEventBus.emit('add', { severity: 'success', summary: 'Configuration Saved', detail: `Restart for the changes to take effect`, group: 'br', life: 5000 });
+          ToastEventBus.emit('add', { severity: 'success', summary: 'Configuration Saved', detail: `Restart the device to apply changes.`, group: 'br', life: 3000 });
         }
         break;
       }
@@ -119,9 +120,8 @@ export function init_mqtt() {
 }
 
 export function publish(topic, payload, qos) {
-  console.log(`Publishing to topic: ${topic}, payload: ${payload}, qos: ${qos}`);
   if (!mqtt_client || !mqtt_client.connected) {
-    ToastEventBus.emit('add', { severity: 'error', summary: 'Network Failure', detail: `Not connected to the server`, group: 'br', life: 5000 });
+    ToastEventBus.emit('add', { severity: 'error', summary: 'Server Disconnected', group: 'br', life: 5000 });
     return;
   }
 

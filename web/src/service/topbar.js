@@ -25,7 +25,7 @@ export const update_connection_server = (value) => {
     connection_server.value.value = 'Connected';
     connection_server.value.severity = 'success';
     connection_status.value = connection_device.value.value === 'Online' ? 'text-green-500' : 'text-red-400';
-    ToastEventBus.emit('add', {severity: 'success', summary: 'Server Connected', detail: `Connected to server`, group: 'br', life: 3000});
+    ToastEventBus.emit('add', {severity: 'success', summary: 'Server Connected', group: 'br', life: 3000});
   }
 }
 
@@ -43,7 +43,7 @@ export const update_connection_device = (value) => {
 
     if (connection_server.value.value === 'Connected') {
       connection_status.value = 'text-green-500';
-      ToastEventBus.emit('add', {severity: 'success', summary: 'Device Online', detail: `Device is now online`, group: 'br', life: 3000});
+      ToastEventBus.emit('add', {severity: 'success', summary: 'Device Online', group: 'br', life: 3000});
     }
   }
 }
