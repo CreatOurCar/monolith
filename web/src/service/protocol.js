@@ -5,13 +5,13 @@ const LOG_SIZE = 24;
 const LOG_TYPE = [
   "INVALID",
   "BOOT",
-  "SYSTEM",
-  "USER_EVENT",
   "CAN",
   "GPS",
   "ANALOG",
   "DIGITAL",
   "GYROSCOPE",
+  "SYSTEM",
+  "USER_EVENT",
 ];
 
 const LOG_POS = {
@@ -145,6 +145,106 @@ export function parse_cfg(buf) {
   return cfg;
 }
 
+export function parse_log(buf) {
+  if (buf.length < LOG_SIZE) {
+    throw new Error("log length failure");
+  }
+
+  const log = {
+    magic: to_uint(8, buf, LOG_POS.MAGIC),
+    type: LOG_TYPE[buf[LOG_POS.TYPE]],
+    checksum: to_uint(16, buf, LOG_POS.CHECKSUM),
+    timestamp: to_uint(32, buf, LOG_POS.TIMESTAMP),
+  };
+
+  if (log.magic !== LOG_MAGIC) {
+    throw new Error("log magic failure");
+  }
+
+  if (!validate_checksum(buf)) {
+    throw new Error("log checksum failure");
+  }
+
+  switch (log.type) {
+    case "BOOT":
+      log.boot = {
+        protocol_version: to_uint(8, buf, LOG_POS.BOOT.PROTOCOL_VERSION),
+        mac: buf.slice(LOG_POS.BOOT.MAC, LOG_POS.BOOT.MAC + 6).map(b => b.toString(16).padStart(2, '0')).join(':').toUpperCase(),
+        boot_time: to_uint(64, buf, LOG_POS.BOOT.BOOT_TIME),
+      };
+      break;
+
+    case "CAN":
+      log.can = {
+        id: to_uint(32, buf, LOG_POS.CAN.ID),
+        extended: to_uint(8, buf, LOG_POS.CAN.EXTENDED),
+        remote: to_uint(8, buf, LOG_POS.CAN.REMOTE),
+        len: to_uint(8, buf, LOG_POS.CAN.LEN),
+      };
+      log.can.data = buf.slice(LOG_POS.CAN.DATA, LOG_POS.CAN.DATA + log.can.len);
+      break;
+
+    case "GPS":
+      log.gps = {
+        latitude: to_float(buf, LOG_POS.GPS.LATITUDE),
+        longitude: to_float(buf, LOG_POS.GPS.LONGITUDE),
+        lat_dir: to_uint(8, buf, LOG_POS.GPS.LAT_DIR),
+        lon_dir: to_uint(8, buf, LOG_POS.GPS.LON_DIR),
+        speed: to_uint(16, buf, LOG_POS.GPS.SPEED),
+        course: to_uint(16, buf, LOG_POS.GPS.COURSE),
+      };
+      break;
+
+    case "ANALOG":
+      log.analog = {
+        ain1: to_int(16, buf, LOG_POS.ANALOG.AIN1),
+        ain2: to_int(16, buf, LOG_POS.ANALOG.AIN2),
+        ain3: to_int(16, buf, LOG_POS.ANALOG.AIN3),
+        ain4: to_int(16, buf, LOG_POS.ANALOG.AIN4),
+        ain5: to_int(16, buf, LOG_POS.ANALOG.AIN5),
+        ain6: to_int(16, buf, LOG_POS.ANALOG.AIN6),
+        voltage: to_int(16, buf, LOG_POS.ANALOG.VOLTAGE),
+        temperature: to_int(16, buf, LOG_POS.ANALOG.TEMPERATURE),
+      };
+      break;
+
+    case "DIGITAL":
+      log.digital = {
+        din1: to_uint(32, buf, LOG_POS.DIGITAL.DIN1),
+        din2: to_uint(32, buf, LOG_POS.DIGITAL.DIN2),
+        din3: to_uint(32, buf, LOG_POS.DIGITAL.DIN3),
+        din4: to_uint(32, buf, LOG_POS.DIGITAL.DIN4),
+      };
+      break;
+
+    case "GYROSCOPE":
+      log.gyro = {
+        accel_x: to_int(16, buf, LOG_POS.GYRO.ACCEL_X),
+        accel_y: to_int(16, buf, LOG_POS.GYRO.ACCEL_Y),
+        accel_z: to_int(16, buf, LOG_POS.GYRO.ACCEL_Z),
+        temperature: to_int(16, buf, LOG_POS.GYRO.TEMPERATURE),
+        gyro_x: to_int(16, buf, LOG_POS.GYRO.GYRO_X),
+        gyro_y: to_int(16, buf, LOG_POS.GYRO.GYRO_Y),
+        gyro_z: to_int(16, buf, LOG_POS.GYRO.GYRO_Z),
+      };
+      break;
+
+    case "SYSTEM":
+      log.sys = { msg: to_string(buf, LOG_POS.SYS.MSG, LOG_POS.SYS.MSG + 16) };
+      break;
+
+    case "USER_EVENT":
+      log.user = { msg: to_string(buf, LOG_POS.USER.MSG, LOG_POS.USER.MSG + 16) };
+      break;
+
+    case "INVALID":
+    default:
+      throw new Error("log type failure");
+  }
+
+  return log;
+}
+
 export function validate_checksum(buf) {
   const original = to_uint(16, buf, LOG_POS.CHECKSUM);
   buf[LOG_POS.CHECKSUM] = 0;
@@ -185,4 +285,9 @@ export function to_int(bit, buffer, start) {
 
 function signed(value, bit) {
   return (value > Math.pow(2, bit - 1) - 1) ? value - Math.pow(2, bit) : value;
+}
+
+export function to_float(buffer, start) {
+  const view = new DataView(buffer.buffer, start, 4);
+  return view.getFloat32(0, true); // little endian
 }

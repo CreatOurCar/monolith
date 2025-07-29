@@ -61,7 +61,11 @@
     <app-sidebar></app-sidebar>
     <div class="layout-main-container">
       <div class="layout-main">
-        <router-view></router-view>
+        <router-view v-slot="{ Component }">
+          <keep-alive include="Telemetry,Viewer,Settings">
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </div>
       <app-footer></app-footer>
     </div>

@@ -1,13 +1,15 @@
-import mqtt from 'mqtt';
-import { ref, watch } from 'vue'
 import ToastEventBus from 'primevue/toasteventbus';
 
+import 'dayjs';
+import mqtt from 'mqtt';
+
 import { connection_server, connection_device, update_connection_server, update_connection_device } from '@/service/topbar';
-import { parse_cfg, to_uint } from '@/service/protocol';
+import { parse_cfg, parse_log, validate_checksum, to_uint } from '@/service/protocol';
 import { refs, current_loading, disabled } from '@/service/state';
+import { term } from '@/service/terminal';
 
+let boot = null;
 let mqtt_client = null;
-
 let first_auth_fail = true;
 
 export function init_mqtt() {
@@ -27,6 +29,7 @@ export function init_mqtt() {
     username: localStorage.getItem('server/name') || '',
     password: localStorage.getItem('server/key') || '',
     keepalive: 10,
+    reschedulePings: false,
   });
 
   mqtt_client.on('connect', () => {
@@ -67,11 +70,12 @@ export function init_mqtt() {
     switch (topic) {
       case 'd/boot': {
         if (message.toString() === 'OFFLINE') {
+          boot = null;
           update_connection_device(false);
           ToastEventBus.emit('add', { severity: 'error', summary: 'Device Offline', group: 'br', life: 5000 });
         } else {
+          boot = to_uint(32, message, 0);
           update_connection_device(true);
-          const boot_sec = to_uint(32, message, 0);
           // TODO:
         }
         break;
@@ -101,6 +105,8 @@ export function init_mqtt() {
       }
 
       case 'd/sl': {
+        const log = parse_log(message);
+        term.write(`[SYS ${dayjs(boot * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
         break;
       }
 

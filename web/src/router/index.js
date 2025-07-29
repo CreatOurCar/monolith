@@ -10,17 +10,17 @@ const router = createRouter({
       children: [
         {
           path: '/',
-          name: 'telemetry',
+          name: 'Telemetry',
           component: () => import('@/views/telemetry.vue')
         },
         {
           path: '/viewer',
-          name: 'viewer',
+          name: 'Viewer',
           component: () => import('@/views/viewer.vue')
         },
         {
           path: '/settings',
-          name: 'settings',
+          name: 'Settings',
           component: () => import('@/views/settings.vue')
         },
       ]

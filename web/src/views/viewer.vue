@@ -1,4 +1,6 @@
 <script setup>
+  defineOptions({ name: 'Viewer' });
+
   import {ref, reactive, onMounted} from 'vue';
 
   import uPlot from 'uplot';

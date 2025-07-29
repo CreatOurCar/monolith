@@ -1,4 +1,6 @@
 <script setup>
+  defineOptions({ name: 'Settings' });
+
   import {ref} from 'vue';
   import ToastEventBus from 'primevue/toasteventbus';
   import {init_mqtt, publish} from '@/service/mqtt';

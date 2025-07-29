@@ -9,6 +9,9 @@
     },
     "dependencies": {
         "@primeuix/themes": "^1.0.0",
+        "@xterm/addon-fit": "^0.10.0",
+        "@xterm/xterm": "^5.5.0",
+        "dayjs": "^1.11.13",
         "mqtt": "^5.13.3",
         "primeicons": "^7.0.0",
         "primevue": "^4.3.1",
