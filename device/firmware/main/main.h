@@ -208,8 +208,8 @@ typedef struct {
 } log_t;
 
 typedef struct {
+  uint32_t timestamp;
   state_t run;
-  uint8_t _reserved[4];
   log_t gps;
   log_t gyro;
   log_t analog;

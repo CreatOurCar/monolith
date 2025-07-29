@@ -5,7 +5,7 @@ import mqtt from 'mqtt';
 
 import { term } from '@/service/terminal';
 import { update_telemetry } from '@/service/telemetry';
-import { config } from '@/service/state';
+import { config, times } from '@/service/state';
 import { parse_cfg, parse_log, parse_logbuf, to_uint } from '@/service/protocol';
 import { connection_server, connection_device, update_connection_server, update_connection_device } from '@/service/topbar';
 
@@ -76,8 +76,8 @@ export function init_mqtt() {
           ToastEventBus.emit('add', { severity: 'error', summary: 'Device Offline', group: 'br', life: 5000 });
         } else {
           boot = to_uint(32, message, 0);
+          times.boot = dayjs(boot * 1000).format("YYYY-MM-DD HH:mm:ss");
           update_connection_device(true);
-          // TODO:
         }
         break;
       }
@@ -108,7 +108,7 @@ export function init_mqtt() {
       case 'd/sl': {
         try {
           const log = parse_log(message);
-          term.write(`[SYS ${dayjs(boot * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
+          term.write(`[${dayjs(boot * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
         } catch (e) {
           console.error(e);
           console.warn(message);
@@ -117,7 +117,9 @@ export function init_mqtt() {
       }
 
       case 'd': {
-        update_telemetry(parse_logbuf(message));
+        const logbuf = parse_logbuf(message);
+        times.current = dayjs(boot * 1000 + logbuf.timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");
+        update_telemetry(logbuf);
         break;
       }
 

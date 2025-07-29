@@ -310,6 +310,7 @@ static void mqtt_task(void *arg) {
 
   while (true) {
     if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
+      logbuf.timestamp = (uint32_t)(esp_timer_get_time() / 1000);
       esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, false);
 
       do {

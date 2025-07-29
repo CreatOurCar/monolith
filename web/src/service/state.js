@@ -33,9 +33,6 @@ export const config = reactive({
   disabled: ref(false),
 });
 
-export const boot_time = ref(0);
-export const current_time = ref(0);
-
 export const state = reactive([
   { name: '', text: 'UNKNOWN', status: "secondary" }, // hide core state
   { name: 'NVS', text: 'UNKNOWN', status: "secondary" },
@@ -49,3 +46,8 @@ export const state = reactive([
   { name: 'DIGITAL', text: 'UNKNOWN', status: "secondary" },
   { name: 'GYRO', text: 'UNKNOWN', status: "secondary" },
 ]);
+
+export const times = reactive({
+  boot: ref("N/A"),
+  current: ref("N/A"),
+});

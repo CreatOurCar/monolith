@@ -106,8 +106,8 @@ const NVS_POS = {
 };
 
 const LOGBUF_POS = {
-  STATE: 0,
-  _RESERVED: 4,
+  TIMESTAMP: 0,
+  STATE: 4,
   GPS: 8,
   GYRO: 32,
   ANALOG: 56,
@@ -259,6 +259,7 @@ export function parse_logbuf(buf) {
   const state = to_uint(32, buf, LOGBUF_POS.STATE);
 
   const logbuf = {
+    timestamp: to_uint(32, buf, LOGBUF_POS.TIMESTAMP),
     state: {
       core: parse_state_bit(state, "CORE"),
       nvs: parse_state_bit(state, "NVS"),
