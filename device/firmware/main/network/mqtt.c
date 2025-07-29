@@ -108,7 +108,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 
     if (STREQL(dir[2], "cfg")) {  // get configuration
       snprintf(topic, sizeof(topic), "%s/d/cfg", storage.device.name);
-      esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, true);
+      esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, false);
     }
 
     else if (STREQL(dir[2], "rbt")) {  // restart
@@ -279,7 +279,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
       esp_mqtt_client_publish(mqtt, topic, (char *)&boot.tv_sec, sizeof(boot.tv_sec), MQTT_QOS_1, true);
 
       snprintf(topic, sizeof(topic), "%s/d/cfg", storage.device.name);
-      esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, true);
+      esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, false);
 
       CLEAR_ALL(&logbuf.run, MQTT);
       SYSLOG("MQTT_CONN");
@@ -310,11 +310,11 @@ static void mqtt_task(void *arg) {
 
   while (true) {
     if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
-      esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, true);
+      esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, false);
 
       do {
         if ((ret = xQueueReceive(syslogqueue, &syslog, 0)) == true) {
-          esp_mqtt_client_publish(mqtt, syslog_topic, (char *)&syslog, sizeof(syslog), MQTT_QOS_0, true);
+          esp_mqtt_client_publish(mqtt, syslog_topic, (char *)&syslog, sizeof(syslog), MQTT_QOS_0, false);
         }
       } while (ret);
 

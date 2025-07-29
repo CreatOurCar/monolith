@@ -120,13 +120,13 @@ static inline void COPY_STATE(state_t *dest, state_t *src, state_component_t com
 typedef enum {
   LOG_TYPE_INVALID,
   LOG_TYPE_BOOT,
-  LOG_TYPE_SYSTEM,
-  LOG_TYPE_USER_EVENT,
   LOG_TYPE_CAN,
   LOG_TYPE_GPS,
   LOG_TYPE_ANALOG,
   LOG_TYPE_DIGITAL,
   LOG_TYPE_GYROSCOPE,
+  LOG_TYPE_SYSTEM,
+  LOG_TYPE_USER_EVENT,
 } log_type_t;
 
 typedef struct {
