@@ -317,7 +317,7 @@ export function validate_checksum(buf) {
     checksum ^= to_uint(32, buf, i);
   }
 
-  checksum = (checksum & 0xFFFF) + (checksum >> 16);
+  checksum = ((checksum & 0xFFFF) + (checksum >>> 16)) & 0xFFFF;
 
   if (checksum === original) {
     return true;
@@ -343,7 +343,7 @@ export function to_uint(bit, buffer, start) {
     ret += buffer[start + i] * Math.pow(2, i * 8); // little endian
   }
 
-  return ret;
+  return ret >>> 0;
 }
 
 export function to_int(bit, buffer, start) {
