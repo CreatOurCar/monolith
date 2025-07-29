@@ -25,13 +25,9 @@
       <div class="card">
         <div class="font-semibold text-xl mb-6">System State</div>
 
-        <div class="mb-4 flex items-center">
-          <span class="w-24 font-medium">Boot</span>
-          <Tag :value="times.boot" severity="info" class="timetag" />
-        </div>
-        <div class="mb-6 flex items-center">
-          <span class="w-24 font-medium">Current</span>
-          <Tag :value="times.current" severity="info" class="timetag" />
+        <div v-for="(tag, key) in times" :key="key" class="flex items-center mb-6">
+          <span class="w-24 font-medium">{{ tag.label }}</span>
+          <Tag :value="tag.value" severity="info" class="timetag" />
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-sm">
@@ -56,7 +52,7 @@
   .xterm {
     padding: 0.5rem 0.7rem;
     border-radius: 1rem;
-    height: 15rem;
+    height: 20rem;
   }
 
   .xterm-viewport {

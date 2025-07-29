@@ -1,6 +1,12 @@
 import ToastEventBus from 'primevue/toasteventbus';
 
-import 'dayjs';
+import dayjs from 'dayjs/esm';
+import duration from 'dayjs/esm/plugin/duration';
+import relativeTime from 'dayjs/esm/plugin/relativeTime';
+
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
+
 import mqtt from 'mqtt';
 
 import { term } from '@/service/terminal';
@@ -76,7 +82,7 @@ export function init_mqtt() {
           ToastEventBus.emit('add', { severity: 'error', summary: 'Device Offline', group: 'br', life: 5000 });
         } else {
           boot = to_uint(32, message, 0);
-          times.boot = dayjs(boot * 1000).format("YYYY-MM-DD HH:mm:ss");
+          times.boot.value = dayjs(boot * 1000).format("YYYY-MM-DD HH:mm:ss");
           update_connection_device(true);
         }
         break;
@@ -118,7 +124,19 @@ export function init_mqtt() {
 
       case 'd': {
         const logbuf = parse_logbuf(message);
-        times.current = dayjs(boot * 1000 + logbuf.timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");
+        times.current.value = dayjs(boot * 1000 + logbuf.timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");
+
+        const d = dayjs.duration(logbuf.timestamp);
+        const hours = Math.floor(d.asHours());
+        const minutes = d.minutes();
+        const seconds = d.seconds();
+
+        times.uptime.value = '';
+
+        if (hours > 0) times.uptime.value += `${hours} hr `;
+        if (minutes > 0) times.uptime.value += `${minutes} min `;
+        times.uptime.value += `${seconds} sec`;
+
         update_telemetry(logbuf);
         break;
       }

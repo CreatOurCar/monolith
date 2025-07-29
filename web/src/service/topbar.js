@@ -22,7 +22,7 @@ export const update_connection_server = (value) => {
     connection_server.value.severity = 'danger';
     connection_status.value = 'text-gray-500';
   } else {
-    connection_server.value.value = 'Connected';
+    connection_server.value.value = 'Online';
     connection_server.value.severity = 'success';
     connection_status.value = connection_device.value.value === 'Online' ? 'text-green-500' : 'text-red-400';
     ToastEventBus.emit('add', {severity: 'success', summary: 'Server Connected', group: 'br', life: 3000});
@@ -34,14 +34,14 @@ export const update_connection_device = (value) => {
     connection_device.value.value = 'Offline';
     connection_device.value.severity = 'danger';
 
-    if (connection_server.value.value === 'Connected') {
+    if (connection_server.value.value === 'Online') {
       connection_status.value = 'text-red-400';
     }
   } else {
     connection_device.value.value = 'Online';
     connection_device.value.severity = 'success';
 
-    if (connection_server.value.value === 'Connected') {
+    if (connection_server.value.value === 'Online') {
       connection_status.value = 'text-green-500';
       ToastEventBus.emit('add', {severity: 'success', summary: 'Device Online', group: 'br', life: 3000});
     }

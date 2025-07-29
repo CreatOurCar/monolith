@@ -48,6 +48,7 @@ export const state = reactive([
 ]);
 
 export const times = reactive({
-  boot: ref("N/A"),
-  current: ref("N/A"),
+  boot: { label: "Boot", value: "N/A" },
+  current: { label: "Current", value: "N/A" },
+  uptime: { label: "Uptime", value: "N/A" },
 });

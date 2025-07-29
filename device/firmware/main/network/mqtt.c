@@ -322,7 +322,7 @@ static void mqtt_task(void *arg) {
       // TODO: publish can event on demand
     }
 
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
 

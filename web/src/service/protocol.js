@@ -318,7 +318,13 @@ export function validate_checksum(buf) {
   }
 
   checksum = (checksum & 0xFFFF) + (checksum >> 16);
-  return checksum === original;
+
+  if (checksum === original) {
+    return true;
+  } else {
+    console.warn(`Checksum mismatch: expected ${original}, got ${checksum}`);
+    return false;
+  }
 }
 
 export function to_string(buffer, start, end) {
