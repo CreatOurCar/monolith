@@ -93,6 +93,6 @@ void task_can(void *pvParameters) {
     log.payload.can.remote   = msg.rtr;
     log.payload.can.len      = msg.data_length_code;
     memcpy(log.payload.can.data, msg.data, msg.data_length_code);
-    LOG(CAN, &log);
+    LOG(LOG_TYPE_CAN, &log);
   }
 }

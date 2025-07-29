@@ -1,6 +1,6 @@
 import { ref, reactive } from "vue";
 
-export const refs = reactive({
+export const config = reactive({
   server: {
     addr: { value: ref(""), loading: ref(false) },
     name: { value: ref(""), loading: ref(false) },
@@ -29,7 +29,23 @@ export const refs = reactive({
   dgt: {
     en: { value: ref(false), loading: ref(false) },
   },
+  current_loading: ref(""),
+  disabled: ref(false),
 });
 
-export const current_loading = ref("");
-export const disabled = ref(false);
+export const boot_time = ref(0);
+export const current_time = ref(0);
+
+export const state = reactive([
+  { name: '', text: 'UNKNOWN', status: "secondary" }, // hide core state
+  { name: 'NVS', text: 'UNKNOWN', status: "secondary" },
+  { name: 'RTC', text: 'UNKNOWN', status: "secondary" },
+  { name: 'SD', text: 'UNKNOWN', status: "secondary" },
+  { name: 'WIFI', text: 'UNKNOWN', status: "secondary" },
+  { name: 'MQTT', text: 'UNKNOWN', status: "secondary" },
+  { name: 'CAN', text: 'UNKNOWN', status: "secondary" },
+  { name: 'GPS', text: 'UNKNOWN', status: "secondary" },
+  { name: 'ANALOG', text: 'UNKNOWN', status: "secondary" },
+  { name: 'DIGITAL', text: 'UNKNOWN', status: "secondary" },
+  { name: 'GYRO', text: 'UNKNOWN', status: "secondary" },
+]);

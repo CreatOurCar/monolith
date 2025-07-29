@@ -209,6 +209,7 @@ typedef struct {
 
 typedef struct {
   state_t run;
+  uint8_t _reserved[4];
   log_t gps;
   log_t gyro;
   log_t analog;

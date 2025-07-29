@@ -3,10 +3,11 @@ import ToastEventBus from 'primevue/toasteventbus';
 import 'dayjs';
 import mqtt from 'mqtt';
 
-import { connection_server, connection_device, update_connection_server, update_connection_device } from '@/service/topbar';
-import { parse_cfg, parse_log, validate_checksum, to_uint } from '@/service/protocol';
-import { refs, current_loading, disabled } from '@/service/state';
 import { term } from '@/service/terminal';
+import { update_telemetry } from '@/service/telemetry';
+import { config } from '@/service/state';
+import { parse_cfg, parse_log, parse_logbuf, to_uint } from '@/service/protocol';
+import { connection_server, connection_device, update_connection_server, update_connection_device } from '@/service/topbar';
 
 let boot = null;
 let mqtt_client = null;
@@ -87,45 +88,56 @@ export function init_mqtt() {
         }
 
         const cfg = parse_cfg(message);
-        refs.net.ssid.value = cfg.wifi.ssid;
-        refs.net.passwd.value = cfg.wifi.passwd;
-        refs.dev.tz.value = cfg.device.tz;
-        refs.gps.en.value = cfg.en.gps ? true : false;
-        refs.gps.dev.value = cfg.gps.dev;
-        refs.can.en.value = cfg.en.can ? true : false;
-        refs.can.bps.value = cfg.can.bps;
-        refs.can.filter.value = '0x' + cfg.can.filter.toString(16).padStart(8, '0').toUpperCase();
-        refs.can.mask.value = '0x' + cfg.can.mask.toString(16).padStart(8, '0').toUpperCase();
-        refs.anl.en.value = cfg.en.analog ? true : false;
-        refs.dgt.en.value = cfg.en.digital ? true : false;
+        config.net.ssid.value = cfg.wifi.ssid;
+        config.net.passwd.value = cfg.wifi.passwd;
+        config.dev.tz.value = cfg.device.tz;
+        config.gps.en.value = cfg.en.gps ? true : false;
+        config.gps.dev.value = cfg.gps.dev;
+        config.can.en.value = cfg.en.can ? true : false;
+        config.can.bps.value = cfg.can.bps;
+        config.can.filter.value = '0x' + cfg.can.filter.toString(16).padStart(8, '0').toUpperCase();
+        config.can.mask.value = '0x' + cfg.can.mask.toString(16).padStart(8, '0').toUpperCase();
+        config.anl.en.value = cfg.en.analog ? true : false;
+        config.dgt.en.value = cfg.en.digital ? true : false;
 
         ToastEventBus.emit('add', { severity: 'success', summary: 'Configuration Loaded', group: 'br', life: 3000 });
-        disabled.value = false;
+        config.disabled = false;
         break;
       }
 
       case 'd/sl': {
-        const log = parse_log(message);
-        term.write(`[SYS ${dayjs(boot * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
+        try {
+          const log = parse_log(message);
+          term.write(`[SYS ${dayjs(boot * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
+        } catch (e) {
+          console.error(e);
+          console.warn(message);
+        }
         break;
       }
 
       case 'd': {
-
+        update_telemetry(parse_logbuf(message));
         break;
       }
 
       case 'ack/set': {
         if (message.toString() === 'ok') {
-          disabled.value = false;
+          config.disabled.value = false;
 
-          if (current_loading.value) {
-            const [section, field] = current_loading.value.split("/");
-            refs[section][field].loading = false;
-            current_loading.value = "";
+          if (config.current_loading.value) {
+            const [section, field] = config.current_loading.value.split("/");
+            config[section][field].loading = false;
+            config.current_loading.value = "";
           }
 
-          ToastEventBus.emit('add', { severity: 'success', summary: 'Configuration Saved', detail: `Restart the device to apply changes.`, group: 'br', life: 3000 });
+          ToastEventBus.emit('add', {
+            severity: 'success',
+            summary: 'Configuration Saved',
+            detail: `Restart the device to apply changes.`,
+            group: 'br',
+            life: 3000
+          });
         }
         break;
       }

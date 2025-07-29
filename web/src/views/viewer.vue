@@ -2,8 +2,8 @@
   defineOptions({ name: 'Viewer' });
 
   import {ref, reactive, onMounted} from 'vue';
-
   import uPlot from 'uplot';
+
   import 'uplot/dist/uPlot.min.css';
 
   function parse(file) {

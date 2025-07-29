@@ -107,14 +107,18 @@ const NVS_POS = {
 
 const LOGBUF_POS = {
   STATE: 0,
-  GPS: 4,
-  GYRO: 28,
-  ANALOG: 52,
-  DIGITAL: 76,
+  _RESERVED: 4,
+  GPS: 8,
+  GYRO: 32,
+  ANALOG: 56,
+  DIGITAL: 80,
 };
 
+const STATE = ["CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO"];
+const STATE_COMPONENT_MAX = 12;
+
 export function parse_cfg(buf) {
-  const cfg = {
+  return {
     wifi: {
       mac: to_string(buf, NVS_POS.WIFI.MACADDR, NVS_POS.WIFI.SSID),
       ssid: to_string(buf, NVS_POS.WIFI.SSID, NVS_POS.WIFI.PASSWD),
@@ -141,15 +145,9 @@ export function parse_cfg(buf) {
       dev: to_uint(8, buf, NVS_POS.GPS.DEV),
     },
   };
-
-  return cfg;
 }
 
 export function parse_log(buf) {
-  if (buf.length < LOG_SIZE) {
-    throw new Error("log length failure");
-  }
-
   const log = {
     magic: to_uint(8, buf, LOG_POS.MAGIC),
     type: LOG_TYPE[buf[LOG_POS.TYPE]],
@@ -243,6 +241,68 @@ export function parse_log(buf) {
   }
 
   return log;
+}
+
+function parse_state_bit(value, component) {
+  component = STATE.indexOf(component);
+
+  if (value & (1 << (component + STATE_COMPONENT_MAX))) {
+    return "FATAL";
+  } else if (value & (1 << component)) {
+    return "ERROR";
+  } else {
+    return "OK";
+  }
+};
+
+export function parse_logbuf(buf) {
+  const state = to_uint(32, buf, LOGBUF_POS.STATE);
+
+  const logbuf = {
+    state: {
+      core: parse_state_bit(state, "CORE"),
+      nvs: parse_state_bit(state, "NVS"),
+      rtc: parse_state_bit(state, "RTC"),
+      sd: parse_state_bit(state, "SD"),
+      wifi: parse_state_bit(state, "WIFI"),
+      mqtt: parse_state_bit(state, "MQTT"),
+      can: parse_state_bit(state, "CAN"),
+      gps: parse_state_bit(state, "GPS"),
+      analog: parse_state_bit(state, "ANALOG"),
+      digital: parse_state_bit(state, "DIGITAL"),
+      gyro: parse_state_bit(state, "GYRO"),
+    },
+  };
+
+  try {
+    // logbuf.gps = parse_log(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
+  } catch (e) {
+    console.error(`GPS: ${e}`);
+    console.lwarn(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
+  }
+
+  try {
+    logbuf.gyro = parse_log(buf.slice(LOGBUF_POS.GYRO, LOGBUF_POS.GYRO + LOG_SIZE));
+  } catch (e) {
+    console.error(`GYRO: ${e}`);
+    console.warn(buf.slice(LOGBUF_POS.GYRO, LOGBUF_POS.GYRO + LOG_SIZE));
+  }
+
+  try {
+    logbuf.analog = parse_log(buf.slice(LOGBUF_POS.ANALOG, LOGBUF_POS.ANALOG + LOG_SIZE));
+  } catch (e) {
+    console.error(`ANALOG: ${e}`);
+    console.warn(buf.slice(LOGBUF_POS.ANALOG, LOGBUF_POS.ANALOG + LOG_SIZE));
+  }
+
+  try {
+    logbuf.digital = parse_log(buf.slice(LOGBUF_POS.DIGITAL, LOGBUF_POS.DIGITAL + LOG_SIZE));
+  } catch (e) {
+    console.error(`DIGITAL: ${e}`);
+    console.warn(buf.slice(LOGBUF_POS.DIGITAL, LOGBUF_POS.DIGITAL + LOG_SIZE));
+  }
+
+  return logbuf;
 }
 
 export function validate_checksum(buf) {

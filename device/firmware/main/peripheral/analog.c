@@ -106,7 +106,7 @@ void task_analog(void *pvParameters) {
 
     if (err == ESP_OK) {
       logbuf.analog.payload.analog.temperature = (int16_t)(temperature * 100);
-      LOG(ANALOG, &logbuf.analog);
+      LOG(LOG_TYPE_ANALOG, &logbuf.analog);
 
       INFO(ANALOG, "%d mV, %d mV, %d mV, %d mV, %d mV, %d mV, %d mV, %d C", VOLT(logbuf.analog.payload.analog.ain1),
         VOLT(logbuf.analog.payload.analog.ain2), VOLT(logbuf.analog.payload.analog.ain3),
