@@ -1,36 +1,36 @@
-import { ref, reactive } from "vue";
+import { reactive } from "vue";
 
 export const config = reactive({
   server: {
-    addr: { value: ref(""), loading: ref(false) },
-    name: { value: ref(""), loading: ref(false) },
-    key: { value: ref(""), loading: ref(false) },
+    addr: { value: "", loading: false },
+    name: { value: "", loading: false },
+    key: { value: "", loading: false },
   },
   net: {
-    ssid: { value: ref(""), loading: ref(false) },
-    passwd: { value: ref(""), loading: ref(false) },
+    ssid: { value: "", loading: false },
+    passwd: { value: "", loading: false },
   },
   dev: {
-    tz: { value: ref(""), loading: ref(false) },
+    tz: { value: "", loading: false },
   },
   can: {
-    en: { value: ref(false), loading: ref(false) },
-    bps: { value: ref(0), loading: ref(false) },
-    filter: { value: ref(""), loading: ref(false) },
-    mask: { value: ref(""), loading: ref(false) },
+    en: { value: false, loading: false },
+    bps: { value: 0, loading: false },
+    filter: { value: "", loading: false },
+    mask: { value: "", loading: false },
   },
   gps: {
-    en: { value: ref(false), loading: ref(false) },
-    dev: { value: ref(0), loading: ref(false) },
+    en: { value: false, loading: false },
+    dev: { value: 0, loading: false },
   },
   anl: {
-    en: { value: ref(false), loading: ref(false) },
+    en: { value: false, loading: false },
   },
   dgt: {
-    en: { value: ref(false), loading: ref(false) },
+    en: { value: false, loading: false },
   },
-  current_loading: ref(""),
-  disabled: ref(false),
+  current_loading: "",
+  disabled: false,
 });
 
 export const state = reactive([
@@ -51,4 +51,29 @@ export const times = reactive({
   boot: { label: "Boot", value: "N/A" },
   current: { label: "Current", value: "N/A" },
   uptime: { label: "Uptime", value: "N/A" },
+});
+
+export const cons = reactive({
+  usrevt: "",
+  can: {
+    id: "",
+    data: Array.from({ length: 8 }, () => ""),
+  },
+});
+
+export const inputs = reactive({
+  digital: {
+    din1: { name: 'DIN1', value: false },
+    din2: { name: 'DIN2', value: false },
+    din3: { name: 'DIN3', value: false },
+    din4: { name: 'DIN4', value: false },
+  },
+  analog: {
+    ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1 },
+    ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1 },
+    ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1 },
+    ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1 },
+    ain5: { name: 'AIN5', value: 0, divider: false, multiplier: 1 },
+    ain6: { name: 'AIN6', value: 0, divider: false, multiplier: 1 },
+  },
 });

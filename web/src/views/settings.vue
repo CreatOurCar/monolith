@@ -24,13 +24,13 @@
     const [section, field] = target.split("/");
 
     config[section][field].loading = true;
-    config.disabled.value = true;
+    config.disabled = true;
 
     localStorage.setItem(target, config[section][field].value.trim());
     init_mqtt();
 
     config[section][field].loading = false;
-    config.disabled.value = false;
+    config.disabled = false;
 
     ToastEventBus.emit('add', {severity: 'success', summary: 'Configuration Saved', group: 'br', life: 3000});
   }
@@ -81,8 +81,8 @@
     }
 
     config[section][field].loading = true;
-    config.current_loading.value = target;
-    config.disabled.value = true;
+    config.current_loading = target;
+    config.disabled = true;
 
     publish(`set/${target}`, payload, 1);
   }
@@ -180,8 +180,8 @@
             <label for="server/addr" class="flex items-center col-span-3">Address</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.server.addr.value" placeholder="MQTT Server Address" />
-                <Button id="server/addr" type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
+                <InputText v-model="config.server.addr.value" placeholder="MQTT Server Address" />
+                <Button id="server/addr" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
                   :loading="config.server.addr.loading" @click="save($event)" />
               </InputGroup>
             </div>
@@ -190,8 +190,8 @@
             <label for="server/name" class="flex items-center col-span-3">Name</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.server.name.value" placeholder="Device Name" />
-                <Button id="server/name" type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
+                <InputText v-model="config.server.name.value" placeholder="Device Name" />
+                <Button id="server/name" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
                   :loading="config.server.name.loading" @click="save($event)" />
               </InputGroup>
             </div>
@@ -200,8 +200,8 @@
             <label for="server/key" class="flex items-center col-span-3">Key</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.server.key.value" placeholder="Device Key" />
-                <Button id="server/key" type="button" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
+                <InputText v-model="config.server.key.value" placeholder="Device Key" />
+                <Button id="server/key" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
                   :loading="config.server.key.loading" @click="save($event)" />
               </InputGroup>
             </div>
@@ -214,8 +214,8 @@
             <label for="net/ssid" class="flex items-center col-span-3">SSID</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.net.ssid.value" placeholder="Wi-Fi SSID" />
-                <Button id="net/ssid" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                <InputText v-model="config.net.ssid.value" placeholder="Wi-Fi SSID" />
+                <Button id="net/ssid" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.net.ssid.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
@@ -224,8 +224,8 @@
             <label for="net/passwd" class="flex items-center col-span-3">Password</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.net.passwd.value" placeholder="Wi-Fi Password" />
-                <Button id="net/passwd" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                <InputText v-model="config.net.passwd.value" placeholder="Wi-Fi Password" />
+                <Button id="net/passwd" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.net.passwd.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
@@ -234,8 +234,8 @@
             <label for="dev/tz" class="flex items-center col-span-3">Timezone</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.dev.tz.value" placeholder="POSIX timezone string" />
-                <Button id="dev/tz" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                <InputText v-model="config.dev.tz.value" placeholder="POSIX timezone string" />
+                <Button id="dev/tz" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.dev.tz.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
@@ -275,7 +275,7 @@
               <InputGroup>
                 <Select v-model="config.can.bps.value" :options="canbps" optionLabel="name" optionValue="value"
                   placeholder="CAN bps" />
-                <Button id="can/bps" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                <Button id="can/bps" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.can.bps.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
@@ -284,8 +284,8 @@
             <label for="can/filter" class="flex items-center col-span-3">Filter</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.can.filter.value" placeholder="CAN filter ID" />
-                <Button id="can/filter" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                <InputText v-model="config.can.filter.value" placeholder="CAN filter ID" />
+                <Button id="can/filter" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.can.filter.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
@@ -294,8 +294,8 @@
             <label for="can/mask" class="flex items-center col-span-3">Mask</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText type="text" v-model="config.can.mask.value" placeholder="CAN filter mask" />
-                <Button id="can/mask" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                <InputText v-model="config.can.mask.value" placeholder="CAN filter mask" />
+                <Button id="can/mask" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.can.mask.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
@@ -317,7 +317,7 @@
               <InputGroup>
                 <Select v-model="config.gps.dev.value" :options="gpsdev" optionLabel="name" optionValue="value"
                   placeholder="GPS device" />
-                <Button id="gps/dev" type="button" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                <Button id="gps/dev" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.gps.dev.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>

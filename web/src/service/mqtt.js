@@ -143,12 +143,12 @@ export function init_mqtt() {
 
       case 'ack/set': {
         if (message.toString() === 'ok') {
-          config.disabled.value = false;
+          config.disabled = false;
 
-          if (config.current_loading.value) {
-            const [section, field] = config.current_loading.value.split("/");
+          if (config.current_loading) {
+            const [section, field] = config.current_loading.split("/");
             config[section][field].loading = false;
-            config.current_loading.value = "";
+            config.current_loading = "";
           }
 
           ToastEventBus.emit('add', {
