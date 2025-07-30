@@ -278,9 +278,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
       snprintf(topic, sizeof(topic), "%s/d/boot", storage.device.name);
       esp_mqtt_client_publish(mqtt, topic, (char *)&boot.tv_sec, sizeof(boot.tv_sec), MQTT_QOS_1, true);
 
-      snprintf(topic, sizeof(topic), "%s/d/cfg", storage.device.name);
-      esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, false);
-
       CLEAR_ALL(&logbuf.run, MQTT);
       SYSLOG("MQTT_CONN");
       break;
