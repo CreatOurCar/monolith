@@ -90,7 +90,7 @@
   function load_confirm() {
     confirm.require({
       header: 'Load Confirmation',
-      message: 'Loading configuration may affect the logging performance. Make sure the device is not in the critical session.',
+      message: 'Load configurations from the device? Make sure it is not in the critical session.',
       icon: 'pi pi-info-circle',
       rejectProps: {
         label: 'Cancel',
@@ -130,7 +130,7 @@
   function reset_confirm() {
     confirm.require({
       header: 'Reset Confirmation',
-      message: 'This button has the same effect as pressing the RST button on the device. All configurations will be erased and the device need to be configured from the beginning.',
+      message: 'This has the same effect as pressing the RST button on the device. All configurations will be erased and it needs to be configured from the beginning.',
       icon: 'pi pi-exclamation-triangle',
       rejectProps: {
         label: 'Cancel',

@@ -116,8 +116,7 @@ export function init_mqtt() {
           const log = parse_log(message);
           term.write(`[${dayjs(boot * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
         } catch (e) {
-          console.error(e);
-          console.warn(message);
+          console.error(e, message);
         }
         break;
       }

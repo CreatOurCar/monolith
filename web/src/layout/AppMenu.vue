@@ -10,6 +10,7 @@
         {label: 'Live Telemetry', icon: 'pi pi-fw pi-wifi', to: '/'},
         {label: 'Data Viewer', icon: 'pi pi-fw pi-database', to: '/viewer'},
         {label: 'Settings', icon: 'pi pi-fw pi-cog', to: '/settings'},
+        {label: 'Views', icon: 'pi pi-fw pi-desktop', to: '/views'},
       ]
     },
     {
