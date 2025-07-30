@@ -62,7 +62,7 @@
     <div class="layout-main-container">
       <div class="layout-main">
         <router-view v-slot="{ Component }">
-          <keep-alive include="Telemetry,Viewer,Settings">
+          <keep-alive>
             <component :is="Component" />
           </keep-alive>
         </router-view>

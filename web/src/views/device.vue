@@ -1,5 +1,5 @@
 <script setup>
-  defineOptions({name: 'Settings'});
+  defineOptions({name: 'DeviceConfiguration'});
 
   import {ref, onMounted} from 'vue';
   import {init_mqtt, publish} from '@/service/mqtt';

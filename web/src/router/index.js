@@ -19,14 +19,14 @@ const router = createRouter({
           component: () => import('@/views/viewer.vue')
         },
         {
-          path: '/settings',
-          name: 'Settings',
-          component: () => import('@/views/settings.vue')
+          path: '/ui',
+          name: 'UI Configuration',
+          component: () => import('@/views/ui.vue')
         },
         {
-          path: '/views',
-          name: 'Views',
-          component: () => import('@/views/views.vue')
+          path: '/device',
+          name: 'Device Configuration',
+          component: () => import('@/views/device.vue')
         },
       ]
     },
