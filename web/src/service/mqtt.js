@@ -11,9 +11,9 @@ import mqtt from 'mqtt';
 
 import { term } from '@/service/terminal';
 import { update_telemetry } from '@/service/telemetry';
-import { config, times } from '@/service/state';
+import { connection, config, times } from '@/service/state';
 import { parse_cfg, parse_log, parse_logbuf, to_uint } from '@/service/protocol';
-import { connection_server, connection_device, update_connection_server, update_connection_device } from '@/service/topbar';
+import { update_connection_server, update_connection_device } from '@/service/topbar';
 
 let boot = null;
 let mqtt_client = null;
@@ -59,7 +59,7 @@ export function init_mqtt() {
   });
 
   mqtt_client.on('close', () => {
-    if (connection_server.value.value !== 'Disconnected') {
+    if (connection.server.value !== 'Disconnected') {
       ToastEventBus.emit('add', { severity: 'error', summary: 'Server Connection Closed', group: 'br', life: 5000 });
     }
     update_connection_server(false);
@@ -89,7 +89,7 @@ export function init_mqtt() {
       }
 
       case 'd/cfg': {
-        if (connection_device.value.value !== 'Online') {
+        if (connection.device.value !== 'Online') {
           return;
         }
 

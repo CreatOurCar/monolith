@@ -2,9 +2,8 @@
   defineOptions({name: 'Settings'});
 
   import {ref, onMounted} from 'vue';
-  import {connection_device} from '@/service/topbar';
   import {init_mqtt, publish} from '@/service/mqtt';
-  import {config} from '@/service/state';
+  import {connection, config} from '@/service/state';
 
   import {useConfirm} from "primevue/useconfirm";
   import ToastEventBus from 'primevue/toasteventbus';
@@ -16,7 +15,9 @@
     config.server.name.value = localStorage.getItem('server/name');
     config.server.key.value = localStorage.getItem('server/key');
 
-    load_confirm();
+    if (connection.device.value === 'Online') {
+      load_confirm();
+    }
   });
 
   function save(event) {
@@ -36,7 +37,7 @@
   }
 
   function set_cfg(event) {
-    if (connection_device.value.value !== 'Online') {
+    if (connection.device.value !== 'Online') {
       ToastEventBus.emit('add', {
         severity: 'error',
         summary: 'Configuration Failure',

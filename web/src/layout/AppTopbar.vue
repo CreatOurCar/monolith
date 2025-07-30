@@ -2,7 +2,7 @@
   import {ref} from 'vue';
   import {useLayout} from '@/layout/composables/layout';
   import AppConfigurator from './AppConfigurator.vue';
-  import {connection_status, connection_server, connection_device} from '@/service/topbar';
+  import {connection} from '@/service/state';
 
   const {toggleMenu, toggleDarkMode, isDarkTheme} = useLayout();
 
@@ -34,17 +34,17 @@
         <AppConfigurator />
 
         <button type="button" class="layout-topbar-action" @click="toggle_connections">
-          <i class="pi pi-sitemap" :class="connection_status"></i>
+          <i class="pi pi-sitemap" :class="connection.status"></i>
           <span>Connections</span>
         </button>
 
         <Popover ref="popup_connections">
           <div class="flex flex-col gap-4">
             <div>
-              Server <Tag :value="connection_server.value" :severity="connection_server.severity" class="ml-2"></Tag>
+              Server <Tag :value="connection.server.value" :severity="connection.server.severity" class="ml-2"></Tag>
             </div>
             <div>
-              Device <Tag :value="connection_device.value" :severity="connection_device.severity" class="ml-2"></Tag>
+              Device <Tag :value="connection.device.value" :severity="connection.device.severity" class="ml-2"></Tag>
             </div>
           </div>
         </Popover>

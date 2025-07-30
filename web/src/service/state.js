@@ -1,5 +1,19 @@
 import { reactive } from "vue";
 
+export const connection = reactive({
+  server:
+    {
+      value: 'Uninitialized',
+      severity: 'danger',
+    },
+  device:
+    {
+      value: 'Offline',
+      severity: 'danger',
+    },
+  status: 'text-gray-500',
+});
+
 export const config = reactive({
   server: {
     addr: { value: "", loading: false },

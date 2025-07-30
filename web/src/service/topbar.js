@@ -1,49 +1,38 @@
 import { ref } from 'vue'
 import ToastEventBus from 'primevue/toasteventbus';
+import { connection } from '@/service/state';
 
 /*******************************************************************************
  * Topbar connection status
  *******************************************************************************/
-export const connection_server = ref({
-  value: 'Uninitialized',
-  severity: 'danger',
-});
-
-export const connection_device = ref({
-  value: 'Offline',
-  severity: 'danger',
-});
-
-export const connection_status = ref('text-gray-500');
-
 export const update_connection_server = (value) => {
   if (value === false) {
-    connection_server.value.value = 'Disconnected';
-    connection_server.value.severity = 'danger';
-    connection_status.value = 'text-gray-500';
+    connection.server.value = 'Disconnected';
+    connection.server.severity = 'danger';
+    connection.status = 'text-gray-500';
   } else {
-    connection_server.value.value = 'Online';
-    connection_server.value.severity = 'success';
-    connection_status.value = connection_device.value.value === 'Online' ? 'text-green-500' : 'text-red-400';
-    ToastEventBus.emit('add', {severity: 'success', summary: 'Server Connected', group: 'br', life: 3000});
+    connection.server.value = 'Online';
+    connection.server.severity = 'success';
+    connection.status = connection.device.value === 'Online' ? 'text-green-500' : 'text-red-400';
+    ToastEventBus.emit('add', { severity: 'success', summary: 'Server Connected', group: 'br', life: 3000 });
   }
 }
 
 export const update_connection_device = (value) => {
   if (value === false) {
-    connection_device.value.value = 'Offline';
-    connection_device.value.severity = 'danger';
+    connection.device.value = 'Offline';
+    connection.device.severity = 'danger';
 
-    if (connection_server.value.value === 'Online') {
-      connection_status.value = 'text-red-400';
+    if (connection.server.value === 'Online') {
+      connection.status = 'text-red-400';
     }
   } else {
-    connection_device.value.value = 'Online';
-    connection_device.value.severity = 'success';
+    connection.device.value = 'Online';
+    connection.device.severity = 'success';
 
-    if (connection_server.value.value === 'Online') {
-      connection_status.value = 'text-green-500';
-      ToastEventBus.emit('add', {severity: 'success', summary: 'Device Online', group: 'br', life: 3000});
+    if (connection.server.value === 'Online') {
+      connection.status = 'text-green-500';
+      ToastEventBus.emit('add', { severity: 'success', summary: 'Device Online', group: 'br', life: 3000 });
     }
   }
 }
