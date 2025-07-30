@@ -91,3 +91,14 @@ export const inputs = reactive({
     ain6: { name: 'AIN6', value: 0, divider: false, multiplier: 1 },
   },
 });
+
+export const files = reactive({
+  buf: [],
+  list: [],
+  loading: {
+    list: false,
+    del: false,
+    download: false,
+  },
+  disabled: false,
+});

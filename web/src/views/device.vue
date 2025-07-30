@@ -3,7 +3,7 @@
 
   import {ref, onMounted} from 'vue';
   import {init_mqtt, publish} from '@/service/mqtt';
-  import {connection, config} from '@/service/state';
+  import {connection, config, files} from '@/service/state';
 
   import {useConfirm} from "primevue/useconfirm";
   import ToastEventBus from 'primevue/toasteventbus';
@@ -169,6 +169,63 @@
     {name: 'UBLOX', value: 0},
   ];
 
+  function list_files() {
+    if (connection.device.value !== 'Online') {
+      ToastEventBus.emit('add', {
+        severity: 'error',
+        summary: 'List Failure',
+        detail: 'Device is offline.',
+        group: 'br',
+        life: 5000
+      });
+      return;
+    }
+
+    files.loading.list = true;
+    files.disabled = true;
+    files.buf.length = 0;
+    files.list.length = 0;
+    publish('cmd/ls', '!', 1);
+  }
+
+  function delete_file(name, index) {
+    if (connection.device.value !== 'Online') {
+      ToastEventBus.emit('add', {
+        severity: 'error',
+        summary: 'Delete Failure',
+        detail: 'Device is offline.',
+        group: 'br',
+        life: 5000
+      });
+      return;
+    }
+
+    confirm.require({
+      header: 'Delete Confirmation',
+      message: `Are you sure you want to delete ${name}?`,
+      icon: 'pi pi-exclamation-triangle',
+      rejectProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      acceptProps: {
+        label: 'Delete',
+        severity: 'danger',
+      },
+      accept: () => {
+        files.loading.del = index;
+        files.disabled = true;
+        publish(`cmd/del/${name}`, '!', 1);
+      },
+    });
+  }
+
+  function format_size(size) {
+    if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + " MB"
+    if (size >= 1024) return (size / 1024).toFixed(2) + " KB"
+    return size + " B"
+  }
 </script>
 
 <template>
@@ -328,15 +385,46 @@
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Danger Zone</div>
           <span>Restart the device to apply changes.</span>
-
           <div class="flex gap-4">
-            <Button class="flex-1" label="Refresh" icon="pi pi-sync" severity="info" @click="load_confirm" />
+            <Button class="flex-1" label="Refresh" icon="pi pi-sync" @click="load_confirm" />
             <Button class="flex-1" label="Restart" icon="pi pi-refresh" severity="warn" @click="restart_confirm" />
             <Button class="flex-1" label="Reset" icon="pi pi-sparkles" severity="danger" @click="reset_confirm" />
           </div>
-
-          <ConfirmDialog style="maxWidth: 400px" />
         </div>
+        <ConfirmDialog style="maxWidth: 400px" />
+      </div>
+    </div>
+
+    <div class="w-full mt-8">
+      <div class="card flex flex-col gap-4">
+        <div class="font-semibold text-xl">Data Downloader</div>
+        <div class="flex gap-4 mt-4">
+          <Button label="Load List" icon="pi pi-list" :fluid="false" class="flex-1 md:flex-none"
+            :loading="files.loading.list" :disabled="files.disabled" @click="list_files" />
+          <Button label="Delete All" icon="pi pi-eraser" severity="danger" :fluid="false" class="flex-1 md:flex-none"
+            :loading="files.loading.del === -1" :disabled="files.disabled" @click="delete_file('all', -1)" />
+        </div>
+        <DataView :value="files.list" class="mt-4">
+          <template #empty>
+            <div class="p-4 text-center text-gray-400">Click Load List to see the files list.</div>
+          </template>
+          <template #list="slotProps">
+            <div class="flex flex-col">
+              <div v-for="(item, index) in slotProps.items" :key="index"
+                class="flex items-center border-b py-2 px-2 gap-2">
+                <div class="w-8 text-center">{{ index + 1 }}</div>
+                <div class="flex-1">
+                  <div class="text-sm truncate">{{ item.name }}</div>
+                  <div class="text-xs text-gray-500 mt-1">{{ format_size(item.size) }}</div>
+                </div>
+                <Button icon="pi pi-download" class="mx-1" @click="download_file(item.name, index)"
+                  :loading="files.loading.download === index" :disabled="files.disabled" />
+                <Button icon="pi pi-trash" severity="danger" class="mx-1" @click="delete_file(item.name, index)"
+                  :loading="files.loading.del === index" :disabled="files.disabled" />
+              </div>
+            </div>
+          </template>
+        </DataView>
       </div>
     </div>
   </Fluid>

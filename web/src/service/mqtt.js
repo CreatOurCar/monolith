@@ -11,7 +11,7 @@ import mqtt from 'mqtt';
 
 import { term } from '@/service/terminal';
 import { update_telemetry } from '@/service/telemetry';
-import { connection, config, times } from '@/service/state';
+import { connection, config, times, files } from '@/service/state';
 import { parse_cfg, parse_log, parse_logbuf, to_uint } from '@/service/protocol';
 import { update_connection_server, update_connection_device } from '@/service/topbar';
 
@@ -157,6 +157,77 @@ export function init_mqtt() {
             group: 'br',
             life: 3000
           });
+        }
+        break;
+      }
+
+      case 'ack/ls': {
+        if (!files.loading.list) {
+          return;
+        }
+
+        files.loading.list = false;
+        files.disabled = false;
+
+        if (message.toString() === 'ok') {
+          files.list = JSON.parse(JSON.stringify(files.buf.sort((a, b) => b.name.localeCompare(a.name))));
+
+          ToastEventBus.emit('add', {
+            severity: 'success',
+            summary: 'File List Loaded',
+            detail: `Found ${files.list.length} files.`,
+            group: 'br',
+            life: 3000
+          });
+        } else {
+          ToastEventBus.emit('add', {
+            severity: 'error',
+            summary: 'File List Error',
+            detail: message.toString(),
+            group: 'br',
+            life: 5000
+          });
+        }
+        break;
+      }
+
+      case 'ack/del': {
+        files.loading.del = false;
+        files.disabled = false;
+
+        if (message.toString() === 'ok') {
+          ToastEventBus.emit('add', {
+            severity: 'success',
+            summary: 'File Deleted',
+            group: 'br',
+            life: 3000
+          });
+
+          files.buf.length = 0;
+          files.list.length = 0;
+          publish('cmd/ls', '!', 1);
+        } else {
+          ToastEventBus.emit('add', {
+            severity: 'error',
+            summary: 'File Delete Error',
+            detail: message.toString(),
+            group: 'br',
+            life: 5000
+          });
+        }
+        break;
+      }
+
+      default: {
+        if (topic.startsWith('ack/ls/')) {
+          const name = topic.replace('ack/ls/', '');
+
+          if (!files.buf.some(file => file.name === name)) {
+            files.buf.push({
+              name: name,
+              size: to_uint(32, message, 0),
+            });
+          }
         }
         break;
       }
