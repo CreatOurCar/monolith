@@ -101,4 +101,10 @@ export const files = reactive({
     download: false,
   },
   disabled: false,
+  download: {
+    name: "",
+    buf: [],
+    progress: 0,
+    size: 0,
+  }
 });

@@ -196,12 +196,7 @@ export function init_mqtt() {
         files.disabled = false;
 
         if (message.toString() === 'ok') {
-          ToastEventBus.emit('add', {
-            severity: 'success',
-            summary: 'File Deleted',
-            group: 'br',
-            life: 3000
-          });
+          ToastEventBus.emit('add', { severity: 'success', summary: 'File Deleted', group: 'br', life: 3000 });
 
           files.buf.length = 0;
           files.list.length = 0;
@@ -218,6 +213,56 @@ export function init_mqtt() {
         break;
       }
 
+      case 'ack/get': {
+        const cnt = to_uint(32, message, 0);
+
+        for (let i = 0; i < cnt; i++) {
+          if (!files.download.buf[i]) {
+            ToastEventBus.emit('add', {
+              severity: 'error',
+              summary: 'File Download Error',
+              detail: `Missing file chunk ${i}`,
+              group: 'br',
+              life: 5000
+            });
+
+            files.loading.download = false;
+            files.disabled = false;
+            return;
+          }
+        }
+
+        const size = files.download.buf.reduce((acc, chunk) => acc + chunk.byteLength, 0);
+        const file = new Uint8Array(size);
+
+        let offset = 0;
+
+        for (let i = 0; i < cnt; i++) {
+          file.set(files.download.buf[i], offset);
+          offset += files.download.buf[i].byteLength;
+        }
+
+        files.loading.download = false;
+        files.disabled = false;
+
+        ToastEventBus.emit('add', {
+          severity: 'success', summary: 'File Downloaded',
+          detail: `${files.download.name} (${format_size(size)} bytes)`,
+          group: 'br', life: 3000
+        });
+
+        const blob = new Blob([file], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = files.download.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        break;
+      }
+
       default: {
         if (topic.startsWith('ack/ls/')) {
           const name = topic.replace('ack/ls/', '');
@@ -228,8 +273,12 @@ export function init_mqtt() {
               size: to_uint(32, message, 0),
             });
           }
+        } else if (topic.startsWith('ack/get/')) {
+          const index = topic.replace('ack/get/', '');
+          files.download.buf[index] = message;
+          files.download.progress = (index * 4096 / files.download.size * 100).toFixed(1);
+          break;
         }
-        break;
       }
     }
   });
@@ -244,3 +293,8 @@ export function publish(topic, payload, qos) {
   mqtt_client.publish(`${localStorage.getItem('server/name')}/${topic}`, payload, { qos: qos });
 }
 
+export function format_size(size) {
+    if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + " MB"
+    if (size >= 1024) return (size / 1024).toFixed(2) + " KB"
+    return size + " B"
+  }

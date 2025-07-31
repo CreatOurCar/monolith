@@ -158,7 +158,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 #pragma GCC diagnostic ignored "-Wformat-truncation"
           snprintf(topic, sizeof(topic), "%s/ack/ls/%s", storage.device.name, entry->d_name);
 #pragma GCC diagnostic pop
-          esp_mqtt_client_publish(mqtt, topic, (char *)&st.st_size, sizeof(st.st_size), MQTT_QOS_1, false);
+          esp_mqtt_client_publish(mqtt, topic, (char *)&st.st_size, sizeof(st.st_size), MQTT_QOS_0, false);
         }
       }
 
@@ -230,7 +230,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       }
 
       int cnt    = 0;
-      char *data = malloc(1024);
+      char *data = malloc(4096);
 
       if (data == NULL) {
         fclose(fp);
@@ -240,21 +240,21 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       }
 
       while (true) {
-        size_t read = fread(data, 1, 1024, fp);
+        size_t read = fread(data, 1, 4096, fp);
 
         if (read == 0) {
           break;
         }
 
         snprintf(topic, sizeof(topic), "%s/ack/get/%d", storage.device.name, cnt++);
-        esp_mqtt_client_publish(mqtt, topic, data, read, MQTT_QOS_1, false);
+        esp_mqtt_client_publish(mqtt, topic, data, read, MQTT_QOS_0, false);
       }
 
       free(data);
       fclose(fp);
 
       snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
-      esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
+      esp_mqtt_client_publish(mqtt, topic, (char *)&cnt, sizeof(cnt), MQTT_QOS_2, false);
     }
   }
 }

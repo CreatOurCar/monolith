@@ -2,7 +2,7 @@
   defineOptions({name: 'DeviceConfiguration'});
 
   import {ref, onMounted} from 'vue';
-  import {init_mqtt, publish} from '@/service/mqtt';
+  import {init_mqtt, publish, format_size} from '@/service/mqtt';
   import {connection, config, files} from '@/service/state';
 
   import {useConfirm} from "primevue/useconfirm";
@@ -193,7 +193,7 @@
       ToastEventBus.emit('add', {
         severity: 'error',
         summary: 'Delete Failure',
-        detail: 'Device is offline.',
+        detail: 'Device offline.',
         group: 'br',
         life: 5000
       });
@@ -221,10 +221,24 @@
     });
   }
 
-  function format_size(size) {
-    if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + " MB"
-    if (size >= 1024) return (size / 1024).toFixed(2) + " KB"
-    return size + " B"
+  function download_file(name, size, index) {
+    if (connection.device.value !== 'Online') {
+      ToastEventBus.emit('add', {
+        severity: 'error',
+        summary: 'Download Failure',
+        detail: 'Device offline.',
+        group: 'br',
+        life: 5000
+      });
+      return;
+    }
+
+    files.loading.download = index;
+    files.download.name = name;
+    files.download.size = size;
+    files.download.progress = 0;
+    files.disabled = true;
+    publish(`cmd/get/${name}`, '!', 1);
   }
 </script>
 
@@ -417,7 +431,7 @@
                   <div class="text-sm truncate">{{ item.name }}</div>
                   <div class="text-xs text-gray-500 mt-1">{{ format_size(item.size) }}</div>
                 </div>
-                <Button icon="pi pi-download" class="mx-1" @click="download_file(item.name, index)"
+                <Button icon="pi pi-download" class="mx-1" @click="download_file(item.name, item.size, index)"
                   :loading="files.loading.download === index" :disabled="files.disabled" />
                 <Button icon="pi pi-trash" severity="danger" class="mx-1" @click="delete_file(item.name, index)"
                   :loading="files.loading.del === index" :disabled="files.disabled" />
@@ -426,6 +440,13 @@
           </template>
         </DataView>
       </div>
+
+      <Dialog v-model:visible="files.loading.download" modal header="Downloading..." :closable="false" :style="{ width: '25rem' }">
+        <div class="flex flex-col items-center">
+          <div class="mb-4">{{ files.download.name }}</div>
+          <ProgressBar :value="files.download.progress" style="width: 100%" />
+        </div>
+      </Dialog>
     </div>
   </Fluid>
 </template>
@@ -433,5 +454,9 @@
 <style>
   .p-confirmdialog-message {
     line-height: 1.5;
+  }
+
+  .p-progressbar-value {
+    transition: width 0.1s ease-in-out!important;
   }
 </style>
