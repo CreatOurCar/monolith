@@ -125,6 +125,9 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       log_t log;
       strncpy(log.payload.user_event.msg, evt->data, sizeof(log.payload.user_event.msg));
       LOG(LOG_TYPE_USER_EVENT, &log);
+
+      snprintf(topic, sizeof(topic), "%s/ack/evt", storage.device.name);
+      esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
     }
 
     else if (STREQL(dir[2], "can")) {  // transmit CAN message

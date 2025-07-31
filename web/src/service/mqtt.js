@@ -161,6 +161,13 @@ export function init_mqtt() {
         break;
       }
 
+      case 'ack/evt': {
+        if (message.toString() === 'ok') {
+          ToastEventBus.emit('add', { severity: 'success', summary: 'Event Saved', group: 'br', life: 3000 });
+        }
+        break;
+      }
+
       case 'ack/ls': {
         if (!files.loading.list) {
           return;

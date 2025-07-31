@@ -21,6 +21,11 @@
 
   function send_usrevt() {
     cons.usrevt = cons.usrevt.replace(/[^\x20-\x7E]/g, '').trim().slice(0, 16);
+
+    if (cons.usrevt.length === 0) {
+      cons.usrevt = 'USREVT';
+    }
+
     publish('cmd/evt', cons.usrevt, 1);
   }
 
