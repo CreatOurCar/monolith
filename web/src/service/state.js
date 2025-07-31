@@ -1,16 +1,8 @@
 import { reactive } from "vue";
 
 export const connection = reactive({
-  server:
-    {
-      value: 'Uninitialized',
-      severity: 'danger',
-    },
-  device:
-    {
-      value: 'Offline',
-      severity: 'danger',
-    },
+  server: { value: 'Uninitialized', severity: 'danger' },
+  device: { value: 'Offline', severity: 'danger' },
   status: 'text-gray-500',
 });
 
@@ -47,6 +39,23 @@ export const config = reactive({
   disabled: false,
 });
 
+export const files = reactive({
+  buf: [],
+  list: [],
+  loading: {
+    list: false,
+    del: false,
+    download: false,
+  },
+  disabled: false,
+  download: {
+    name: "",
+    buf: [],
+    progress: 0,
+    size: 0,
+  }
+});
+
 export const state = reactive([
   { name: '', text: 'UNKNOWN', status: "secondary" }, // hide core state
   { name: 'NVS', text: 'UNKNOWN', status: "secondary" },
@@ -69,42 +78,50 @@ export const times = reactive({
 
 export const cons = reactive({
   usrevt: "",
-  can: {
-    id: "",
-    data: Array.from({ length: 8 }, () => ""),
-  },
+  can: { id: "", data: Array.from({ length: 8 }, () => "") },
 });
 
-export const inputs = reactive({
+export const views = reactive({
   digital: {
-    din1: { name: 'DIN1', value: false },
-    din2: { name: 'DIN2', value: false },
-    din3: { name: 'DIN3', value: false },
-    din4: { name: 'DIN4', value: false },
+    display: {
+      telemetry: true,
+      viewer: true,
+    },
+    ch: {
+      din1: { name: 'DIN1', value: false },
+      din2: { name: 'DIN2', value: false },
+      din3: { name: 'DIN3', value: false },
+      din4: { name: 'DIN4', value: false },
+    }
   },
   analog: {
-    ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1 },
-    ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1 },
-    ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1 },
-    ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1 },
-    ain5: { name: 'AIN5', value: 0, divider: false, multiplier: 1 },
-    ain6: { name: 'AIN6', value: 0, divider: false, multiplier: 1 },
+    display: {
+      telemetry: "both",
+      viewer: "both",
+    },
+    ch: {
+      ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1 },
+      ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1 },
+      ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1 },
+      ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1 },
+      ain5: { name: 'AIN5', value: 0, divider: false, multiplier: 1 },
+      ain6: { name: 'AIN6', value: 0, divider: false, multiplier: 1 },
+    }
   },
-});
-
-export const files = reactive({
-  buf: [],
-  list: [],
-  loading: {
-    list: false,
-    del: false,
-    download: false,
+  gyro: {
+    display: {
+      telemetry: "both",
+      viewer: "both",
+    },
   },
-  disabled: false,
-  download: {
-    name: "",
-    buf: [],
-    progress: 0,
-    size: 0,
+  gps: {
+    display: {
+      telemetry: "both",
+      viewer: true,
+    },
+  },
+  can: {
+    // TODO:
   }
 });
+

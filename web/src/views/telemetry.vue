@@ -4,7 +4,7 @@
   import {ref, onMounted} from 'vue';
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
-  import {state, times, cons, inputs} from '@/service/state';
+  import {state, times, cons, views} from '@/service/state';
 
   import "@xterm/addon-fit";
   import "@xterm/xterm/css/xterm.css";
@@ -49,11 +49,11 @@
 <template>
   <div class="grid grid-cols-12 gap-8">
     <div class="col-span-full lg:col-span-12">
-      <div class="card">
+      <div v-if="views.digital.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">Digital</div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          <template v-for="item in inputs.digital" :key="item.name">
+          <template v-for="item in views.digital.ch" :key="item.name">
             <div v-if="item.name" class="flex items-center">
               <span class="w-20">{{ item.name }}</span>
               <Tag :value="item.value ? 'HIGH' : 'LOW'" :severity="item.value ? 'info' : 'secondary'" />
@@ -63,15 +63,15 @@
 
       </div>
 
-      <div class="card">
+      <div v-if="views.analog.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">Analog</div>
       </div>
 
-      <div class="card">
+      <div v-if="views.gyro.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">Gyroscope</div>
       </div>
 
-      <div class="card">
+      <div v-if="views.gps.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">GPS</div>
       </div>
 
