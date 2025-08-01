@@ -9,6 +9,8 @@
 
 extern struct timeval boot;
 
+char logpath[64];
+
 /*******************************************************************************
  * save log queue to SD card every 1000 ms
  ******************************************************************************/
@@ -74,8 +76,6 @@ void sdcard_init(void) {
   }
 
   // set log file
-  char logpath[64];
-
   setenv("TZ", storage.device.tz, 1);
   tzset();
 

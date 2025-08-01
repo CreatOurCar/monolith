@@ -202,12 +202,12 @@
       </div>
 
       <div v-if="views.analog.display.telemetry" class="card">
-        <div class="font-semibold text-xl mb-6">Analog</div>
+        <div class="font-semibold text-xl mb-4">Analog</div>
         <div class="chart" :ref="container.analog"></div>
       </div>
 
       <div v-if="views.gyro.display.telemetry" class="card">
-        <div class="font-semibold text-xl mb-6">Gyroscope</div>
+        <div class="font-semibold text-xl mb-4">Gyroscope</div>
         <div class="chart" :ref="container.gyro"></div>
       </div>
 

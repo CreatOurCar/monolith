@@ -7,6 +7,7 @@
 log_buf_t logbuf;
 esp_mqtt_client_handle_t mqtt = NULL;
 
+extern char logpath[64];
 extern struct timeval boot;
 extern const uint8_t isrgrootx1_pem_start[] asm("_binary_isrgrootx1_pem_start");
 
@@ -147,7 +148,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       struct dirent *entry;
 
       while ((entry = readdir(d)) != NULL) {
-        if (entry->d_type != DT_REG) {
+        if (entry->d_type != DT_REG || strcmp(entry->d_name, &logpath[__builtin_strlen("/sdcard/")]) == 0) {
           continue;
         }
 
@@ -187,7 +188,7 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
         struct dirent *entry;
 
         while ((entry = readdir(d)) != NULL) {
-          if (entry->d_type != DT_REG) {
+          if (entry->d_type != DT_REG || strcmp(entry->d_name, &logpath[__builtin_strlen("/sdcard/")]) == 0) {
             continue;
           }
 

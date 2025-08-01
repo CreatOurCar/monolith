@@ -412,15 +412,17 @@
     <div class="w-full mt-8">
       <div class="card flex flex-col gap-4">
         <div class="font-semibold text-xl">Data Downloader</div>
-        <div class="flex gap-4 mt-4">
+        <div class="flex gap-4 mt-2">
           <Button label="Load List" icon="pi pi-list" :fluid="false" class="flex-1 md:flex-none"
             :loading="files.loading.list" :disabled="files.disabled" @click="list_files" />
           <Button label="Delete All" icon="pi pi-eraser" severity="danger" :fluid="false" class="flex-1 md:flex-none"
             :loading="files.loading.del === -1" :disabled="files.disabled" @click="delete_file('all', -1)" />
         </div>
-        <DataView :value="files.list" class="mt-4">
+        <DataView :value="files.list" class="mt-2">
           <template #empty>
-            <div class="p-4 text-center text-gray-400">Click Load List to see the files list.</div>
+            <div class="p-4 text-center text-gray-400">
+              Load the file list to see available files.<br>The current session won't be listed or deleted.
+            </div>
           </template>
           <template #list="slotProps">
             <div class="flex flex-col">
@@ -441,7 +443,8 @@
         </DataView>
       </div>
 
-      <Dialog v-model:visible="files.loading.download" modal header="Downloading..." :closable="false" :style="{ width: '25rem' }">
+      <Dialog v-model:visible="files.loading.download" modal header="Downloading..." :closable="false"
+        :style="{ width: '25rem' }">
         <div class="flex flex-col items-center">
           <div class="mb-4">{{ files.download.name }}</div>
           <ProgressBar :value="files.download.progress" style="width: 100%" />
@@ -457,6 +460,6 @@
   }
 
   .p-progressbar-value {
-    transition: width 0.1s ease-in-out!important;
+    transition: width 0.1s ease-in-out !important;
   }
 </style>
