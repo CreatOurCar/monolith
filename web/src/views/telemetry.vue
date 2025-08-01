@@ -127,14 +127,14 @@
       },
       series: [
         {value: data_time_value},
-        {label: views.analog.ch.ain1.name, stroke: colors[0], value: data_volt_value, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain2.name, stroke: colors[1], value: data_volt_value, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain3.name, stroke: colors[2], value: data_volt_value, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain4.name, stroke: colors[3], value: data_volt_value, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain5.name, stroke: colors[4], value: data_volt_value, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain6.name, stroke: colors[5], value: data_volt_value, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.volt.name, stroke: colors[6], value: data_volt_value, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.temp.name, stroke: colors[7], value: data_temp_value, pxAlign: 0, scale: 'temp', show: false},
+        {label: views.analog.ch.ain1.name, stroke: colors[0], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain2.name, stroke: colors[1], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain3.name, stroke: colors[2], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain4.name, stroke: colors[3], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain5.name, stroke: colors[4], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain6.name, stroke: colors[5], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.volt.name, stroke: colors[6], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.temp.name, stroke: colors[7], value: data_temp_value, points: {show: false}, pxAlign: 0, scale: 'temp', show: false},
       ],
       axes: [
         {
@@ -184,12 +184,12 @@
       },
       series: [
         {value: data_time_value},
-        {label: "Ax", stroke: colors[0], value: data_accel_value, pxAlign: 0, scale: 'accel'},
-        {label: "Ay", stroke: colors[1], value: data_accel_value, pxAlign: 0, scale: 'accel'},
-        {label: "Az", stroke: colors[2], value: data_accel_value, pxAlign: 0, scale: 'accel'},
-        {label: "Gx", stroke: colors[3], value: data_gyro_value, pxAlign: 0, scale: 'gyro'},
-        {label: "Gy", stroke: colors[4], value: data_gyro_value, pxAlign: 0, scale: 'gyro'},
-        {label: "Gz", stroke: colors[5], value: data_gyro_value, pxAlign: 0, scale: 'gyro'},
+        {label: "Ax", stroke: colors[0], value: data_accel_value, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Ay", stroke: colors[1], value: data_accel_value, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Az", stroke: colors[2], value: data_accel_value, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Gx", stroke: colors[3], value: data_gyro_value, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {label: "Gy", stroke: colors[4], value: data_gyro_value, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {label: "Gz", stroke: colors[5], value: data_gyro_value, points: {show: false}, pxAlign: 0, scale: 'gyro'},
       ],
       axes: [
         {
