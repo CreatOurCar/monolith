@@ -2,6 +2,7 @@
   defineOptions({name: 'Telemetry'});
 
   import {ref, onMounted} from 'vue';
+  import {dark} from '@/layout/composables/layout';
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
   import {state, times, cons, views, telemetry} from '@/service/state';
@@ -104,8 +105,19 @@
         {label: views.analog.ch.temp.name, stroke: colors[7], value: data_temp_value, pxAlign: 0},
       ],
       axes: [
-        {values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')), size: 35},
-        {size: 40},
+        {
+          size: 35,
+          values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        },
+        {
+          size: 40,
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        },
       ],
     }, telemetry.analog, container.analog.value);
 
@@ -123,8 +135,19 @@
         {label: "Gz", stroke: colors[5], value: data_gyro_value, pxAlign: 0},
       ],
       axes: [
-        {values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')), size: 35},
-        {size: 40},
+        {
+          size: 35,
+          values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        },
+        {
+          size: 40,
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        },
       ],
     }, telemetry.gyro, container.gyro.value);
 

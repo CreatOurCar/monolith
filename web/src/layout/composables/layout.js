@@ -1,4 +1,5 @@
-import { computed, reactive } from 'vue';
+import { ref, computed, reactive } from 'vue';
+import { telemetry } from '@/service/state';
 
 const layoutConfig = reactive({
   preset: 'Aura',
@@ -18,6 +19,8 @@ const layoutState = reactive({
   activeMenuItem: null
 });
 
+export const dark = ref(layoutConfig.darkTheme);
+
 export function useLayout() {
   const setActiveMenuItem = (item) => {
     layoutState.activeMenuItem = item.value || item;
@@ -36,6 +39,13 @@ export function useLayout() {
   const executeDarkModeToggle = () => {
     layoutConfig.darkTheme = !layoutConfig.darkTheme;
     localStorage.setItem('dark', layoutConfig.darkTheme);
+
+    dark.value = layoutConfig.darkTheme;
+
+    Object.entries(telemetry.chart).forEach(e => {
+      telemetry.chart[e[0]].redraw(false);
+    });
+
     document.documentElement.classList.toggle('app-dark');
   };
 
