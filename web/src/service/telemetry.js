@@ -24,27 +24,11 @@ export function update_telemetry(data) {
     });
   }
 
-  if (data.gps) {
-
-  }
-
-  if (data.gyro) {
-    telemetry.gyro[0].push(times.boot.raw + data.gyro.timestamp / 1000);
-    telemetry.gyro[1].push(accel_to_g(data.gyro.gyro.accel_x));
-    telemetry.gyro[2].push(accel_to_g(data.gyro.gyro.accel_y));
-    telemetry.gyro[3].push(accel_to_g(data.gyro.gyro.accel_z));
-    // telemetry.gyro[4].push(data.gyro.gyro.temperature);
-    telemetry.gyro[4].push(gyro_to_dps(data.gyro.gyro.gyro_x));
-    telemetry.gyro[5].push(gyro_to_dps(data.gyro.gyro.gyro_y));
-    telemetry.gyro[6].push(gyro_to_dps(data.gyro.gyro.gyro_z));
-
-    if (telemetry.chart.gyro) {
-      telemetry.chart.gyro.setData(telemetry.gyro);
-      telemetry.chart.gyro.setScale('x', {
-        min: new Date().getTime() / 1000 - 60,
-        max: new Date().getTime() / 1000
-      });
-    }
+  if (data.digital) {
+    views.digital.ch.din1.value = data.digital.digital.din1;
+    views.digital.ch.din2.value = data.digital.digital.din2;
+    views.digital.ch.din3.value = data.digital.digital.din3;
+    views.digital.ch.din4.value = data.digital.digital.din4;
   }
 
   if (data.analog) {
@@ -67,10 +51,29 @@ export function update_telemetry(data) {
     }
   }
 
-  if (data.digital) {
+  if (data.gyro) {
+    telemetry.gyro[0].push(times.boot.raw + data.gyro.timestamp / 1000);
+    telemetry.gyro[1].push(accel_to_g(data.gyro.gyro.accel_x));
+    telemetry.gyro[2].push(accel_to_g(data.gyro.gyro.accel_y));
+    telemetry.gyro[3].push(accel_to_g(data.gyro.gyro.accel_z));
+    // telemetry.gyro[4].push(data.gyro.gyro.temperature);
+    telemetry.gyro[4].push(gyro_to_dps(data.gyro.gyro.gyro_x));
+    telemetry.gyro[5].push(gyro_to_dps(data.gyro.gyro.gyro_y));
+    telemetry.gyro[6].push(gyro_to_dps(data.gyro.gyro.gyro_z));
 
+    if (telemetry.chart.gyro) {
+      telemetry.chart.gyro.setData(telemetry.gyro);
+      telemetry.chart.gyro.setScale('x', {
+        min: new Date().getTime() / 1000 - 60,
+        max: new Date().getTime() / 1000
+      });
+    }
   }
 
+
+  if (data.gps) {
+
+  }
 }
 
 function adc_to_v(value) {
