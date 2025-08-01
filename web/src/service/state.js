@@ -106,8 +106,8 @@ export const views = reactive({
       ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1 },
       ain5: { name: 'AIN5', value: 0, multiplier: 1 },
       ain6: { name: 'AIN6', value: 0, multiplier: 1 },
-      volt: { name: 'Power', value: 0, multiplier: 15430 / 430 },
-      temp: { name: 'Temp', value: 0, multiplier: 0.01 },
+      volt: { name: 'PWR', value: 0, multiplier: 15430 / 430 },
+      temp: { name: 'TEMP', value: 0, multiplier: 0.01 },
     }
   },
   gyro: {

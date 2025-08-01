@@ -58,13 +58,13 @@
     gyro: ref(null),
   };
 
-  const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#bcbd22", "#17becf"];
+  const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#17becf"];
 
   function init_chart() {
     telemetry.chart.analog = new uPlot({
       width: 600, height: 400,
-      scales: {y: {auto: true}},
       pxAlign: 0, pxSnap: false,
+      scales: {y: {auto: true}},
       series: [
         {value: data_time_value},
         {label: views.analog.ch.ain1.name, stroke: colors[0], value: data_volt_value, pxAlign: 0},
@@ -76,13 +76,16 @@
         {label: views.analog.ch.volt.name, stroke: colors[6], value: data_volt_value, pxAlign: 0},
         {label: views.analog.ch.temp.name, stroke: colors[7], value: data_temp_value, pxAlign: 0},
       ],
-      axes: [{values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss'))}],
+      axes: [
+        {values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')), size: 35},
+        {size: 40},
+      ],
     }, telemetry.analog, container.analog.value);
 
     telemetry.chart.gyro = new uPlot({
       width: 600, height: 400,
-      scales: {y: {auto: true}},
       pxAlign: 0, pxSnap: false,
+      scales: {y: {auto: true}},
       series: [
         {value: data_time_value},
         {label: "Ax", stroke: colors[0], value: data_accel_value, pxAlign: 0},
@@ -92,7 +95,10 @@
         {label: "Gy", stroke: colors[4], value: data_gyro_value, pxAlign: 0},
         {label: "Gz", stroke: colors[5], value: data_gyro_value, pxAlign: 0},
       ],
-      axes: [{values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss'))}],
+      axes: [
+        {values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')), size: 35},
+        {size: 40},
+      ],
     }, telemetry.gyro, container.gyro.value);
 
     setInterval(() => {
@@ -280,5 +286,38 @@
   .can_data {
     font-size: 0.9rem !important;
     height: 2.25rem;
+  }
+
+  .u-legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  }
+
+  .u-legend table,
+  .u-legend tbody {
+    display: contents;
+  }
+
+  .u-legend tr.u-series {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  .u-legend .u-series:first-child .u-marker {
+    display: none;
+  }
+
+  .u-legend tr.u-series:first-child {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
+  .u-series td,
+  .u-series th {
+    padding: 4px 2px;
   }
 </style>
