@@ -96,8 +96,8 @@ export const views = reactive({
   },
   analog: {
     display: {
-      telemetry: "both",
-      viewer: "both",
+      telemetry: true,
+      viewer: true,
     },
     ch: {
       ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1 },
@@ -112,13 +112,13 @@ export const views = reactive({
   },
   gyro: {
     display: {
-      telemetry: "both",
-      viewer: "both",
+      telemetry: true,
+      viewer: true,
     },
   },
   gps: {
     display: {
-      telemetry: "both",
+      telemetry: true,
       viewer: true,
     },
   },
@@ -130,6 +130,6 @@ export const views = reactive({
 
 export const telemetry = reactive({
   chart: {},
-  digital: [ [], [], [], [], [] ],
   analog: [ [], [], [], [], [], [], [], [], [] ],
+  gyro: [ [], [], [], [], [], [], [] ],
 });

@@ -55,6 +55,7 @@
   const container = {
     state: ref(null),
     analog: ref(null),
+    gyro: ref(null),
   };
 
   const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#bcbd22", "#17becf"];
@@ -75,10 +76,24 @@
         {label: views.analog.ch.volt.name, stroke: colors[6], value: data_volt_value, pxAlign: 0},
         {label: views.analog.ch.temp.name, stroke: colors[7], value: data_temp_value, pxAlign: 0},
       ],
-      axes: [
-        {values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss'))},
-      ]
+      axes: [{values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss'))}],
     }, telemetry.analog, container.analog.value);
+
+    telemetry.chart.gyro = new uPlot({
+      width: 600, height: 400,
+      scales: {y: {auto: true}},
+      pxAlign: 0, pxSnap: false,
+      series: [
+        {value: data_time_value},
+        {label: "Ax", stroke: colors[0], value: data_accel_value, pxAlign: 0},
+        {label: "Ay", stroke: colors[1], value: data_accel_value, pxAlign: 0},
+        {label: "Az", stroke: colors[2], value: data_accel_value, pxAlign: 0},
+        {label: "Gx", stroke: colors[3], value: data_gyro_value, pxAlign: 0},
+        {label: "Gy", stroke: colors[4], value: data_gyro_value, pxAlign: 0},
+        {label: "Gz", stroke: colors[5], value: data_gyro_value, pxAlign: 0},
+      ],
+      axes: [{values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss'))}],
+    }, telemetry.gyro, container.gyro.value);
 
     setInterval(() => {
       Object.entries(telemetry.chart).forEach(e => {
@@ -135,6 +150,32 @@
 
     return `${v.toFixed(1)} °C`;
   }
+
+  function data_accel_value(u, v, sidx, didx) {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} g`;
+  }
+
+  function data_gyro_value(u, v, sidx, didx) {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} °/s`;
+  }
 </script>
 
 <template>
@@ -161,6 +202,7 @@
 
       <div v-if="views.gyro.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">Gyroscope</div>
+        <div class="chart" :ref="container.gyro"></div>
       </div>
 
       <div v-if="views.gps.display.telemetry" class="card">

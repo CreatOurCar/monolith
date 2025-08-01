@@ -48,7 +48,7 @@ void task_gyroscope(void *pvParameters) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
     if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) == ESP_OK) {
-      logbuf.gyro.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[1] << 8) | rx[1]);
+      logbuf.gyro.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
       logbuf.gyro.payload.gyroscope.accel_y     = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
       logbuf.gyro.payload.gyroscope.accel_z     = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
       logbuf.gyro.payload.gyroscope.temperature = (int16_t)(((uint16_t)rx[6] << 8) | rx[7]);
