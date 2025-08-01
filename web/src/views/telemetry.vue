@@ -53,6 +53,14 @@
     init_chart();
   });
 
+  function geolocation() {
+    if (map) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        map.setCenter(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
+      });
+    }
+  }
+
   function send_usrevt() {
     cons.usrevt = cons.usrevt.replace(/[^\x20-\x7E]/g, '').trim().slice(0, 16);
 
@@ -230,9 +238,13 @@
         <div class="chart" :ref="container.gyro"></div>
       </div>
 
-      <div v-if="views.gps.display.telemetry" class="card">
+      <div v-if="views.gps.display.telemetry" class="card" style="position: relative;">
         <div class="font-semibold text-xl mb-6">GPS</div>
-        <div :ref="container.gps" style="width: 100%; height: 40vh;"></div>
+        <div class="relative">
+          <div :ref="container.gps" style="width: 100%; height: 40vh;"></div>
+          <Button class="!absolute bottom-3 right-3 z-10 h-10" severity="secondary" icon="pi pi-map-marker"
+            @click="geolocation" />
+        </div>
       </div>
 
       <div class="card">
