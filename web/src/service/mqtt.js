@@ -15,7 +15,6 @@ import { connection, config, times, files } from '@/service/state';
 import { parse_cfg, parse_log, parse_logbuf, to_uint } from '@/service/protocol';
 import { update_connection_server, update_connection_device } from '@/service/topbar';
 
-let boot = null;
 let mqtt_client = null;
 let first_auth_fail = true;
 
@@ -77,12 +76,12 @@ export function init_mqtt() {
     switch (topic) {
       case 'd/boot': {
         if (message.toString() === 'OFFLINE') {
-          boot = null;
+          times.boot.raw = null;
           update_connection_device(false);
           ToastEventBus.emit('add', { severity: 'error', summary: 'Device Offline', group: 'br', life: 5000 });
         } else {
-          boot = to_uint(32, message, 0);
-          times.boot.value = dayjs(boot * 1000).format("YYYY-MM-DD HH:mm:ss");
+          times.boot.raw = to_uint(32, message, 0);
+          times.boot.value = dayjs(times.boot.raw * 1000).format("YYYY-MM-DD HH:mm:ss");
           update_connection_device(true);
         }
         break;
@@ -114,7 +113,7 @@ export function init_mqtt() {
       case 'd/sl': {
         try {
           const log = parse_log(message);
-          term.write(`[${dayjs(boot * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
+          term.write(`[${dayjs(times.boot.raw * 1000 + log.timestamp).format("HH:mm:ss.SSS")}] ${log.sys.msg}\n`);
         } catch (e) {
           console.error(e, message);
         }
@@ -123,7 +122,7 @@ export function init_mqtt() {
 
       case 'd': {
         const logbuf = parse_logbuf(message);
-        times.current.value = dayjs(boot * 1000 + logbuf.timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");
+        times.current.value = dayjs(times.boot.raw * 1000 + logbuf.timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");
 
         const d = dayjs.duration(logbuf.timestamp);
         const hours = Math.floor(d.asHours());

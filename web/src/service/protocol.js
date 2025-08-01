@@ -350,7 +350,7 @@ export function to_int(bit, buffer, start) {
   return signed(to_uint(bit, buffer, start), bit);
 }
 
-function signed(value, bit) {
+export function signed(value, bit) {
   return (value > Math.pow(2, bit - 1) - 1) ? value - Math.pow(2, bit) : value;
 }
 

@@ -71,7 +71,7 @@ export const state = reactive([
 ]);
 
 export const times = reactive({
-  boot: { label: "Boot", value: "N/A" },
+  boot: { label: "Boot", value: "N/A", raw: null },
   current: { label: "Current", value: "N/A" },
   uptime: { label: "Uptime", value: "N/A" },
 });
@@ -104,8 +104,10 @@ export const views = reactive({
       ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1 },
       ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1 },
       ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1 },
-      ain5: { name: 'AIN5', value: 0, divider: false, multiplier: 1 },
-      ain6: { name: 'AIN6', value: 0, divider: false, multiplier: 1 },
+      ain5: { name: 'AIN5', value: 0, multiplier: 1 },
+      ain6: { name: 'AIN6', value: 0, multiplier: 1 },
+      volt: { name: 'Power', value: 0, multiplier: 15430 / 430 },
+      temp: { name: 'Temp', value: 0, multiplier: 0.01 },
     }
   },
   gyro: {
@@ -125,3 +127,9 @@ export const views = reactive({
   }
 });
 
+
+export const telemetry = reactive({
+  chart: {},
+  digital: [ [], [], [], [], [] ],
+  analog: [ [], [], [], [], [], [], [], [], [] ],
+});

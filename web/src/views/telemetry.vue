@@ -4,10 +4,15 @@
   import {ref, onMounted} from 'vue';
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
-  import {state, times, cons, views} from '@/service/state';
+  import {state, times, cons, views, telemetry} from '@/service/state';
+
+  import uPlot from 'uplot';
+  import 'uplot/dist/uPlot.min.css';
 
   import "@xterm/addon-fit";
   import "@xterm/xterm/css/xterm.css";
+
+  import dayjs from 'dayjs/esm';
 
   const terminal = ref(null);
 
@@ -17,6 +22,8 @@
     term.open(terminal.value);
     fit.fit();
     window.addEventListener('resize', () => fit.fit());
+
+    init_chart();
   });
 
   function send_usrevt() {
@@ -44,6 +51,90 @@
       event.target.value = event.target.value.replace(/[^0-9A-Fa-fx]/g, '');
     }
   }
+
+  const container = {
+    state: ref(null),
+    analog: ref(null),
+  };
+
+  const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#bcbd22", "#17becf"];
+
+  function init_chart() {
+    telemetry.chart.analog = new uPlot({
+      width: 600, height: 400,
+      scales: {y: {auto: true}},
+      pxAlign: 0, pxSnap: false,
+      series: [
+        {value: data_time_value},
+        {label: views.analog.ch.ain1.name, stroke: colors[0], value: data_volt_value, pxAlign: 0},
+        {label: views.analog.ch.ain2.name, stroke: colors[1], value: data_volt_value, pxAlign: 0},
+        {label: views.analog.ch.ain3.name, stroke: colors[2], value: data_volt_value, pxAlign: 0},
+        {label: views.analog.ch.ain4.name, stroke: colors[3], value: data_volt_value, pxAlign: 0},
+        {label: views.analog.ch.ain5.name, stroke: colors[4], value: data_volt_value, pxAlign: 0},
+        {label: views.analog.ch.ain6.name, stroke: colors[5], value: data_volt_value, pxAlign: 0},
+        {label: views.analog.ch.volt.name, stroke: colors[6], value: data_volt_value, pxAlign: 0},
+        {label: views.analog.ch.temp.name, stroke: colors[7], value: data_temp_value, pxAlign: 0},
+      ],
+      axes: [
+        {values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss'))},
+      ]
+    }, telemetry.analog, container.analog.value);
+
+    setInterval(() => {
+      Object.entries(telemetry.chart).forEach(e => {
+        telemetry.chart[e[0]].setScale('x', {
+          min: new Date().getTime() / 1000 - 60,
+          max: new Date().getTime() / 1000
+        });
+      });
+    }, 100);
+
+    new ResizeObserver(entries => {
+      for (let entry of entries) {
+        Object.entries(telemetry.chart).forEach(e => {
+          telemetry.chart[e[0]].setSize({
+            width: entry.contentRect.width,
+            height: entry.contentRect.width * 0.6
+          });
+        });
+      }
+    }).observe(container.state.value);
+  }
+
+  function data_time_value(u, v, sidx, didx) {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+    v = dayjs(v * 1000).format('HH:mm:ss.SSS');
+    return v;
+  }
+
+  function data_volt_value(u, v, sidx, didx) {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} V`;
+  }
+
+  function data_temp_value(u, v, sidx, didx) {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} °C`;
+  }
 </script>
 
 <template>
@@ -65,6 +156,7 @@
 
       <div v-if="views.analog.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">Analog</div>
+        <div class="chart" :ref="container.analog"></div>
       </div>
 
       <div v-if="views.gyro.display.telemetry" class="card">
@@ -99,7 +191,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" :ref="container.state">
         <div class="font-semibold text-xl mb-6">System State</div>
         <div v-for="(tag, key) in times" :key="key" class="flex items-center mb-6">
           <span class="w-24 font-medium">{{ tag.label }}</span>

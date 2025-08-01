@@ -12,7 +12,7 @@
 #define MUX_AIN3 (0b111 << 4)
 #define ADS1115_OS (1 << 7)
 
-#define ADS1115_CONFIG_H 0x05  // +-2.048V FSR, single-shot mode
+#define ADS1115_CONFIG_H 0x03  // +-4.096V FSR, single-shot mode
 #define ADS1115_CONFIG_L 0xE3  // 860SPS (1.16ms per conversion)
 #define ADS1115_CONFIG(channel) (ADS1115_CONFIG_H | ADS1115_OS | channel)
 
