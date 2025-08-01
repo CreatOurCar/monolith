@@ -14,7 +14,16 @@
 
   import dayjs from 'dayjs/esm';
 
+  let map = ref(null);
   const terminal = ref(null);
+  const container = {
+    state: ref(null),
+    analog: ref(null),
+    gyro: ref(null),
+    gps: ref(null),
+  };
+
+  const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#17becf"];
 
   onMounted(() => {
     const fit = new FitAddon.FitAddon();
@@ -22,6 +31,24 @@
     term.open(terminal.value);
     fit.fit();
     window.addEventListener('resize', () => fit.fit());
+
+    if (!window.kakao || !window.kakao.maps) {
+      const script = document.createElement("script");
+      script.type = 'text/javascript';
+      script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false";
+      script.onload = () => {
+        window.kakao.maps.load(() => {
+          map = new kakao.maps.Map(container.gps.value, {
+            mapTypeId: kakao.maps.MapTypeId.HYBRID,
+            // center: new kakao.maps.LatLng(37.2829317, 127.0435822),
+            center: new kakao.maps.LatLng(35.2921728, 126.5740566),
+            level: 3
+          });
+          map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
+        });
+      };
+      document.head.appendChild(script);
+    }
 
     init_chart();
   });
@@ -51,14 +78,6 @@
       event.target.value = event.target.value.replace(/[^0-9A-Fa-fx]/g, '');
     }
   }
-
-  const container = {
-    state: ref(null),
-    analog: ref(null),
-    gyro: ref(null),
-  };
-
-  const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#17becf"];
 
   function init_chart() {
     telemetry.chart.analog = new uPlot({
@@ -213,6 +232,7 @@
 
       <div v-if="views.gps.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">GPS</div>
+        <div :ref="container.gps" style="width: 100%; height: 40vh;"></div>
       </div>
 
       <div class="card">
