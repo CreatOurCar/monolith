@@ -224,8 +224,8 @@ static inline int LOG(uint8_t type, log_t *log) {
 
   // set log header
   log->magic     = LOG_MAGIC;
-  log->checksum  = 0;
   log->type      = type;
+  log->checksum  = 0;
   log->timestamp = (uint32_t)(esp_timer_get_time() / 1000);
 
   // calculate checksum

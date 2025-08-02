@@ -91,28 +91,23 @@ void task_analog(void *pvParameters) {
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
+  float temperature;
+  log_t analog;
 
   while (true) {
-    float temperature;
-
-    esp_err_t err = convert(adc1, MUX_AIN0, &logbuf.analog.payload.analog.ain1);
-    err |= convert(adc1, MUX_AIN1, &logbuf.analog.payload.analog.ain2);
-    err |= convert(adc1, MUX_AIN2, &logbuf.analog.payload.analog.ain3);
-    err |= convert(adc1, MUX_AIN3, &logbuf.analog.payload.analog.ain4);
-    err |= convert(adc2, MUX_AIN0, &logbuf.analog.payload.analog.ain5);
-    err |= convert(adc2, MUX_AIN1, &logbuf.analog.payload.analog.ain6);
-    err |= convert(adc2, MUX_AIN2, &logbuf.analog.payload.analog.voltage);
+    esp_err_t err = convert(adc1, MUX_AIN0, &analog.payload.analog.ain1);
+    err |= convert(adc1, MUX_AIN1, &analog.payload.analog.ain2);
+    err |= convert(adc1, MUX_AIN2, &analog.payload.analog.ain3);
+    err |= convert(adc1, MUX_AIN3, &analog.payload.analog.ain4);
+    err |= convert(adc2, MUX_AIN0, &analog.payload.analog.ain5);
+    err |= convert(adc2, MUX_AIN1, &analog.payload.analog.ain6);
+    err |= convert(adc2, MUX_AIN2, &analog.payload.analog.voltage);
     err |= temperature_sensor_get_celsius(sensor, &temperature);
 
     if (err == ESP_OK) {
-      logbuf.analog.payload.analog.temperature = (int16_t)(temperature * 100);
-      LOG(LOG_TYPE_ANALOG, &logbuf.analog);
-
-      INFO(ANALOG, "%d mV, %d mV, %d mV, %d mV, %d mV, %d mV, %d mV, %d C", VOLT(logbuf.analog.payload.analog.ain1),
-        VOLT(logbuf.analog.payload.analog.ain2), VOLT(logbuf.analog.payload.analog.ain3),
-        VOLT(logbuf.analog.payload.analog.ain4), VOLT(logbuf.analog.payload.analog.ain5),
-        VOLT(logbuf.analog.payload.analog.ain6), VOLT(logbuf.analog.payload.analog.voltage),
-        logbuf.analog.payload.analog.temperature / 100);
+      analog.payload.analog.temperature = (int16_t)(temperature * 100);
+      LOG(LOG_TYPE_ANALOG, &analog);
+      memcpy(&logbuf.analog, &analog, sizeof(log_t));
     } else {
       ERROR_SYSLOG(&logbuf.run, ANALOG, "ADC read failure", "ADC_READ_FAIL");
     }
