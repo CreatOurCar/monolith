@@ -1,4 +1,5 @@
 import { reactive } from "vue";
+import dayjs from 'dayjs/esm';
 
 export const connection = reactive({
   server: { value: 'Uninitialized', severity: 'danger' },
@@ -83,10 +84,7 @@ export const cons = reactive({
 
 export const views = reactive({
   digital: {
-    display: {
-      telemetry: true,
-      viewer: true,
-    },
+    display: true,
     ch: {
       din1: { name: 'DIN1', value: false },
       din2: { name: 'DIN2', value: false },
@@ -95,10 +93,7 @@ export const views = reactive({
     }
   },
   analog: {
-    display: {
-      telemetry: true,
-      viewer: true,
-    },
+    display: true,
     ch: {
       ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1 },
       ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1 },
@@ -110,18 +105,8 @@ export const views = reactive({
       temp: { name: 'TEMP', value: 0, multiplier: 0.01 },
     }
   },
-  gyro: {
-    display: {
-      telemetry: true,
-      viewer: true,
-    },
-  },
-  gps: {
-    display: {
-      telemetry: true,
-      viewer: true,
-    },
-  },
+  gyro: { display: true },
+  gps: { display: true },
   can: {
     // TODO:
   }
@@ -130,6 +115,93 @@ export const views = reactive({
 
 export const telemetry = reactive({
   chart: {},
-  analog: [ [], [], [], [], [], [], [], [], [] ],
-  gyro: [ [], [], [], [], [], [], [] ],
+  analog: [[], [], [], [], [], [], [], [], []],
+  gyro: [[], [], [], [], [], [], []],
 });
+
+export const fmt = {
+  time: (u, v, sidx, didx) => {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    return dayjs(v * 1000).format('HH:mm:ss.SSS');
+  },
+  state: (u, v, sidx, didx) => {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    switch (v) {
+      case 0: return 'OK';
+      case 1: return 'ERROR';
+      case 2: return 'FATAL';
+      default: return 'N/A';
+    }
+  },
+  digital: (u, v, sidx, didx) => {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    switch (v) {
+      case 0: return 'LOW';
+      case 1: return 'HIGH';
+      default: return 'N/A';
+    }
+  },
+
+  volt: (u, v, sidx, didx) => {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} V`;
+  },
+  temp: (u, v, sidx, didx) => {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} °C`;
+  },
+
+  accel: (u, v, sidx, didx) => {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} g`;
+  },
+
+  gyro: (u, v, sidx, didx) => {
+    if (didx == null) {
+      let d = u.data[sidx];
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v)) {
+      return 'N/A';
+    }
+
+    return `${v.toFixed(1)} °/s`;
+  }
+}

@@ -5,7 +5,7 @@
   import {dark} from '@/layout/composables/layout';
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
-  import {state, times, cons, views, telemetry} from '@/service/state';
+  import {state, times, cons, views, telemetry, fmt} from '@/service/state';
 
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
@@ -126,15 +126,15 @@
         }
       },
       series: [
-        {value: data_time_value},
-        {label: views.analog.ch.ain1.name, stroke: colors[0], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain2.name, stroke: colors[1], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain3.name, stroke: colors[2], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain4.name, stroke: colors[3], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain5.name, stroke: colors[4], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain6.name, stroke: colors[5], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.volt.name, stroke: colors[6], value: data_volt_value, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.temp.name, stroke: colors[7], value: data_temp_value, points: {show: false}, pxAlign: 0, scale: 'temp', show: false},
+        {value: fmt.time},
+        {label: views.analog.ch.ain1.name, stroke: colors[0], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain2.name, stroke: colors[1], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain3.name, stroke: colors[2], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain4.name, stroke: colors[3], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain5.name, stroke: colors[4], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.ain6.name, stroke: colors[5], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.volt.name, stroke: colors[6], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
+        {label: views.analog.ch.temp.name, stroke: colors[7], value: fmt.temp, points: {show: false}, pxAlign: 0, scale: 'temp', show: false},
       ],
       axes: [
         {
@@ -160,7 +160,8 @@
           values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}°C`),
           splits: () => axis.temp.splits,
           stroke: () => dark.value ? '#fff' : '#000',
-          grid: {show: false}
+          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
         },
       ],
     }, telemetry.analog, container.analog.value);
@@ -183,13 +184,13 @@
         }
       },
       series: [
-        {value: data_time_value},
-        {label: "Ax", stroke: colors[0], value: data_accel_value, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Ay", stroke: colors[1], value: data_accel_value, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Az", stroke: colors[2], value: data_accel_value, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Gx", stroke: colors[3], value: data_gyro_value, points: {show: false}, pxAlign: 0, scale: 'gyro'},
-        {label: "Gy", stroke: colors[4], value: data_gyro_value, points: {show: false}, pxAlign: 0, scale: 'gyro'},
-        {label: "Gz", stroke: colors[5], value: data_gyro_value, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {value: fmt.time},
+        {label: "Ax", stroke: colors[0], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Ay", stroke: colors[1], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Az", stroke: colors[2], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Gx", stroke: colors[3], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {label: "Gy", stroke: colors[4], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {label: "Gz", stroke: colors[5], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
       ],
       axes: [
         {
@@ -216,7 +217,7 @@
           splits: () => axis.gyro.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {show: false}
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
         },
       ],
     }, telemetry.gyro, container.gyro.value);
@@ -241,73 +242,28 @@
       }
     }).observe(container.state.value);
   }
-
-  function data_time_value(u, v, sidx, didx) {
-    if (didx == null) {
-      let d = u.data[sidx];
-      v = d[d.length - 1];
-    }
-    v = dayjs(v * 1000).format('HH:mm:ss.SSS');
-    return v;
-  }
-
-  function data_volt_value(u, v, sidx, didx) {
-    if (didx == null) {
-      let d = u.data[sidx];
-      v = d[d.length - 1];
-    }
-
-    if (isNaN(v)) {
-      return 'N/A';
-    }
-
-    return `${v.toFixed(1)} V`;
-  }
-
-  function data_temp_value(u, v, sidx, didx) {
-    if (didx == null) {
-      let d = u.data[sidx];
-      v = d[d.length - 1];
-    }
-
-    if (isNaN(v)) {
-      return 'N/A';
-    }
-
-    return `${v.toFixed(1)} °C`;
-  }
-
-  function data_accel_value(u, v, sidx, didx) {
-    if (didx == null) {
-      let d = u.data[sidx];
-      v = d[d.length - 1];
-    }
-
-    if (isNaN(v)) {
-      return 'N/A';
-    }
-
-    return `${v.toFixed(1)} g`;
-  }
-
-  function data_gyro_value(u, v, sidx, didx) {
-    if (didx == null) {
-      let d = u.data[sidx];
-      v = d[d.length - 1];
-    }
-
-    if (isNaN(v)) {
-      return 'N/A';
-    }
-
-    return `${v.toFixed(1)} °/s`;
-  }
 </script>
 
 <template>
   <div class="grid grid-cols-12 gap-8">
     <div class="col-span-full lg:col-span-12">
-      <div v-if="views.digital.display.telemetry" class="card">
+      <div class="card" :ref="container.state">
+        <div class="font-semibold text-xl mb-6">System State</div>
+        <div v-for="(tag, key) in times" :key="key" class="flex items-center mb-6">
+          <span class="w-24 font-medium">{{ tag.label }}</span>
+          <Tag :value="tag.value" severity="info" class="timetag" />
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-sm">
+          <template v-for="item in state" :key="item.name">
+            <div v-if="item.name" class="flex items-center">
+              <span class="w-16">{{ item.name }}</span>
+              <Tag :value="item.text" :severity="item.status" class="ml-2 state" />
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div v-if="views.digital.display" class="card">
         <div class="font-semibold text-xl mb-6">Digital</div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -321,17 +277,17 @@
 
       </div>
 
-      <div v-if="views.analog.display.telemetry" class="card">
+      <div v-if="views.analog.display" class="card">
         <div class="font-semibold text-xl mb-4">Analog</div>
         <div class="chart" :ref="container.analog"></div>
       </div>
 
-      <div v-if="views.gyro.display.telemetry" class="card">
+      <div v-if="views.gyro.display" class="card">
         <div class="font-semibold text-xl mb-4">Gyroscope</div>
         <div class="chart" :ref="container.gyro"></div>
       </div>
 
-      <div v-if="views.gps.display.telemetry" class="card" style="position: relative;">
+      <div v-if="views.gps.display" class="card" style="position: relative;">
         <div class="font-semibold text-xl mb-6">GPS</div>
         <div class="relative">
           <div :ref="container.gps" style="width: 100%; height: 40vh;"></div>
@@ -364,24 +320,8 @@
         </div>
       </div>
 
-      <div class="card" :ref="container.state">
-        <div class="font-semibold text-xl mb-6">System State</div>
-        <div v-for="(tag, key) in times" :key="key" class="flex items-center mb-6">
-          <span class="w-24 font-medium">{{ tag.label }}</span>
-          <Tag :value="tag.value" severity="info" class="timetag" />
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-sm">
-          <template v-for="item in state" :key="item.name">
-            <div v-if="item.name" class="flex items-center">
-              <span class="w-16">{{ item.name }}</span>
-              <Tag :value="item.text" :severity="item.status" class="ml-2 state" />
-            </div>
-          </template>
-        </div>
-      </div>
-
       <div class="card">
-        <div class="font-semibold text-xl mb-6">System Logs</div>
+        <div class="font-semibold text-xl mb-6">System Events</div>
         <div ref="terminal" class="text-sm"></div>
       </div>
     </div>
@@ -412,10 +352,11 @@
     font-size: 0.9rem !important;
     height: 2.25rem;
   }
-
   .u-legend {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 0.5rem;
   }
 
   .u-legend table,
@@ -425,24 +366,15 @@
 
   .u-legend tr.u-series {
     display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
     align-items: center;
     white-space: nowrap;
     box-sizing: border-box;
-  }
-
-  .u-legend .u-series:first-child .u-marker {
-    display: none;
+    flex: 0 1;
+    margin: 0;
   }
 
   .u-legend tr.u-series:first-child {
-    grid-column: 1 / -1;
+    flex-basis: 100%;
     justify-content: center;
-  }
-
-  .u-series td,
-  .u-series th {
-    padding: 4px 2px;
   }
 </style>
