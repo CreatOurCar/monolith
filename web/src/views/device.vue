@@ -2,8 +2,8 @@
   defineOptions({name: 'DeviceConfiguration'});
 
   import {ref, onMounted} from 'vue';
-  import {init_mqtt, publish, format_size} from '@/service/mqtt';
-  import {connection, config, files} from '@/service/state';
+  import {init_mqtt, publish} from '@/service/mqtt';
+  import {connection, config, files, format_size} from '@/service/state';
 
   import {useConfirm} from "primevue/useconfirm";
   import ToastEventBus from 'primevue/toasteventbus';
@@ -455,7 +455,8 @@
 </template>
 
 <style>
-  .p-confirmdialog-message {
+  .p-confirmdialog-message,
+  .p-dataview-empty-message {
     line-height: 1.5;
   }
 

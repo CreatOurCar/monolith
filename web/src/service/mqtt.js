@@ -11,7 +11,7 @@ import mqtt from 'mqtt';
 
 import { term } from '@/service/terminal';
 import { update_telemetry } from '@/service/telemetry';
-import { connection, config, times, files } from '@/service/state';
+import { connection, config, times, files, format_size } from '@/service/state';
 import { parse_cfg, parse_log, parse_logbuf, to_uint } from '@/service/protocol';
 import { update_connection_server, update_connection_device } from '@/service/topbar';
 
@@ -299,8 +299,3 @@ export function publish(topic, payload, qos) {
   mqtt_client.publish(`${localStorage.getItem('server/name')}/${topic}`, payload, { qos: qos });
 }
 
-export function format_size(size) {
-    if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + " MB"
-    if (size >= 1024) return (size / 1024).toFixed(2) + " KB"
-    return size + " B"
-  }

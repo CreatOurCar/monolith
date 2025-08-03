@@ -1,6 +1,12 @@
 import { reactive } from "vue";
 import dayjs from 'dayjs/esm';
 
+export function format_size(size) {
+  if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + " MB"
+  if (size >= 1024) return (size / 1024).toFixed(2) + " KB"
+  return size + " B"
+}
+
 export const connection = reactive({
   server: { value: 'Uninitialized', severity: 'danger' },
   device: { value: 'Offline', severity: 'danger' },

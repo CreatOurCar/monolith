@@ -117,6 +117,76 @@ const LOGBUF_POS = {
 const STATE = ["CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO"];
 const STATE_COMPONENT_MAX = 12;
 
+export function parse(buf) {
+  const logs = {
+    ok: 0,
+    error: [],
+    data: {},
+    header: null,
+    latest: null,
+  };
+
+  let i = 0;
+  let header = false;
+
+  while (i < buf.length) {
+    let ret;
+    try {
+      ret = parse_log(buf.slice(i, i + LOG_SIZE));
+    } catch (e) {
+      console.error(e);
+      // TODO:
+    }
+
+    if (!header && i === 0 && ret.type !== "BOOT") {
+      logs.error.push(`#${i}: No valid header found`);
+      i += LOG_SIZE;
+      continue;
+    }
+
+    switch (ret.type) {
+      case "BOOT":
+        if (header) {
+          logs.error.push(`#${i}: Multiple headers found`);
+          i += LOG_SIZE;
+          continue;
+        } else if (ret.boot.protocol_version !== PROTOCOL_VERSION) {
+          logs.error.push(`#${i}: Unsupported protocol version ${ret.boot.protocol_version}`);
+          i += LOG_SIZE;
+          continue;
+        } else {
+          header = true;
+          logs.header = ret;
+        }
+        break;
+
+      case "CAN":
+      case "GPS":
+      case "ANALOG":
+      case "DIGITAL":
+      case "GYROSCOPE":
+      case "SYSTEM":
+      case "USER_EVENT":
+        if (logs.data[ret.type] === undefined) {
+          logs.data[ret.type] = [];
+        }
+
+        logs.data[ret.type].push(ret);
+        logs.ok++;
+        logs.latest = ret;
+        break;
+
+      default:
+        logs.error.push(`#${i}: Unknown log type ${ret.type}`);
+        break;
+    }
+
+    i += LOG_SIZE;
+  }
+
+  return logs;
+}
+
 export function parse_cfg(buf) {
   return {
     wifi: {
@@ -167,7 +237,7 @@ export function parse_log(buf) {
     case "BOOT":
       log.boot = {
         protocol_version: to_uint(8, buf, LOG_POS.BOOT.PROTOCOL_VERSION),
-        mac: buf.slice(LOG_POS.BOOT.MAC, LOG_POS.BOOT.MAC + 6).map(b => b.toString(16).padStart(2, '0')).join(':').toUpperCase(),
+        mac: Array.from(buf.slice(LOG_POS.BOOT.MAC, LOG_POS.BOOT.MAC + 6)).map(b => b.toString(16).padStart(2, '0')).join(':').toUpperCase(),
         boot_time: to_uint(64, buf, LOG_POS.BOOT.BOOT_TIME),
       };
       break;

@@ -3,15 +3,50 @@
 
   import {ref, onMounted} from 'vue';
   import {dark} from '@/layout/composables/layout';
-  import {views, fmt} from '@/service/state';
+  import {parse} from '@/service/protocol';
+  import {views, fmt, format_size} from '@/service/state';
 
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
 
   import dayjs from 'dayjs/esm';
 
-  function parse(file) {
-    console.log('Parsing file:', file);
+  const file = {
+    device: ref(""),
+    name: ref(""),
+    boot: ref(""),
+    duration: ref(""),
+    statistic: ref(""),
+  };
+
+  function upload(f) {
+    file.name.value = f.files[0].name;
+
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(f.files[0]);
+    reader.onload = (e) => {
+      let result;
+      try {
+        result = parse(new Uint8Array(e.target.result));
+      } catch (e) {
+        return;
+      }
+
+      file.device.value = result.header.boot.mac;
+      file.boot.value = dayjs(result.header.boot.boot_time * 1000).format('YYYY-MM-DD HH:mm:ss (UTC Z)');
+      file.statistic.value = `${result.ok.toLocaleString()} valid / ${result.error.length.toLocaleString()} error (${format_size(f.files[0].size)})`;
+
+      const d = dayjs.duration(result.latest.timestamp);
+      const hours = Math.floor(d.asHours());
+      const minutes = d.minutes();
+      const seconds = d.seconds();
+
+      file.duration.value = '';
+
+      if (hours > 0) file.duration.value += `${hours} hr `;
+      if (minutes > 0) file.duration.value += `${minutes} min `;
+      file.duration.value += `${seconds} sec`;
+    };
   }
 
   let map = ref(null);
@@ -130,6 +165,7 @@
         },
         {
           scale: 'digital',
+          side: 1,
           size: 50,
           values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}V`),
           splits: () => axis.digital.splits,
@@ -195,9 +231,28 @@
     <div class="col-span-full lg:col-span-12">
       <div class="card">
         <div class="font-semibold text-xl">File</div>
-        <div class="flex justify-start mt-4 w-full">
-          <FileUpload mode="basic" accept=".log" @uploader="parse" customUpload chooseIcon="pi pi-file"
+        <div class="flex justify-start mt-4 w-full" style="align-items: center;">
+          <FileUpload mode="basic" accept=".log" @uploader="upload" :auto="true" customUpload chooseIcon="pi pi-file"
             chooseLabel="Select" />
+          <span class="ml-4 "> {{ file.name.value ? file.name : "Select a file to view" }}</span>
+        </div>
+        <div v-if="file.name" class="mt-4 space-y-4">
+          <div class="flex">
+            <span class="font-semibold w-24">Device:</span>
+            <span class="flex-1">{{ file.device }}</span>
+          </div>
+          <div class="flex">
+            <span class="font-semibold w-24">Logs:</span>
+            <span class="flex-1">{{ file.statistic }}</span>
+          </div>
+          <div class="flex">
+            <span class="font-semibold w-24">Boot:</span>
+            <span class="flex-1">{{ file.boot }}</span>
+          </div>
+          <div class="flex">
+            <span class="font-semibold w-24">Duration:</span>
+            <span class="flex-1">{{ file.duration }}</span>
+          </div>
         </div>
       </div>
 
