@@ -95,15 +95,17 @@
     gyro: {splits: [], min: 0, max: 0},
   };
 
-  function split_range(d_min, d_max, extra_step = false) {
+  function split_range(d_min, d_max) {
+    if (d_min === d_max) {
+      d_min *= 0.85;
+      d_max *= 1.15;
+    }
+
     const tick = 5;
     const step = (d_max - d_min) / (tick - 1);
     const min = Math.floor(d_min / step) * step;
-
-    const tick_margin = extra_step ? tick + 1 : tick;
-    const max = min + step * (tick_margin - 1);
-
-    const splits = Array.from({length: tick_margin}, (_, i) => min + i * step);
+    const max = min + step * tick;
+    const splits = Array.from({length: tick + 1}, (_, i) => min + i * step);
     return {min, max, splits};
   }
 
@@ -114,13 +116,13 @@
       scales: {
         volt: {
           range: (u, d_min, d_max) => {
-            axis.volt = split_range(d_min, d_max, true);
+            axis.volt = split_range(d_min, d_max);
             return [axis.volt.min, axis.volt.max];
           }
         },
         temp: {
           range: (u, d_min, d_max) => {
-            axis.temp = split_range(d_min, d_max, true);
+            axis.temp = split_range(d_min, d_max);
             return [axis.temp.min, axis.temp.max];
           }
         }
@@ -147,7 +149,7 @@
         {
           scale: 'volt',
           size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}V`),
+          values: (u, v) => v.map(x => `${x.toFixed(1)}V`),
           splits: () => axis.volt.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -157,7 +159,7 @@
           scale: 'temp',
           side: 1,
           size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}°C`),
+          values: (u, v) => v.map(x => `${x.toFixed(1)}°C`),
           splits: () => axis.temp.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -172,13 +174,13 @@
       scales: {
         accel: {
           range: (u, d_min, d_max) => {
-            axis.accel = split_range(d_min, d_max, true);
+            axis.accel = split_range(d_min, d_max);
             return [axis.accel.min, axis.accel.max];
           }
         },
         gyro: {
           range: (u, d_min, d_max) => {
-            axis.gyro = split_range(d_min, d_max, true);
+            axis.gyro = split_range(d_min, d_max);
             return [axis.gyro.min, axis.gyro.max];
           }
         }
@@ -203,7 +205,7 @@
         {
           scale: 'accel',
           size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}g`),
+          values: (u, v) => v.map(x => `${x.toFixed(1)}g`),
           splits: () => axis.accel.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -213,7 +215,7 @@
           scale: 'gyro',
           side: 1,
           size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(0)}°/s`),
+          values: (u, v) => v.map(x => `${x.toFixed(0)}°/s`),
           splits: () => axis.gyro.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -352,11 +354,10 @@
     font-size: 0.9rem !important;
     height: 2.25rem;
   }
+
   .u-legend {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
   }
 
   .u-legend table,
@@ -366,15 +367,24 @@
 
   .u-legend tr.u-series {
     display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
     align-items: center;
     white-space: nowrap;
     box-sizing: border-box;
-    flex: 0 1;
-    margin: 0;
+  }
+
+  .u-legend .u-series:first-child .u-marker {
+    display: none;
   }
 
   .u-legend tr.u-series:first-child {
-    flex-basis: 100%;
+    grid-column: 1 / -1;
     justify-content: center;
+  }
+
+  .u-series td,
+  .u-series th {
+    padding: 4px 2px;
   }
 </style>

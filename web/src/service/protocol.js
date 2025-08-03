@@ -121,7 +121,7 @@ export function parse(buf) {
   const logs = {
     ok: 0,
     error: [],
-    data: {},
+    data: [],
     header: null,
     latest: null,
   };
@@ -144,41 +144,23 @@ export function parse(buf) {
       continue;
     }
 
-    switch (ret.type) {
-      case "BOOT":
-        if (header) {
-          logs.error.push(`#${i}: Multiple headers found`);
-          i += LOG_SIZE;
-          continue;
-        } else if (ret.boot.protocol_version !== PROTOCOL_VERSION) {
-          logs.error.push(`#${i}: Unsupported protocol version ${ret.boot.protocol_version}`);
-          i += LOG_SIZE;
-          continue;
-        } else {
-          header = true;
-          logs.header = ret;
-        }
-        break;
-
-      case "CAN":
-      case "GPS":
-      case "ANALOG":
-      case "DIGITAL":
-      case "GYROSCOPE":
-      case "SYSTEM":
-      case "USER_EVENT":
-        if (logs.data[ret.type] === undefined) {
-          logs.data[ret.type] = [];
-        }
-
-        logs.data[ret.type].push(ret);
-        logs.ok++;
-        logs.latest = ret;
-        break;
-
-      default:
-        logs.error.push(`#${i}: Unknown log type ${ret.type}`);
-        break;
+    if (ret.type === "BOOT") {
+      if (header) {
+        logs.error.push(`#${i}: Multiple headers found`);
+        i += LOG_SIZE;
+        continue;
+      } else if (ret.boot.protocol_version !== PROTOCOL_VERSION) {
+        logs.error.push(`#${i}: Unsupported protocol version ${ret.boot.protocol_version}`);
+        i += LOG_SIZE;
+        continue;
+      } else {
+        header = true;
+        logs.header = ret;
+      }
+    } else {
+      logs.data.push(ret);
+      logs.latest = ret;
+      logs.ok++;
     }
 
     i += LOG_SIZE;
@@ -395,6 +377,12 @@ export function validate_checksum(buf) {
     console.warn(`Checksum mismatch: expected ${original}, got ${checksum}`);
     return false;
   }
+}
+
+export const convert = {
+  adc_to_v: v => v / (1 << 15) * 4.096, // +-4.096V FSRadc_to_v(value),
+  accel_to_g: v => v / (1 << 15) * 8, // +-8g FSR
+  gyro_to_dps: v => v / (1 << 15) * 500
 }
 
 export function to_string(buffer, start, end) {

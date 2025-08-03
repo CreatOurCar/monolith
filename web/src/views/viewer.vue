@@ -3,7 +3,7 @@
 
   import {ref, onMounted} from 'vue';
   import {dark} from '@/layout/composables/layout';
-  import {parse} from '@/service/protocol';
+  import {parse, convert} from '@/service/protocol';
   import {views, fmt, format_size} from '@/service/state';
 
   import uPlot from 'uplot';
@@ -19,42 +19,34 @@
     statistic: ref(""),
   };
 
-  function upload(f) {
-    file.name.value = f.files[0].name;
-
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(f.files[0]);
-    reader.onload = (e) => {
-      let result;
-      try {
-        result = parse(new Uint8Array(e.target.result));
-      } catch (e) {
-        return;
-      }
-
-      file.device.value = result.header.boot.mac;
-      file.boot.value = dayjs(result.header.boot.boot_time * 1000).format('YYYY-MM-DD HH:mm:ss (UTC Z)');
-      file.statistic.value = `${result.ok.toLocaleString()} valid / ${result.error.length.toLocaleString()} error (${format_size(f.files[0].size)})`;
-
-      const d = dayjs.duration(result.latest.timestamp);
-      const hours = Math.floor(d.asHours());
-      const minutes = d.minutes();
-      const seconds = d.seconds();
-
-      file.duration.value = '';
-
-      if (hours > 0) file.duration.value += `${hours} hr `;
-      if (minutes > 0) file.duration.value += `${minutes} min `;
-      file.duration.value += `${seconds} sec`;
-    };
-  }
-
   let map = ref(null);
   let gps = ref(null);
   let chart = ref(null);
+  let graph = ref(null);
   let container = ref(null);
 
-  let dataset = [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1], [1]];
+  const axis = {
+    volt: {splits: [], min: 0, max: 0},
+    temp: {splits: [], min: 0, max: 0},
+    accel: {splits: [], min: 0, max: 0},
+    gyro: {splits: [], min: 0, max: 0},
+  };
+
+  const colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5'];
+
+  function split_range(d_min, d_max) {
+    if (d_min === d_max) {
+      d_min *= 0.85;
+      d_max *= 1.15;
+    }
+
+    const tick = 5;
+    const step = (d_max - d_min) / (tick - 1);
+    const min = Math.floor(d_min / step) * step;
+    const max = min + step * tick;
+    const splits = Array.from({length: tick + 1}, (_, i) => min + i * step);
+    return {min, max, splits};
+  }
 
   onMounted(() => {
     if (!window.kakao || !window.kakao.maps) {
@@ -74,86 +66,170 @@
       };
       document.head.appendChild(script);
     }
-
-    init_chart();
   });
 
-  const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#17becf"];
+  function upload(f) {
+    file.name.value = f.files[0].name;
 
-  const axis = {
-    volt: {splits: [], min: 0, max: 0},
-    temp: {splits: [], min: 0, max: 0},
-    accel: {splits: [], min: 0, max: 0},
-    gyro: {splits: [], min: 0, max: 0},
-  };
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(f.files[0]);
+    reader.onload = (e) => {
+      let result;
+      try {
+        result = parse(new Uint8Array(e.target.result));
+      } catch (e) {
+        return;
+      }
 
-  function split_range(d_min, d_max, extra_step = false) {
-    const tick = 5;
-    const step = (d_max - d_min) / (tick - 1);
-    const min = Math.floor(d_min / step) * step;
+      const bt = result.header.boot.boot_time;
+      file.device.value = result.header.boot.mac;
+      file.boot.value = dayjs(bt * 1000).format('YYYY-MM-DD HH:mm:ss (UTC Z)');
+      file.statistic.value = `${result.ok.toLocaleString()} valid / ${result.error.length.toLocaleString()} error (${format_size(f.files[0].size)})`;
 
-    const tick_margin = extra_step ? tick + 1 : tick;
-    const max = min + step * (tick_margin - 1);
+      const d = dayjs.duration(result.latest.timestamp);
+      const hours = Math.floor(d.asHours());
+      const minutes = d.minutes();
+      const seconds = d.seconds();
 
-    const splits = Array.from({length: tick_margin}, (_, i) => min + i * step);
-    return {min, max, splits};
+      file.duration.value = '';
+
+      if (hours > 0) file.duration.value += `${hours} hr `;
+      if (minutes > 0) file.duration.value += `${minutes} min `;
+      file.duration.value += `${seconds} sec`;
+
+      const dataset = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
+
+      for (const data of result.data) {
+        switch (data.type) {
+          case "DIGITAL":
+            dataset[0].push(bt + data.timestamp / 1000);
+            dataset[1].push(data.digital.din1);
+            dataset[2].push(data.digital.din2);
+            dataset[3].push(data.digital.din3);
+            dataset[4].push(data.digital.din4);
+
+            for (let i = 5; i < dataset.length; i++) {
+              dataset[i].push(null);
+            }
+            break;
+
+          case "ANALOG":
+            dataset[0].push(bt + data.timestamp / 1000);
+            dataset[5].push(convert.adc_to_v(data.analog.ain1) * views.analog.ch.ain1.multiplier * (views.analog.ch.ain1.devider ? 0.5 : 1));
+            dataset[6].push(convert.adc_to_v(data.analog.ain2) * views.analog.ch.ain2.multiplier * (views.analog.ch.ain2.devider ? 0.5 : 1));
+            dataset[7].push(convert.adc_to_v(data.analog.ain3) * views.analog.ch.ain3.multiplier * (views.analog.ch.ain3.devider ? 0.5 : 1));
+            dataset[8].push(convert.adc_to_v(data.analog.ain4) * views.analog.ch.ain4.multiplier * (views.analog.ch.ain4.devider ? 0.5 : 1));
+            dataset[9].push(convert.adc_to_v(data.analog.ain5) * views.analog.ch.ain5.multiplier);
+            dataset[10].push(convert.adc_to_v(data.analog.ain6) * views.analog.ch.ain6.multiplier);
+            dataset[11].push(convert.adc_to_v(data.analog.voltage) * views.analog.ch.volt.multiplier);
+            dataset[12].push(data.analog.temperature * views.analog.ch.temp.multiplier);
+
+            for (let i = 1; i < dataset.length; i++) {
+              if (i < 5 || i > 12) {
+                dataset[i].push(null);
+              }
+            }
+            break;
+
+          case "GYROSCOPE":
+            dataset[0].push(bt + data.timestamp / 1000);
+            dataset[13].push(convert.accel_to_g(data.gyro.accel_x));
+            dataset[14].push(convert.accel_to_g(data.gyro.accel_y));
+            dataset[15].push(convert.accel_to_g(data.gyro.accel_z));
+            dataset[16].push(convert.gyro_to_dps(data.gyro.gyro_x));
+            dataset[17].push(convert.gyro_to_dps(data.gyro.gyro_y));
+            dataset[18].push(convert.gyro_to_dps(data.gyro.gyro_z));
+
+            for (let i = 1; i < dataset.length; i++) {
+              if (i < 13 || i > 18) {
+                dataset[i].push(null);
+              }
+            }
+            break;
+        }
+      }
+
+      init_chart(dataset);
+    };
   }
 
-  function init_chart() {
-    chart = new uPlot({
+  function init_chart(dataset) {
+    chart.value = new uPlot({
       width: 600, height: 400,
+      cursor: {
+        hover: {
+          prox: 10,
+          bias: 0,
+          skip: [null],
+        }
+      },
       scales: {
-        digital: {
-          range: (u, d_min, d_max) => {
-            axis.digital = split_range(d_min, d_max, true);
-            return [axis.digital.min, axis.digital.max];
-          }
-        },
+        digital: {range: () => [0, 1]},
         volt: {
           range: (u, d_min, d_max) => {
+            if (!d_min && !d_max) {
+              d_min = [dataset[5].min(), dataset[6].min(), dataset[7].min(), dataset[8].min(), dataset[9].min(), dataset[10].min(), dataset[11].min()].min();
+              d_max = [dataset[5].max(), dataset[6].max(), dataset[7].max(), dataset[8].max(), dataset[9].max(), dataset[10].max(), dataset[11].max()].max();
+            }
+
             axis.volt = split_range(d_min, d_max, true);
             return [axis.volt.min, axis.volt.max];
           }
         },
         temp: {
           range: (u, d_min, d_max) => {
+            if (!d_min && !d_max) {
+              d_min = dataset[12].min();
+              d_max = dataset[12].max();
+            }
+
             axis.temp = split_range(d_min, d_max, true);
             return [axis.temp.min, axis.temp.max];
           }
         },
         accel: {
           range: (u, d_min, d_max) => {
+            if (!d_min && !d_max) {
+              d_min = [dataset[13].min(), dataset[14].min(), dataset[15].min()].min();
+              d_max = [dataset[13].max(), dataset[14].max(), dataset[15].max()].max();
+            }
+
             axis.accel = split_range(d_min, d_max, true);
             return [axis.accel.min, axis.accel.max];
           }
         },
         gyro: {
           range: (u, d_min, d_max) => {
+            if (!d_min && !d_max) {
+              d_min = [dataset[16].min(), dataset[17].min(), dataset[18].min()].min();
+              d_max = [dataset[16].max(), dataset[17].max(), dataset[18].max()].max();
+            }
+
             axis.gyro = split_range(d_min, d_max, true);
             return [axis.gyro.min, axis.gyro.max];
           }
-        },
+        }
       },
       series: [
         {value: fmt.time},
-        {label: views.digital.ch.din1.name, stroke: '#ff0000', value: fmt.volt, points: {show: false}, scale: 'digital'},
-        {label: views.digital.ch.din2.name, stroke: '#00ff00', value: fmt.volt, points: {show: false}, scale: 'digital'},
-        {label: views.digital.ch.din3.name, stroke: '#0000ff', value: fmt.volt, points: {show: false}, scale: 'digital'},
-        {label: views.digital.ch.din4.name, stroke: '#ffff00', value: fmt.volt, points: {show: false}, scale: 'digital'},
-        {label: views.analog.ch.ain1.name, stroke: colors[0], value: fmt.volt, points: {show: false}, scale: 'volt'},
-        {label: views.analog.ch.ain2.name, stroke: colors[1], value: fmt.volt, points: {show: false}, scale: 'volt'},
-        {label: views.analog.ch.ain3.name, stroke: colors[2], value: fmt.volt, points: {show: false}, scale: 'volt'},
-        {label: views.analog.ch.ain4.name, stroke: colors[3], value: fmt.volt, points: {show: false}, scale: 'volt'},
-        {label: views.analog.ch.ain5.name, stroke: colors[4], value: fmt.volt, points: {show: false}, scale: 'volt'},
-        {label: views.analog.ch.ain6.name, stroke: colors[5], value: fmt.volt, points: {show: false}, scale: 'volt'},
-        {label: views.analog.ch.volt.name, stroke: colors[6], value: fmt.volt, points: {show: false}, scale: 'volt'},
-        {label: views.analog.ch.temp.name, stroke: colors[7], value: fmt.temp, points: {show: false}, scale: 'temp', show: false},
-        {label: "Ax", stroke: colors[0], value: fmt.accel, points: {show: false}, scale: 'accel'},
-        {label: "Ay", stroke: colors[1], value: fmt.accel, points: {show: false}, scale: 'accel'},
-        {label: "Az", stroke: colors[2], value: fmt.accel, points: {show: false}, scale: 'accel'},
-        {label: "Gx", stroke: colors[3], value: fmt.gyro, points: {show: false}, scale: 'gyro'},
-        {label: "Gy", stroke: colors[4], value: fmt.gyro, points: {show: false}, scale: 'gyro'},
-        {label: "Gz", stroke: colors[5], value: fmt.gyro, points: {show: false}, scale: 'gyro'},
+        {label: views.digital.ch.din1.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[0]},
+        {label: views.digital.ch.din2.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[1]},
+        {label: views.digital.ch.din3.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[2]},
+        {label: views.digital.ch.din4.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[3]},
+        {label: views.analog.ch.ain1.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[4]},
+        {label: views.analog.ch.ain2.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[5]},
+        {label: views.analog.ch.ain3.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[6]},
+        {label: views.analog.ch.ain4.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[7]},
+        {label: views.analog.ch.ain5.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[8]},
+        {label: views.analog.ch.ain6.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[9]},
+        {label: views.analog.ch.volt.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[10]},
+        {label: views.analog.ch.temp.name, value: fmt.temp, scale: 'temp', spanGaps: true, stroke: colors[11], show: false},
+        {label: "Ax", value: fmt.accel, scale: 'accel', spanGaps: true, stroke: colors[12]},
+        {label: "Ay", value: fmt.accel, scale: 'accel', spanGaps: true, stroke: colors[13]},
+        {label: "Az", value: fmt.accel, scale: 'accel', spanGaps: true, stroke: colors[14]},
+        {label: "Gx", value: fmt.gyro, scale: 'gyro', spanGaps: true, stroke: colors[15]},
+        {label: "Gy", value: fmt.gyro, scale: 'gyro', spanGaps: true, stroke: colors[16]},
+        {label: "Gz", value: fmt.gyro, scale: 'gyro', spanGaps: true, stroke: colors[17]},
       ],
       axes: [
         {
@@ -164,38 +240,8 @@
           grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
         },
         {
-          scale: 'digital',
-          side: 1,
-          size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}V`),
-          splits: () => axis.digital.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'volt',
-          size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}V`),
-          splits: () => axis.volt.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'temp',
-          side: 1,
-          size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}°C`),
-          splits: () => axis.temp.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
           scale: 'accel',
-          size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(1)}g`),
+          values: (u, v) => v.map(x => `${x.toFixed(1)}g`),
           splits: () => axis.accel.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -204,19 +250,46 @@
         {
           scale: 'gyro',
           side: 1,
-          size: 50,
-          values: (u, v) => v.map(x => isNaN(x) ? 'N/A' : `${x.toFixed(0)}°/s`),
+          values: (u, v) => v.map(x => `${x.toFixed(0)}°/s`),
           splits: () => axis.gyro.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
           grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
         },
+        {
+          scale: 'volt',
+          values: (u, v) => v.map(x => `${x.toFixed(1)}V`),
+          splits: () => axis.volt.splits,
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {show: false},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        },
+        {
+          scale: 'temp',
+          side: 1,
+          values: (u, v) => v.map(x => `${x.toFixed(1)}°C`),
+          splits: () => axis.temp.splits,
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {show: false},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        },
+        {
+          scale: 'digital',
+          side: 1,
+          values: (u, v) => v.map(x => x ? "HIGH" : "LOW"),
+          splits: () => [0, 1],
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {show: false},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        },
       ]
-    }, dataset, chart.value);
+    }, dataset, graph.value);
+
+    console.log(dataset);
 
     new ResizeObserver(entries => {
       for (let entry of entries) {
-        chart.setSize({
+        chart.value.setSize({
           width: entry.contentRect.width,
           height: entry.contentRect.width * 0.6
         });
@@ -224,6 +297,13 @@
     }).observe(container.value);
   }
 
+  Array.prototype.max = function () {
+    return Math.max.apply(null, this.filter(x => x));
+  };
+
+  Array.prototype.min = function () {
+    return Math.min.apply(null, this.filter(x => x));
+  };
 </script>
 
 <template>
@@ -258,7 +338,7 @@
 
       <div class="card" ref="container">
         <div class="font-semibold text-xl mb-4">Graph</div>
-        <div class="chart" ref="chart"></div>
+        <div class="chart" ref="graph"></div>
       </div>
 
       <div class="card">
@@ -275,10 +355,8 @@
 
 <style>
   .u-legend {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
   }
 
   .u-legend table,
@@ -288,15 +366,24 @@
 
   .u-legend tr.u-series {
     display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
     align-items: center;
     white-space: nowrap;
     box-sizing: border-box;
-    flex: 0 1;
-    margin: 0;
+  }
+
+  .u-legend .u-series:first-child .u-marker {
+    display: none;
   }
 
   .u-legend tr.u-series:first-child {
-    flex-basis: 100%;
+    grid-column: 1 / -1;
     justify-content: center;
+  }
+
+  .u-series td,
+  .u-series th {
+    padding: 4px 2px;
   }
 </style>

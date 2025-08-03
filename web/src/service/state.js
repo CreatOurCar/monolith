@@ -78,9 +78,9 @@ export const state = reactive([
 ]);
 
 export const times = reactive({
-  boot: { label: "Boot", value: "N/A", raw: null },
-  current: { label: "Current", value: "N/A" },
-  uptime: { label: "Uptime", value: "N/A" },
+  boot: { label: "Boot", value: "-", raw: null },
+  current: { label: "Current", value: "-" },
+  uptime: { label: "Uptime", value: "-" },
 });
 
 export const cons = reactive({
@@ -127,85 +127,80 @@ export const telemetry = reactive({
 
 export const fmt = {
   time: (u, v, sidx, didx) => {
-    if (didx == null) {
-      let d = u.data[sidx];
+    const d = u.data[sidx];
+
+    if (didx == null && d) {
       v = d[d.length - 1];
     }
 
     return dayjs(v * 1000).format('HH:mm:ss.SSS');
   },
-  state: (u, v, sidx, didx) => {
-    if (didx == null) {
-      let d = u.data[sidx];
-      v = d[d.length - 1];
-    }
 
-    switch (v) {
-      case 0: return 'OK';
-      case 1: return 'ERROR';
-      case 2: return 'FATAL';
-      default: return 'N/A';
-    }
-  },
   digital: (u, v, sidx, didx) => {
-    if (didx == null) {
-      let d = u.data[sidx];
+    const d = u.data[sidx];
+
+    if (didx == null && d) {
       v = d[d.length - 1];
     }
 
     switch (v) {
       case 0: return 'LOW';
       case 1: return 'HIGH';
-      default: return 'N/A';
+      default: return '-';
     }
   },
 
   volt: (u, v, sidx, didx) => {
-    if (didx == null) {
-      let d = u.data[sidx];
+    const d = u.data[sidx];
+
+    if (didx == null && d) {
       v = d[d.length - 1];
     }
 
-    if (isNaN(v)) {
-      return 'N/A';
+    if (isNaN(v) || !v) {
+      return '-';
     }
 
     return `${v.toFixed(1)} V`;
   },
+
   temp: (u, v, sidx, didx) => {
-    if (didx == null) {
-      let d = u.data[sidx];
+    const d= u.data[sidx];
+
+    if (didx == null && d) {
       v = d[d.length - 1];
     }
 
-    if (isNaN(v)) {
-      return 'N/A';
+    if (isNaN(v) || !v) {
+      return '-';
     }
 
     return `${v.toFixed(1)} °C`;
   },
 
   accel: (u, v, sidx, didx) => {
-    if (didx == null) {
-      let d = u.data[sidx];
+    const d = u.data[sidx];
+
+    if (didx == null && d) {
       v = d[d.length - 1];
     }
 
-    if (isNaN(v)) {
-      return 'N/A';
+    if (isNaN(v) || !v) {
+      return '-';
     }
 
     return `${v.toFixed(1)} g`;
   },
 
   gyro: (u, v, sidx, didx) => {
-    if (didx == null) {
-      let d = u.data[sidx];
+    const d = u.data[sidx];
+
+    if (didx == null && d) {
       v = d[d.length - 1];
     }
 
-    if (isNaN(v)) {
-      return 'N/A';
+    if (isNaN(v) || !v) {
+      return '-';
     }
 
     return `${v.toFixed(1)} °/s`;
