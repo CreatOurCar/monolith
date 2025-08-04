@@ -33,21 +33,15 @@
     gyro: {splits: [], min: 0, max: 0},
   };
 
+  const show = {
+    digital: {name: "DIN", ref: ref(false)},
+    analog: {name: "AIN", ref: ref(false)},
+    gyro: {name: "Gyro", ref: ref(false)},
+    can: {name: "CAN", ref: ref(false)},
+    gps: {name: "GPS", ref: ref(false)},
+  };
+
   const colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5'];
-
-  function split_range(d_min, d_max) {
-    if (d_min === d_max) {
-      d_min *= 0.85;
-      d_max *= 1.15;
-    }
-
-    const tick = 5;
-    const step = (d_max - d_min) / (tick - 1);
-    const min = Math.floor(d_min / step) * step;
-    const max = min + step * tick;
-    const splits = Array.from({length: tick + 1}, (_, i) => min + i * step);
-    return {min, max, splits};
-  }
 
   onMounted(() => {
     if (!window.kakao || !window.kakao.maps) {
@@ -97,6 +91,12 @@
       if (hours > 0) file.duration.value += `${hours} hr `;
       if (minutes > 0) file.duration.value += `${minutes} min `;
       file.duration.value += `${seconds} sec`;
+
+      events.value = [];
+
+      if (chart.value) {
+        chart.value.destroy();
+      }
 
       const dataset = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
 
@@ -177,10 +177,6 @@
   }
 
   function init_chart(dataset) {
-    if (chart.value) {
-      chart.value.destroy();
-    }
-
     chart.value = new uPlot({
       width: 600, height: 400,
       cursor: {
@@ -191,72 +187,76 @@
         }
       },
       scales: {
-        digital: {range: () => [0, 1]},
+        digital: {
+          range: (u, d_min, d_max) => {
+            if (d_min === null && d_max === null) {
+              return [null, null];
+            } else {
+              return [0, 1];
+            }
+          }
+        },
         volt: {
           range: (u, d_min, d_max) => {
-            if (!d_min && !d_max) {
-              d_min = [dataset[5].min(), dataset[6].min(), dataset[7].min(), dataset[8].min(), dataset[9].min(), dataset[10].min(), dataset[11].min()].min();
-              d_max = [dataset[5].max(), dataset[6].max(), dataset[7].max(), dataset[8].max(), dataset[9].max(), dataset[10].max(), dataset[11].max()].max();
+            if (d_min === null && d_max === null) {
+              return [null, null];
+            } else {
+              axis.volt = split_range(d_min, d_max);
+              return [axis.volt.min, axis.volt.max];
             }
-
-            axis.volt = split_range(d_min, d_max, true);
-            return [axis.volt.min, axis.volt.max];
           }
         },
         temp: {
           range: (u, d_min, d_max) => {
-            if (!d_min && !d_max) {
-              d_min = dataset[12].min();
-              d_max = dataset[12].max();
+            if (d_min === null && d_max === null) {
+              return [null, null];
+            } else {
+              axis.temp = split_range(d_min, d_max);
+              return [axis.temp.min, axis.temp.max];
             }
-
-            axis.temp = split_range(d_min, d_max, true);
-            return [axis.temp.min, axis.temp.max];
           }
         },
         accel: {
           range: (u, d_min, d_max) => {
-            if (!d_min && !d_max) {
-              d_min = [dataset[13].min(), dataset[14].min(), dataset[15].min()].min();
-              d_max = [dataset[13].max(), dataset[14].max(), dataset[15].max()].max();
+            if (d_min === null && d_max === null) {
+              return [null, null];
+            } else {
+              axis.accel = split_range(d_min, d_max);
+              return [axis.accel.min, axis.accel.max];
             }
-
-            axis.accel = split_range(d_min, d_max, true);
-            return [axis.accel.min, axis.accel.max];
           }
         },
         gyro: {
           range: (u, d_min, d_max) => {
-            if (!d_min && !d_max) {
-              d_min = [dataset[16].min(), dataset[17].min(), dataset[18].min()].min();
-              d_max = [dataset[16].max(), dataset[17].max(), dataset[18].max()].max();
+            if (d_min === null && d_max === null) {
+              return [null, null];
+            } else {
+              axis.gyro = split_range(d_min, d_max);
+              return [axis.gyro.min, axis.gyro.max];
             }
-
-            axis.gyro = split_range(d_min, d_max, true);
-            return [axis.gyro.min, axis.gyro.max];
           }
         }
       },
       series: [
         {value: fmt.time},
-        {label: views.digital.ch.din1.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[0]},
-        {label: views.digital.ch.din2.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[1]},
-        {label: views.digital.ch.din3.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[2]},
-        {label: views.digital.ch.din4.name, value: fmt.digital, scale: 'digital', spanGaps: true, stroke: colors[3]},
-        {label: views.analog.ch.ain1.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[4]},
-        {label: views.analog.ch.ain2.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[5]},
-        {label: views.analog.ch.ain3.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[6]},
-        {label: views.analog.ch.ain4.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[7]},
-        {label: views.analog.ch.ain5.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[8]},
-        {label: views.analog.ch.ain6.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[9]},
-        {label: views.analog.ch.volt.name, value: fmt.volt, scale: 'volt', spanGaps: true, stroke: colors[10]},
-        {label: views.analog.ch.temp.name, value: fmt.temp, scale: 'temp', spanGaps: true, stroke: colors[11], show: false},
-        {label: "Ax", value: fmt.accel, scale: 'accel', spanGaps: true, stroke: colors[12]},
-        {label: "Ay", value: fmt.accel, scale: 'accel', spanGaps: true, stroke: colors[13]},
-        {label: "Az", value: fmt.accel, scale: 'accel', spanGaps: true, stroke: colors[14]},
-        {label: "Gx", value: fmt.gyro, scale: 'gyro', spanGaps: true, stroke: colors[15]},
-        {label: "Gy", value: fmt.gyro, scale: 'gyro', spanGaps: true, stroke: colors[16]},
-        {label: "Gz", value: fmt.gyro, scale: 'gyro', spanGaps: true, stroke: colors[17]},
+        {label: views.digital.ch.din1.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[0]},
+        {label: views.digital.ch.din2.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[1]},
+        {label: views.digital.ch.din3.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[2]},
+        {label: views.digital.ch.din4.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[3]},
+        {label: views.analog.ch.ain1.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[4]},
+        {label: views.analog.ch.ain2.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[5]},
+        {label: views.analog.ch.ain3.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[6]},
+        {label: views.analog.ch.ain4.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[7]},
+        {label: views.analog.ch.ain5.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[8]},
+        {label: views.analog.ch.ain6.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[9]},
+        {label: views.analog.ch.volt.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[10]},
+        {label: views.analog.ch.temp.name, value: fmt.temp, scale: 'temp', spanGaps: true, show: false, stroke: colors[11]},
+        {label: "Ax", value: fmt.accel, scale: 'accel', spanGaps: true, show: false, stroke: colors[12]},
+        {label: "Ay", value: fmt.accel, scale: 'accel', spanGaps: true, show: false, stroke: colors[13]},
+        {label: "Az", value: fmt.accel, scale: 'accel', spanGaps: true, show: false, stroke: colors[14]},
+        {label: "Gx", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[15]},
+        {label: "Gy", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[16]},
+        {label: "Gz", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[17]},
       ],
       axes: [
         {
@@ -303,7 +303,7 @@
         {
           scale: 'digital',
           side: 1,
-          values: (u, v) => v.map(x => x ? "HIGH" : "LOW"),
+          values: (u, v) => v.map(x => x ? "HI" : "LO"),
           splits: () => [0, 1],
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {show: false},
@@ -320,6 +320,45 @@
         });
       }
     }).observe(container.value);
+  }
+
+  function toggle_axis(key) {
+    switch (key) {
+      case 'digital':
+        for (let i = 1; i <= 4; i++) {
+          chart.value.setSeries(i, {show: show[key].ref});
+        }
+        break;
+      case 'analog':
+        for (let i = 5; i <= 12; i++) {
+          chart.value.setSeries(i, {show: show[key].ref});
+        }
+        break;
+      case 'gyro':
+        for (let i = 13; i <= 18; i++) {
+          chart.value.setSeries(i, {show: show[key].ref});
+        }
+        break;
+      case 'can':
+        break;
+      case 'gps':
+        chart.value.setSeries(19, {show: show[key].ref});
+        break;
+    }
+  }
+
+  function split_range(d_min, d_max) {
+    if (d_min === d_max) {
+      d_min *= 0.85;
+      d_max *= 1.15;
+    }
+
+    const tick = 5;
+    const step = (d_max - d_min) / (tick - 1);
+    const min = Math.floor(d_min / step) * step;
+    const max = min + step * tick;
+    const splits = Array.from({length: tick + 1}, (_, i) => min + i * step);
+    return {min, max, splits};
   }
 
   Array.prototype.max = function () {
@@ -362,12 +401,21 @@
       </div>
 
       <div class="card" ref="container">
-        <div class="font-semibold text-xl mb-4">Graph</div>
-        <div class="chart" ref="graph"></div>
+        <div class="font-semibold text-xl mb-6">Graph</div>
+        <div v-show="chart">
+          <div class="flex flex-wrap justify-start items-center mb-6 gap-3">
+            <ToggleButton v-for="(tag, key) in show" :key="key" v-model="tag.ref" :onLabel="tag.name"
+              :offLabel="tag.name" @click="toggle_axis(key)" />
+          </div>
+          <div class="chart" ref="graph"></div>
+        </div>
+        <div v-show="!chart" class="text-center text-gray-400">
+          Please select a file to view the graph.
+        </div>
       </div>
 
       <div class="card">
-        <div class="font-semibold text-xl mb-4">GPS</div>
+        <div class="font-semibold text-xl mb-6">GPS</div>
         <div ref="gps" style="width: 100%; height: 40vh;"></div>
       </div>
 
