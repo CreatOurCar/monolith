@@ -5,6 +5,7 @@
   import {dark} from '@/layout/composables/layout';
   import {parse, convert} from '@/service/protocol';
   import {views, fmt, format_size} from '@/service/state';
+  import {init_map} from '@/service/map';
 
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
@@ -44,22 +45,14 @@
   const colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5'];
 
   onMounted(() => {
-    if (!window.kakao || !window.kakao.maps) {
+    if (!window.kakao) {
       const script = document.createElement("script");
       script.type = 'text/javascript';
       script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false";
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          map = new kakao.maps.Map(gps.value, {
-            mapTypeId: kakao.maps.MapTypeId.HYBRID,
-            // center: new kakao.maps.LatLng(37.2829317, 127.0435822),
-            center: new kakao.maps.LatLng(35.2921728, 126.5740566),
-            level: 3
-          });
-          map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
-        });
-      };
+      script.onload = () => init_map(map, gps.value);
       document.head.appendChild(script);
+    } else {
+      init_map(map, gps.value);
     }
   });
 

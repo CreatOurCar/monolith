@@ -6,6 +6,7 @@
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
   import {state, times, cons, views, telemetry, fmt} from '@/service/state';
+  import {init_map} from '@/service/map';
 
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
@@ -33,22 +34,14 @@
     fit.fit();
     window.addEventListener('resize', () => fit.fit());
 
-    if (!window.kakao || !window.kakao.maps) {
+    if (!window.kakao) {
       const script = document.createElement("script");
       script.type = 'text/javascript';
       script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false";
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          map = new kakao.maps.Map(container.gps.value, {
-            mapTypeId: kakao.maps.MapTypeId.HYBRID,
-            // center: new kakao.maps.LatLng(37.2829317, 127.0435822),
-            center: new kakao.maps.LatLng(35.2921728, 126.5740566),
-            level: 3
-          });
-          map.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
-        });
-      };
+      script.onload = () => init_map(map, container.gps.value);
       document.head.appendChild(script);
+    } else {
+      init_map(map, container.gps.value);
     }
 
     init_chart();
