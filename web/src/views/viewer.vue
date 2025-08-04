@@ -24,6 +24,7 @@
   let chart = ref(null);
   let graph = ref(null);
   let container = ref(null);
+  let events = ref([]);
 
   const axis = {
     volt: {splits: [], min: 0, max: 0},
@@ -97,7 +98,7 @@
       if (minutes > 0) file.duration.value += `${minutes} min `;
       file.duration.value += `${seconds} sec`;
 
-      const dataset = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
+      const dataset = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
 
       for (const data of result.data) {
         switch (data.type) {
@@ -146,6 +147,28 @@
               }
             }
             break;
+
+          case "CAN":
+            // TODO:
+            break;
+
+          case "GPS":
+            dataset[0].push(bt + data.timestamp / 1000);
+            dataset[19].push(data.gps.speed);
+
+            for (let i = 1; i < 19; i++) {
+              dataset[i].push(null);
+            }
+            break;
+
+          case "SYSTEM":
+          case "USER_EVENT":
+            events.value.push({
+              time: dayjs(bt * 1000 + data.timestamp).format('HH:mm:ss.SSS'),
+              type: data.type === "SYSTEM" ? "SYS" : "USR",
+              msg: data.type === "SYSTEM" ? data.sys.msg : data.user.msg,
+            });
+            break;
         }
       }
 
@@ -154,6 +177,10 @@
   }
 
   function init_chart(dataset) {
+    if (chart.value) {
+      chart.value.destroy();
+    }
+
     chart.value = new uPlot({
       width: 600, height: 400,
       cursor: {
@@ -285,8 +312,6 @@
       ]
     }, dataset, graph.value);
 
-    console.log(dataset);
-
     new ResizeObserver(entries => {
       for (let entry of entries) {
         chart.value.setSize({
@@ -348,6 +373,23 @@
 
       <div class="card">
         <div class="font-semibold text-xl mb-6">Events</div>
+        <DataView :value="events">
+          <template #empty>
+            <div class="p-4 text-center text-gray-400">
+              No events found.
+            </div>
+          </template>
+          <template #list="slotProps">
+            <div class="flex flex-col">
+              <div v-for="(item, index) in slotProps.items" :key="index" class="flex items-center py-2 px-2 gap-2">
+                <div class="w-8 text-center">{{ index + 1 }}</div>
+                <Tag :value="item.time" severity="success" class="timetag" />
+                <Tag :value="item.type" severity="info" class="timetag" />
+                <Tag :value="item.msg" severity="secondary" class="timetag" />
+              </div>
+            </div>
+          </template>
+        </DataView>
       </div>
     </div>
   </div>
