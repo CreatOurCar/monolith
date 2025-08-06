@@ -433,8 +433,8 @@
                   <div class="text-sm truncate">{{ item.name }}</div>
                   <div class="text-xs text-gray-500 mt-1">{{ format_size(item.size) }}</div>
                 </div>
-                <Button icon="pi pi-download" class="mx-1" @click="download_file(item.name, item.size, index)"
-                  :loading="files.loading.download === index" :disabled="files.disabled" />
+                <Button icon="pi pi-download" class="mx-1" @click="download_file(item.name, item.size, index + 1)"
+                  :loading="files.loading.download === index + 1" :disabled="files.disabled" />
                 <Button icon="pi pi-trash" severity="danger" class="mx-1" @click="delete_file(item.name, index)"
                   :loading="files.loading.del === index" :disabled="files.disabled" />
               </div>
