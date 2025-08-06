@@ -206,7 +206,9 @@ export function init_mqtt() {
 
           files.buf.length = 0;
           files.list.length = 0;
-          publish('cmd/ls', '!', 1);
+          setTimeout(() => {
+            document.getElementById('list').click();
+          }, 100);
         } else {
           ToastEventBus.emit('add', {
             severity: 'error',

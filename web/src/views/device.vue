@@ -413,7 +413,7 @@
       <div class="card flex flex-col gap-4">
         <div class="font-semibold text-xl">Data Downloader</div>
         <div class="flex gap-4 mt-2">
-          <Button label="Load List" icon="pi pi-list" :fluid="false" class="flex-1 md:flex-none"
+          <Button id="list" label="Load List" icon="pi pi-list" :fluid="false" class="flex-1 md:flex-none"
             :loading="files.loading.list" :disabled="files.disabled" @click="list_files" />
           <Button label="Delete All" icon="pi pi-eraser" severity="danger" :fluid="false" class="flex-1 md:flex-none"
             :loading="files.loading.del === -1" :disabled="files.disabled" @click="delete_file('all', -1)" />
