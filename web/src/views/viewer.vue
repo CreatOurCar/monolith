@@ -20,14 +20,19 @@
     statistic: ref(""),
   };
 
+  let bt = 0;
+
   const gps = ref(null);
   const map = ref(null);
   const line = ref(null);
   const path = ref([]);
-  const path_time = ref([]);
+  const path_history = [];
   const slider = ref(0);
   const timelapse_pos = ref(null);
   const timelapse_time = ref("00:00:00.000");
+  const timelapse_coord = ref("00.0000000, 000.0000000");
+  const timelapse_speed = ref("0 km/h");
+  const timelapse_course = ref("0 °");
 
   const chart = ref(null);
   const graph = ref(null);
@@ -78,7 +83,7 @@
         return;
       }
 
-      const bt = result.header.boot.boot_time;
+      bt = result.header.boot.boot_time;
       file.device.value = result.header.boot.mac;
       file.boot.value = dayjs(bt * 1000).format('YYYY-MM-DD HH:mm:ss (UTC Z)');
       file.statistic.value = `${result.ok.toLocaleString()} valid / ${result.error.length.toLocaleString()} error (${format_size(f.files[0].size)})`;
@@ -164,7 +169,7 @@
 
             const pos = new kakao.maps.LatLng(data.gps.latitude, data.gps.longitude);
             path.value.push(pos);
-            path_time.value.push(dayjs(bt * 1000 + data.timestamp).format('HH:mm:ss.SSS'));
+            path_history.push(data);
             break;
 
           case "SYSTEM":
@@ -180,6 +185,7 @@
 
       line.value.setPath(path.value);
       map.value.setCenter(path.value[0]);
+
       new kakao.maps.Circle({
         center: path.value[0],
         fillColor: '#00FF00',
@@ -188,6 +194,7 @@
         strokeOpacity: 1,
         radius: 0.5,
       }).setMap(map.value);
+
       new kakao.maps.Circle({
         center: path.value[path.value.length - 1],
         fillColor: '#FF0000',
@@ -196,6 +203,23 @@
         strokeOpacity: 1,
         radius: 0.5,
       }).setMap(map.value);
+
+      timelapse_pos.value = new kakao.maps.Circle({
+        fillColor: '#FF00FF',
+        strokeColor: '#FF00FF',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        radius: 0.5,
+        zIndex: 2,
+      });
+
+      timelapse_pos.value.setMap(map.value);
+      timelapse_pos.value.setPosition(path.value[0]);
+
+      timelapse_time.value = dayjs(bt * 1000 + path_history[0].timestamp).format('HH:mm:ss.SSS');
+      timelapse_coord.value = `${path_history[0].gps.latitude.toFixed(7)}, ${path_history[0].gps.longitude.toFixed(7)}`;
+      timelapse_speed.value = `${digit(path_history[0].gps.speed)} km/h`;
+      timelapse_course.value = `${digit(path_history[0].gps.course)} °`;
 
       init_chart(dataset);
     };
@@ -418,25 +442,16 @@
   };
 
   function timelapse() {
-    if (!path.value.length) {
+    if (!path.value.length || !timelapse_pos.value) {
       return;
-    }
-
-    if (!timelapse_pos.value) {
-      timelapse_pos.value = new kakao.maps.Circle({
-        fillColor: '#FF00FF',
-        strokeColor: '#FF00FF',
-        fillOpacity: 1,
-        strokeOpacity: 1,
-        radius: 0.5,
-        zIndex: 2,
-      });
-      timelapse_pos.value.setMap(map.value);
     }
 
     const pos = Math.floor((path.value.length - 1) * slider.value / 100);
     timelapse_pos.value.setPosition(path.value[pos]);
-    timelapse_time.value = path_time.value[pos];
+    timelapse_time.value = dayjs(bt * 1000 + path_history[pos].timestamp).format('HH:mm:ss.SSS');
+    timelapse_coord.value = `${path_history[pos].gps.latitude.toFixed(7)}, ${path_history[pos].gps.longitude.toFixed(7)}`;
+    timelapse_speed.value = `${digit(path_history[pos].gps.speed)} km/h`;
+    timelapse_course.value = `${digit(path_history[pos].gps.course)} °`;
   }
 </script>
 
@@ -489,6 +504,20 @@
         <div class="flex items-center mb-6">
           <span class="font-semibold mr-6">{{ timelapse_time }}</span>
           <Slider v-model="slider" class="w-full" @change="timelapse" />
+        </div>
+        <div class="mb-6 space-y-4">
+          <div class="flex">
+            <span class="font-semibold w-24">Coord:</span>
+            <Tag :value="timelapse_coord" severity="info" />
+          </div>
+          <div class="flex">
+            <span class="font-semibold w-24">Speed:</span>
+            <Tag :value="timelapse_speed" severity="info" />
+          </div>
+          <div class="flex">
+            <span class="font-semibold w-24">Course:</span>
+            <Tag :value="timelapse_course" severity="info" />
+          </div>
         </div>
         <div ref="gps" style="width: 100%; aspect-ratio: 1 / 0.7;"></div>
       </div>
