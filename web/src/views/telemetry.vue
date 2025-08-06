@@ -6,6 +6,7 @@
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
   import {state, times, cons, views, telemetry, fmt} from '@/service/state';
+  import {map, line, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 
   import uPlot from 'uplot';
@@ -16,7 +17,6 @@
 
   import dayjs from 'dayjs/esm';
 
-  let map = ref(null);
   const terminal = ref(null);
   const container = {
     state: ref(null),
@@ -38,10 +38,10 @@
       const script = document.createElement("script");
       script.type = 'text/javascript';
       script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false";
-      script.onload = () => init_map(map, container.gps.value);
+      script.onload = () => init_map(map, container.gps);
       document.head.appendChild(script);
     } else {
-      init_map(map, container.gps.value);
+      init_map(map, container.gps);
     }
 
     init_chart();
@@ -50,7 +50,7 @@
   function geolocation() {
     if (map) {
       navigator.geolocation.getCurrentPosition((pos) => {
-        map.setCenter(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
+        map.value.setCenter(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
       });
     }
   }
@@ -284,6 +284,17 @@
 
       <div v-if="views.gps.display" class="card" style="position: relative;">
         <div class="font-semibold text-xl mb-6">GPS</div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+          <div class="flex items-center">
+            <span class="w-20 font-medium">Speed</span>
+            <Tag :value="speed" severity="info" class="ml-2 state" />
+          </div>
+          <div class="flex items-center">
+            <span class="w-20 font-medium">Course</span>
+            <Tag :value="course" severity="info" class="ml-2 state" />
+          </div>
+        </div>
+
         <div class="relative">
           <div :ref="container.gps" style="width: 100%; height: 40vh;"></div>
           <Button class="!absolute bottom-3 right-3 z-10 h-10" severity="secondary" icon="pi pi-map-marker"

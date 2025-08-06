@@ -235,9 +235,11 @@ export function parse_log(buf) {
       break;
 
     case "GPS":
+      const lat = to_float(buf, LOG_POS.GPS.LATITUDE) / 100;
+      const lon = to_float(buf, LOG_POS.GPS.LONGITUDE) / 100;
       log.gps = {
-        latitude: to_float(buf, LOG_POS.GPS.LATITUDE) / 100,
-        longitude: to_float(buf, LOG_POS.GPS.LONGITUDE) / 100,
+        latitude: Math.floor(lat) + (((lat % 1) * 100) / 60),
+        longitude: Math.floor(lon) + (((lon % 1) * 100) / 60),
         lat_dir: to_string(buf, LOG_POS.GPS.LAT_DIR, LOG_POS.GPS.LAT_DIR + 1),
         lon_dir: to_string(buf, LOG_POS.GPS.LON_DIR, LOG_POS.GPS.LON_DIR + 1),
         speed: to_uint(16, buf, LOG_POS.GPS.SPEED) / 100,

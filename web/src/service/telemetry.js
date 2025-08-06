@@ -1,5 +1,13 @@
+import { ref } from 'vue';
 import { convert } from '@/service/protocol';
 import { times, state, views, telemetry } from '@/service/state';
+
+export const map = ref(null);
+export const line = ref(null);
+export const path = ref([]);
+
+export const speed = ref("0.0 km/h");
+export const course = ref("0.0°");
 
 export function update_telemetry(data) {
   if (data.state) {
@@ -71,8 +79,15 @@ export function update_telemetry(data) {
     }
   }
 
-
   if (data.gps) {
+    speed.value = `${data.gps.gps.speed.toFixed(1)} km/h`;
+    course.value = `${data.gps.gps.course.toFixed(1)}°`;
 
+    if (window.kakao && map.value) {
+      const pos = new kakao.maps.LatLng(data.gps.gps.latitude, data.gps.gps.longitude);
+      path.value.push(pos);
+      line.value.setPath(path.value);
+      map.value.panTo(pos);
+    }
   }
 }
