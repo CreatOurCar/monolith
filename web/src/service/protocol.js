@@ -236,12 +236,12 @@ export function parse_log(buf) {
 
     case "GPS":
       log.gps = {
-        latitude: to_float(buf, LOG_POS.GPS.LATITUDE),
-        longitude: to_float(buf, LOG_POS.GPS.LONGITUDE),
-        lat_dir: to_uint(8, buf, LOG_POS.GPS.LAT_DIR),
-        lon_dir: to_uint(8, buf, LOG_POS.GPS.LON_DIR),
-        speed: to_uint(16, buf, LOG_POS.GPS.SPEED),
-        course: to_uint(16, buf, LOG_POS.GPS.COURSE),
+        latitude: to_float(buf, LOG_POS.GPS.LATITUDE) / 100,
+        longitude: to_float(buf, LOG_POS.GPS.LONGITUDE) / 100,
+        lat_dir: to_string(buf, LOG_POS.GPS.LAT_DIR, LOG_POS.GPS.LAT_DIR + 1),
+        lon_dir: to_string(buf, LOG_POS.GPS.LON_DIR, LOG_POS.GPS.LON_DIR + 1),
+        speed: to_uint(16, buf, LOG_POS.GPS.SPEED) / 100,
+        course: to_uint(16, buf, LOG_POS.GPS.COURSE) / 100,
       };
       break;
 
@@ -328,7 +328,7 @@ export function parse_logbuf(buf) {
   };
 
   try {
-    // logbuf.gps = parse_log(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
+    logbuf.gps = parse_log(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
   } catch (e) {
     console.error(`GPS: ${e}`);
     console.error(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
@@ -386,8 +386,9 @@ export const convert = {
 }
 
 export function to_string(buffer, start, end) {
-  let str = String.fromCharCode(...buffer.slice(start, end));
-  return str.slice(0, str.indexOf('\u0000')); // drop from the null character
+  const str = String.fromCharCode(...buffer.slice(start, end));
+  const nl = str.indexOf('\u0000');
+  return nl === -1 ? str : str.slice(0, nl);
 }
 
 export function to_uint(bit, buffer, start) {
@@ -413,6 +414,6 @@ export function signed(value, bit) {
 }
 
 export function to_float(buffer, start) {
-  const view = new DataView(buffer.buffer, start, 4);
+  const view = new DataView(buffer.buffer, buffer.byteOffset + start, 4);
   return view.getFloat32(0, true); // little endian
 }
