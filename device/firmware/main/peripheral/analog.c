@@ -18,14 +18,25 @@
 
 #define VOLT(v) ((int)(((v) * 2048) >> 15))
 
+static i2c_master_bus_handle_t i2c1;
+
 esp_err_t convert(i2c_master_dev_handle_t adc, uint8_t ch, int16_t *v) {
+  esp_err_t ret;
+  int cnt = 0;
   uint8_t tx_conv = ADS1115_CONVERSION_REG_ADDR;
   uint8_t tx[3]   = { ADS1115_CONFIG_REG_ADDR, ADS1115_CONFIG(ch), ADS1115_CONFIG_L };
   uint8_t rx[2]   = { 0 };
 
-  esp_err_t ret = i2c_master_transmit(adc, tx, sizeof(tx), 20);
-  esp_rom_delay_us(1200);  // wait for conversion complete
-  ret |= i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), 10);
+  do {
+    if (cnt) {
+      i2c_master_bus_reset(i2c1);
+    }
+
+    ret = i2c_master_transmit(adc, tx, sizeof(tx), 20);
+    esp_rom_delay_us(1200);  // wait for conversion complete
+    ret |= i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), 10);
+    cnt++;
+  } while (ret != ESP_OK && cnt < 2);
 
   *v = ((int16_t)rx[0] << 8) | rx[1];
 
@@ -45,7 +56,6 @@ void task_analog(void *pvParameters) {
   }
 
   // initialize i2c bus and adc
-  i2c_master_bus_handle_t i2c1;
   i2c_master_bus_config_t i2c_config = {
     .clk_source                   = I2C_CLK_SRC_DEFAULT,
     .i2c_port                     = I2C_NUM_1,

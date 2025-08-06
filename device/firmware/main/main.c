@@ -303,9 +303,17 @@ static void rtc_init(void) {
   uint8_t tx[1] = { 0x02 };  // VL_seconds register address
   uint8_t rx[7] = { 0 };     // 0x02 VL_seconds to 0x08 Years register
 
-  if (i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), 10) != ESP_OK) {
+  esp_err_t ret;
+  int cnt = 0;
+
+  do {
+    ret = i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), 10);
+    cnt++;
+  } while (ret != ESP_OK && cnt < 3);
+
+  if (ret != ESP_OK) {
     i2c_master_bus_rm_device(rtc);
-    ERROR_LOG(&init, RTC, "read time transfer failure");
+    FATAL_LOG(&init, RTC, "read time transfer failure");
     goto finish;
   }
 

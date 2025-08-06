@@ -68,7 +68,15 @@ static void sntp_sync_callback(struct timeval *tv) {
   tx[6] = DEC_TO_BCD(tm->tm_mon + 1);     // month
   tx[7] = DEC_TO_BCD(tm->tm_year - 100);  // year
 
-  if (i2c_master_transmit(rtc, tx, sizeof(tx), 10) != ESP_OK) {
+  esp_err_t ret;
+  int cnt = 0;
+
+  do {
+    ret = i2c_master_transmit(rtc, tx, sizeof(tx), 10);
+    cnt++;
+  } while (ret != ESP_OK && cnt < 3);
+
+  if (ret != ESP_OK) {
     ERROR_SYSLOG(&logbuf.run, RTC, "write time transfer failure", "RTC_WRITE_FAIL");
   } else {
     SYSLOG("RTC_SNTP_SYNC");
