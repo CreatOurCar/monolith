@@ -24,6 +24,10 @@
   const map = ref(null);
   const line = ref(null);
   const path = ref([]);
+  const path_time = ref([]);
+  const slider = ref(0);
+  const timelapse_pos = ref(null);
+  const timelapse_time = ref("00:00:00.000");
 
   const chart = ref(null);
   const graph = ref(null);
@@ -160,6 +164,7 @@
 
             const pos = new kakao.maps.LatLng(data.gps.latitude, data.gps.longitude);
             path.value.push(pos);
+            path_time.value.push(dayjs(bt * 1000 + data.timestamp).format('HH:mm:ss.SSS'));
             break;
 
           case "SYSTEM":
@@ -411,6 +416,28 @@
   Array.prototype.min = function () {
     return Math.min.apply(null, this.filter(x => x));
   };
+
+  function timelapse() {
+    if (!path.value.length) {
+      return;
+    }
+
+    if (!timelapse_pos.value) {
+      timelapse_pos.value = new kakao.maps.Circle({
+        fillColor: '#FF00FF',
+        strokeColor: '#FF00FF',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        radius: 0.5,
+        zIndex: 2,
+      });
+      timelapse_pos.value.setMap(map.value);
+    }
+
+    const pos = Math.floor((path.value.length - 1) * slider.value / 100);
+    timelapse_pos.value.setPosition(path.value[pos]);
+    timelapse_time.value = path_time.value[pos];
+  }
 </script>
 
 <template>
@@ -459,6 +486,10 @@
 
       <div class="card">
         <div class="font-semibold text-xl mb-6">GPS</div>
+        <div class="flex items-center mb-6">
+          <span class="font-semibold mr-6">{{ timelapse_time }}</span>
+          <Slider v-model="slider" class="w-full" @change="timelapse" />
+        </div>
         <div ref="gps" style="width: 100%; aspect-ratio: 1 / 0.7;"></div>
       </div>
 
