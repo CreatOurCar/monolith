@@ -5,6 +5,44 @@
 
 QueueHandle_t uart_queue;
 
+/* NMEA GPRMC message */
+typedef struct {
+  uint8_t *id;
+  uint8_t *utc_time;
+  uint8_t *status;
+  uint8_t *lat;
+  uint8_t *north;
+  uint8_t *lon;
+  uint8_t *east;
+  uint8_t *speed;
+  uint8_t *course;
+  uint8_t *utc_date;
+  uint8_t *others;
+} nmea_gprmc_t;
+
+#define FIND_AND_NUL(s, p, c) ((p) = (uint8_t *)strchr((char *)s, c), *(p) = '\0', ++(p), (p))
+
+bool parse_nmea_gprmc(nmea_gprmc_t *gprmc, uint8_t *data) {
+  gprmc->id       = data;
+  gprmc->utc_time = FIND_AND_NUL(gprmc->id, gprmc->utc_time, ',');
+  gprmc->status   = FIND_AND_NUL(gprmc->utc_time, gprmc->status, ',');
+
+  if (*gprmc->status == 'A') {
+    gprmc->lat      = FIND_AND_NUL(gprmc->status, gprmc->lat, ',');
+    gprmc->north    = FIND_AND_NUL(gprmc->lat, gprmc->north, ',');
+    gprmc->lon      = FIND_AND_NUL(gprmc->north, gprmc->lon, ',');
+    gprmc->east     = FIND_AND_NUL(gprmc->lon, gprmc->east, ',');
+    gprmc->speed    = FIND_AND_NUL(gprmc->east, gprmc->speed, ',');
+    gprmc->course   = FIND_AND_NUL(gprmc->speed, gprmc->course, ',');
+    gprmc->utc_date = FIND_AND_NUL(gprmc->course, gprmc->utc_date, ',');
+    gprmc->others   = FIND_AND_NUL(gprmc->utc_date, gprmc->others, ',');
+
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void init_ublox(void) {
   uart_config_t uart_config = {
     .baud_rate = 9600,
@@ -20,6 +58,11 @@ void init_ublox(void) {
       uart_enable_pattern_det_baud_intr(UART_NUM_1, '\n', 1, 10, 0, 0) != ESP_OK) {
     ERROR_SYSLOG(&init, GPS, "UART driver init failure", "GPS_UART_FAIL");
   }
+
+  const uint8_t GPS_BAUD_115200[] = { 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xC2, 0x01, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x7E };
+
+  uart_write_bytes(UART_NUM_1, GPS_BAUD_115200, sizeof(GPS_BAUD_115200));
+  uart_set_baudrate(UART_NUM_1, 115200);
 
   const uint8_t GPS_DISABLE_NMEA_GxGGA[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x01, 0x00, 0x24 };
@@ -72,6 +115,7 @@ void task_gps(void *pvParameters) {
 
   uint8_t data[256];
   uart_event_t event;
+  nmea_gprmc_t gprmc;
 
   while (true) {
     if (xQueueReceive(uart_queue, &event, portMAX_DELAY) != pdTRUE) {
@@ -97,7 +141,15 @@ void task_gps(void *pvParameters) {
     }
 
     if (strncmp((char *)data, "$GPRMC", 6) == 0) {
-      printf("%.*s", len, data);
+      if (parse_nmea_gprmc(&gprmc, data)) {
+        logbuf.gps.payload.gps.latitude  = atof((char *)gprmc.lat);
+        logbuf.gps.payload.gps.longitude = atof((char *)gprmc.lon);
+        logbuf.gps.payload.gps.lat_dir   = *gprmc.north;
+        logbuf.gps.payload.gps.lon_dir   = *gprmc.east;
+        logbuf.gps.payload.gps.speed     = (uint16_t)(atof((char *)gprmc.speed) * 1.852f * 100.0f);
+        logbuf.gps.payload.gps.course    = (uint16_t)(atof((char *)gprmc.course) * 100.0f);
+        LOG(LOG_TYPE_GPS, &logbuf.gps);
+      }
     }
 
     uart_pattern_queue_reset(UART_NUM_1, 16);

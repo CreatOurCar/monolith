@@ -148,8 +148,8 @@ typedef struct {
 typedef struct {
   float latitude;
   float longitude;
-  uint8_t lat_dir;  // 0: N, 1: S
-  uint8_t lon_dir;  // 0: E, 1: W
+  uint8_t lat_dir;
+  uint8_t lon_dir;
   uint8_t _reserved[2];
   uint16_t speed;
   uint16_t course;
