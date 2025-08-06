@@ -9,8 +9,8 @@ export function init_map(map, line, path, ref) {
     map.value.addControl(new kakao.maps.MapTypeControl(), kakao.maps.ControlPosition.TOPRIGHT);
 
     line.value = new kakao.maps.Polyline({
-      strokeColor: '#FF00FF',
-      strokeOpacity: 0.8,
+      strokeColor: '#FFFF00',
+      strokeOpacity: 0.9,
     });
 
     line.value.setPath(path.value);

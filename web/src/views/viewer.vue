@@ -175,8 +175,22 @@
 
       line.value.setPath(path.value);
       map.value.setCenter(path.value[0]);
-      new kakao.maps.Marker({position: path.value[0], title: "Start", }).setMap(map.value);
-      new kakao.maps.Marker({position: path.value[path.value.length - 1], title: "End", }).setMap(map.value);
+      new kakao.maps.Circle({
+        center: path.value[0],
+        fillColor: '#00FF00',
+        strokeColor: '#00FF00',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        radius: 0.5,
+      }).setMap(map.value);
+      new kakao.maps.Circle({
+        center: path.value[path.value.length - 1],
+        fillColor: '#FF0000',
+        strokeColor: '#FF0000',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        radius: 0.5,
+      }).setMap(map.value);
 
       init_chart(dataset);
     };

@@ -9,6 +9,8 @@ export const path = ref([]);
 export const speed = ref("0.0 km/h");
 export const course = ref("0.0°");
 
+let current_pos = null;
+
 export function update_telemetry(data) {
   if (data.state) {
     Object.entries(data.state).forEach(([key, value]) => {
@@ -84,7 +86,19 @@ export function update_telemetry(data) {
     course.value = `${data.gps.gps.course.toFixed(1)}°`;
 
     if (window.kakao && map.value) {
+      if (!current_pos) {
+        current_pos = new kakao.maps.Circle({
+          fillColor: '#00FF00',
+          strokeColor: '#00FF00',
+          fillOpacity: 1,
+          strokeOpacity: 1,
+          radius: 0.3,
+        });
+        current_pos.setMap(map.value);
+      }
+
       const pos = new kakao.maps.LatLng(data.gps.gps.latitude, data.gps.gps.longitude);
+      current_pos.setPosition(pos);
       path.value.push(pos);
       line.value.setPath(path.value);
       map.value.panTo(pos);
