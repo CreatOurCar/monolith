@@ -118,12 +118,13 @@ export const views = reactive({
   }
 });
 
-
 export const telemetry = reactive({
   chart: {},
   analog: [[], [], [], [], [], [], [], [], []],
   gyro: [[], [], [], [], [], [], []],
 });
+
+export const digit = num => num.toFixed(Math.max(0, 3 - Math.trunc(Math.abs(num)).toString().length));
 
 export const fmt = {
   time: (u, v, sidx, didx) => {
@@ -135,7 +136,6 @@ export const fmt = {
 
     return dayjs(v * 1000).format('HH:mm:ss.SSS');
   },
-
   digital: (u, v, sidx, didx) => {
     const d = u.data[sidx];
 
@@ -149,7 +149,6 @@ export const fmt = {
       default: return '-';
     }
   },
-
   volt: (u, v, sidx, didx) => {
     const d = u.data[sidx];
 
@@ -161,9 +160,8 @@ export const fmt = {
       return '-';
     }
 
-    return `${v.toFixed(1)} V`;
+    return `${digit(v)} V`;
   },
-
   temp: (u, v, sidx, didx) => {
     const d= u.data[sidx];
 
@@ -175,9 +173,8 @@ export const fmt = {
       return '-';
     }
 
-    return `${v.toFixed(1)} °C`;
+    return `${digit(v)} °C`;
   },
-
   accel: (u, v, sidx, didx) => {
     const d = u.data[sidx];
 
@@ -189,9 +186,8 @@ export const fmt = {
       return '-';
     }
 
-    return `${v.toFixed(1)} g`;
+    return `${digit(v)} g`;
   },
-
   gyro: (u, v, sidx, didx) => {
     const d = u.data[sidx];
 
@@ -203,6 +199,19 @@ export const fmt = {
       return '-';
     }
 
-    return `${v.toFixed(1)} °/s`;
-  }
+    return `${digit(v)} °/s`;
+  },
+  speed: (u, v, sidx, didx) => {
+    const d = u.data[sidx];
+
+    if (didx == null && d) {
+      v = d[d.length - 1];
+    }
+
+    if (isNaN(v) || !v) {
+      return '-';
+    }
+
+    return `${digit(v)} km/h`;
+  },
 }

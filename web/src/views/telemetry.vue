@@ -5,7 +5,7 @@
   import {dark} from '@/layout/composables/layout';
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
-  import {state, times, cons, views, telemetry, fmt} from '@/service/state';
+  import {state, times, cons, views, telemetry, fmt, digit} from '@/service/state';
   import {map, line, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 
@@ -142,7 +142,7 @@
         {
           scale: 'volt',
           size: 50,
-          values: (u, v) => v.map(x => `${x.toFixed(1)}V`),
+          values: (u, v) => v.map(x => `${digit(x)}V`),
           splits: () => axis.volt.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -152,7 +152,7 @@
           scale: 'temp',
           side: 1,
           size: 50,
-          values: (u, v) => v.map(x => `${x.toFixed(1)}°C`),
+          values: (u, v) => v.map(x => `${digit(x)}°C`),
           splits: () => axis.temp.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -198,7 +198,7 @@
         {
           scale: 'accel',
           size: 50,
-          values: (u, v) => v.map(x => `${x.toFixed(1)}g`),
+          values: (u, v) => v.map(x => `${digit(x)}g`),
           splits: () => axis.accel.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -207,8 +207,8 @@
         {
           scale: 'gyro',
           side: 1,
-          size: 50,
-          values: (u, v) => v.map(x => `${x.toFixed(0)}°/s`),
+          size: 60,
+          values: (u, v) => v.map(x => `${digit(x)}°/s`),
           splits: () => axis.gyro.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},

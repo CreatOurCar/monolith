@@ -4,7 +4,7 @@
   import {ref, onMounted} from 'vue';
   import {dark} from '@/layout/composables/layout';
   import {parse, convert} from '@/service/protocol';
-  import {views, fmt, format_size} from '@/service/state';
+  import {views, fmt, digit, format_size} from '@/service/state';
   import {init_map} from '@/service/map';
 
   import uPlot from 'uplot';
@@ -32,6 +32,7 @@
     temp: {splits: [], min: 0, max: 0},
     accel: {splits: [], min: 0, max: 0},
     gyro: {splits: [], min: 0, max: 0},
+    speed: {splits: [], min: 0, max: 0},
   };
 
   const show = {
@@ -42,7 +43,7 @@
     gps: {name: "GPS", ref: ref(false)},
   };
 
-  const colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5'];
+  const colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5', '#7f7f7f', '#c7c7c7'];
 
   onMounted(() => {
     if (!window.kakao) {
@@ -228,7 +229,17 @@
               return [axis.gyro.min, axis.gyro.max];
             }
           }
-        }
+        },
+        speed: {
+          range: (u, d_min, d_max) => {
+            if (d_min === null && d_max === null) {
+              return [null, null];
+            } else {
+              axis.speed = split_range(d_min, d_max);
+              return [axis.speed.min, axis.speed.max];
+            }
+          }
+        },
       },
       series: [
         {value: fmt.time},
@@ -250,6 +261,7 @@
         {label: "Gx", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[15]},
         {label: "Gy", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[16]},
         {label: "Gz", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[17]},
+        {label: "SPD", value: fmt.speed, scale: 'speed', spanGaps: true, show: false, stroke: colors[18]},
       ],
       axes: [
         {
@@ -261,7 +273,7 @@
         },
         {
           scale: 'accel',
-          values: (u, v) => v.map(x => `${x.toFixed(1)}g`),
+          values: (u, v) => v.map(x => `${digit(x)}g`),
           splits: () => axis.accel.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -270,7 +282,8 @@
         {
           scale: 'gyro',
           side: 1,
-          values: (u, v) => v.map(x => `${x.toFixed(0)}°/s`),
+          size: 60,
+          values: (u, v) => v.map(x => `${digit(x)}°/s`),
           splits: () => axis.gyro.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -278,7 +291,7 @@
         },
         {
           scale: 'volt',
-          values: (u, v) => v.map(x => `${x.toFixed(1)}V`),
+          values: (u, v) => v.map(x => `${digit(x)}V`),
           splits: () => axis.volt.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {show: false},
@@ -287,7 +300,7 @@
         {
           scale: 'temp',
           side: 1,
-          values: (u, v) => v.map(x => `${x.toFixed(1)}°C`),
+          values: (u, v) => v.map(x => `${digit(x)}°C`),
           splits: () => axis.temp.splits,
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {show: false},
@@ -296,12 +309,23 @@
         {
           scale: 'digital',
           side: 1,
+          size: 20,
           values: (u, v) => v.map(x => x ? "HI" : "LO"),
           splits: () => [0, 1],
           stroke: () => dark.value ? '#fff' : '#000',
           ticks: {show: false},
           grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
         },
+        {
+          scale: 'speed',
+          side: 1,
+          size: 60,
+          values: (u, v) => v.map(x => `${digit(x)}km/h`),
+          splits: () => axis.speed.splits,
+          stroke: () => dark.value ? '#fff' : '#000',
+          ticks: {show: false},
+          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        }
       ]
     }, dataset, graph.value);
 
