@@ -222,6 +222,10 @@ export function init_mqtt() {
       }
 
       case 'ack/get': {
+        if (!files.loading.download) {
+          return;
+        }
+
         const cnt = to_uint(32, message, 0);
 
         for (let i = 0; i < cnt; i++) {
