@@ -1,6 +1,4 @@
-import { line, path } from '@/service/telemetry';
-
-export function init_map(map, ref) {
+export function init_map(map, line, path, ref) {
   window.kakao.maps.load(() => {
     map.value = new kakao.maps.Map(ref.value, {
       mapTypeId: kakao.maps.MapTypeId.HYBRID,

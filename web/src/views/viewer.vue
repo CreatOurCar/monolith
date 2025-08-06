@@ -20,11 +20,15 @@
     statistic: ref(""),
   };
 
-  let map = ref(null);
   let gps = ref(null);
+  let map = ref(null);
+  let line = ref(null);
+  let path = ref([]);
+
   let chart = ref(null);
   let graph = ref(null);
   let container = ref(null);
+
   let events = ref([]);
 
   const axis = {
@@ -50,10 +54,10 @@
       const script = document.createElement("script");
       script.type = 'text/javascript';
       script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false";
-      script.onload = () => init_map(map, gps);
+      script.onload = () => init_map(map, line, path, gps);
       document.head.appendChild(script);
     } else {
-      init_map(map, gps);
+      init_map(map, line, path, gps);
     }
   });
 
@@ -153,6 +157,9 @@
             for (let i = 1; i < 19; i++) {
               dataset[i].push(null);
             }
+
+            const pos = new kakao.maps.LatLng(data.gps.latitude, data.gps.longitude);
+            path.value.push(pos);
             break;
 
           case "SYSTEM":
@@ -165,6 +172,11 @@
             break;
         }
       }
+
+      line.value.setPath(path.value);
+      map.value.setCenter(path.value[0]);
+      new kakao.maps.Marker({ position: path.value[0], title: "Start", }).setMap(map.value);
+      new kakao.maps.Marker({ position: path.value[path.value.length - 1], title: "End", }).setMap(map.value);
 
       init_chart(dataset);
     };

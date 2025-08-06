@@ -6,7 +6,7 @@
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
   import {state, times, cons, views, telemetry, fmt, digit} from '@/service/state';
-  import {map, line, speed, course} from '@/service/telemetry';
+  import {map, line, path, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 
   import uPlot from 'uplot';
@@ -38,10 +38,10 @@
       const script = document.createElement("script");
       script.type = 'text/javascript';
       script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false";
-      script.onload = () => init_map(map, container.gps);
+      script.onload = () => init_map(map, line, path, container.gps);
       document.head.appendChild(script);
     } else {
-      init_map(map, container.gps);
+      init_map(map, line, path, container.gps);
     }
 
     init_chart();
