@@ -146,8 +146,8 @@ typedef struct {
 } can_record_t;
 
 typedef struct {
-  float latitude;
-  float longitude;
+  uint32_t latitude;
+  uint32_t longitude;
   uint8_t lat_dir;
   uint8_t lon_dir;
   uint8_t _reserved[2];
