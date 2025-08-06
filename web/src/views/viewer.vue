@@ -20,14 +20,14 @@
     statistic: ref(""),
   };
 
-  let gps = ref(null);
-  let map = ref(null);
-  let line = ref(null);
-  let path = ref([]);
+  const gps = ref(null);
+  const map = ref(null);
+  const line = ref(null);
+  const path = ref([]);
 
-  let chart = ref(null);
-  let graph = ref(null);
-  let container = ref(null);
+  const chart = ref(null);
+  const graph = ref(null);
+  const container = ref(null);
 
   let events = ref([]);
 
@@ -175,8 +175,8 @@
 
       line.value.setPath(path.value);
       map.value.setCenter(path.value[0]);
-      new kakao.maps.Marker({ position: path.value[0], title: "Start", }).setMap(map.value);
-      new kakao.maps.Marker({ position: path.value[path.value.length - 1], title: "End", }).setMap(map.value);
+      new kakao.maps.Marker({position: path.value[0], title: "Start", }).setMap(map.value);
+      new kakao.maps.Marker({position: path.value[path.value.length - 1], title: "End", }).setMap(map.value);
 
       init_chart(dataset);
     };
@@ -445,7 +445,7 @@
 
       <div class="card">
         <div class="font-semibold text-xl mb-6">GPS</div>
-        <div ref="gps" style="width: 100%; height: 40vh;"></div>
+        <div ref="gps" style="width: 100%; aspect-ratio: 1 / 0.7;"></div>
       </div>
 
       <div class="card">

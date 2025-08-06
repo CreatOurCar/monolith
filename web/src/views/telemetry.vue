@@ -284,7 +284,7 @@
 
       <div v-if="views.gps.display" class="card" style="position: relative;">
         <div class="font-semibold text-xl mb-6">GPS</div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
           <div class="flex items-center">
             <span class="w-20 font-medium">Speed</span>
             <Tag :value="speed" severity="info" class="ml-2 state" />
@@ -296,7 +296,7 @@
         </div>
 
         <div class="relative">
-          <div :ref="container.gps" style="width: 100%; height: 40vh;"></div>
+          <div :ref="container.gps" style="width: 100%; aspect-ratio: 1 / 0.7;"></div>
           <Button class="!absolute bottom-3 right-3 z-10 h-10" severity="secondary" icon="pi pi-map-marker"
             @click="geolocation" />
         </div>
