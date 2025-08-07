@@ -16,7 +16,7 @@
     config.server.key.value = localStorage.getItem('server/key');
 
     if (connection.device.value === 'Online') {
-      load_confirm();
+      publish('cmd/cfg', '!', 1)
     }
   });
 
@@ -91,7 +91,7 @@
   function load_confirm() {
     confirm.require({
       header: 'Load Confirmation',
-      message: 'Load configurations from the device? Make sure it is not in the critical session.',
+      message: 'Load configurations from the device?',
       icon: 'pi pi-info-circle',
       rejectProps: {
         label: 'Cancel',
