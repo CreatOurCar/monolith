@@ -108,6 +108,7 @@ void task_gps(void *pvParameters) {
     COPY_STATE(&logbuf.run, &init, GPS);
   }
 
+  log_t gps;
   uint8_t data[256];
   uart_event_t event;
   nmea_gprmc_t gprmc;
@@ -137,13 +138,14 @@ void task_gps(void *pvParameters) {
 
     if (strncmp((char *)data, "$GPRMC", 6) == 0) {
       if (parse_nmea_gprmc(&gprmc, data)) {
-        logbuf.gps.payload.gps.latitude  = (uint32_t)(atof((char *)gprmc.lat) * 100000.0f);
-        logbuf.gps.payload.gps.longitude = (uint32_t)(atof((char *)gprmc.lon) * 100000.0f);
-        logbuf.gps.payload.gps.lat_dir   = *gprmc.north;
-        logbuf.gps.payload.gps.lon_dir   = *gprmc.east;
-        logbuf.gps.payload.gps.speed     = (uint16_t)(atof((char *)gprmc.speed) * 1.852f * 100.0f);
-        logbuf.gps.payload.gps.course    = (uint16_t)(atof((char *)gprmc.course) * 100.0f);
-        LOG(LOG_TYPE_GPS, &logbuf.gps);
+        gps.payload.gps.latitude  = (uint32_t)(atof((char *)gprmc.lat) * 100000.0f);
+        gps.payload.gps.longitude = (uint32_t)(atof((char *)gprmc.lon) * 100000.0f);
+        gps.payload.gps.lat_dir   = *gprmc.north;
+        gps.payload.gps.lon_dir   = *gprmc.east;
+        gps.payload.gps.speed     = (uint16_t)(atof((char *)gprmc.speed) * 1.852f * 100.0f);
+        gps.payload.gps.course    = (uint16_t)(atof((char *)gprmc.course) * 100.0f);
+        LOG(LOG_TYPE_GPS, &gps);
+        memcpy(&logbuf.gps, &gps, sizeof(log_t));
       }
     }
 
