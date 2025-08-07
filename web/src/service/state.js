@@ -105,12 +105,12 @@ export const views = reactive({
     name: 'Analog',
     display: { telemetry: true },
     ch: {
-      ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1 },
-      ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1 },
-      ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1 },
-      ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1 },
-      ain5: { name: 'AIN5', value: 0, multiplier: 1 },
-      ain6: { name: 'AIN6', value: 0, multiplier: 1 },
+      ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
+      ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
+      ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
+      ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
+      ain5: { name: 'AIN5', value: 0, multiplier: 1, unit: 'Volt' },
+      ain6: { name: 'AIN6', value: 0, multiplier: 1, unit: 'Volt' },
       volt: { name: 'PWR', value: 0, multiplier: 15430 / 430 },
       temp: { name: 'TEMP', value: 0, multiplier: 0.01 },
     }
@@ -129,7 +129,7 @@ export const views = reactive({
   },
 });
 
-export const units = reactive([]);
+export const units = reactive([{ name: 'Volt', unit: 'V', display: 'Volt (V)' }]);
 
 export const telemetry = reactive({
   chart: {},
