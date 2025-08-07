@@ -129,6 +129,8 @@ export const views = reactive({
   },
 });
 
+export const units = reactive([]);
+
 export const telemetry = reactive({
   chart: {},
   analog: [[], [], [], [], [], [], [], [], []],
