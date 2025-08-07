@@ -4,7 +4,8 @@
   import {ref, onMounted} from 'vue';
   import {dark} from '@/layout/composables/layout';
   import {parse, convert} from '@/service/protocol';
-  import {views, fmt, digit, format_size} from '@/service/state';
+  import {fmt, digit, format_size} from '@/service/state';
+  import {views} from '@/service/ui';
   import {init_map} from '@/service/map';
 
   import uPlot from 'uplot';

@@ -1,6 +1,6 @@
 <script setup>
   import {ref} from 'vue';
-  import {views, units} from '@/service/state';
+  import {views, units} from '@/service/ui';
 
   import ToastEventBus from 'primevue/toasteventbus';
 
@@ -48,17 +48,18 @@
             <Button icon="pi pi-plus" @click="add_unit" />
           </InputGroup>
           <div class="mt-2 flex flex-wrap gap-4">
-            <Tag v-for="(u, idx) in units" :key="idx" :value="u.display" class="text-lg cursor-pointer"
-              @click="remove_unit(idx)" />
+            <Tag v-for="(u, idx) in units" :key="idx" :value="u.display"
+              class="text-lg cursor-pointer [user-select:none]" @click="remove_unit(idx)" />
           </div>
         </div>
 
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl mb-2">Display</div>
           <div class="text-lg font-semibold">Telemetry</div>
-          <div class="grid grid-cols-12 gap-4 items-center pl-4">
+          <div class="grid grid-cols-12 gap-6 items-center pl-4">
             <template v-for="(view, key, idx) in views" :key="key">
-              <label :for="key" class="flex items-center col-span-3 font-medium" :class="{ 'col-start-7': idx % 2 === 1 }">
+              <label :for="key" class="flex items-center col-span-3 font-medium"
+                :class="{ 'col-start-7': idx % 2 === 1 }">
                 {{ view.name }}
               </label>
               <div class="flex items-center col-span-3" :class="{ 'col-start-10': idx % 2 === 1 }">
@@ -104,7 +105,8 @@
             <div class="grid grid-cols-12 gap-2 items-center">
               <div class="col-span-4 flex items-center gap-2 col-start-4">
                 <div class="flex items-end">
-                  <InputNumber v-model.number="channel.multiplier" mode="decimal" class="w-20" :fluid="false" />
+                  <input v-model.number="channel.multiplier" type="number" step="0.001"
+                    class="w-20 p-inputtext p-component p-filled" />
                   <span class="mb-1">&ensp;x</span>
                 </div>
               </div>
@@ -126,3 +128,17 @@
     </div>
   </Fluid>
 </template>
+
+<style>
+  input[type="number"] {
+    -moz-appearance: textfield;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+</style>

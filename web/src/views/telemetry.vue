@@ -5,7 +5,8 @@
   import {dark} from '@/layout/composables/layout';
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
-  import {state, times, cons, views, telemetry, fmt, digit} from '@/service/state';
+  import {state, times, cons, telemetry, fmt, digit} from '@/service/state';
+  import {views} from '@/service/ui';
   import {map, line, path, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 

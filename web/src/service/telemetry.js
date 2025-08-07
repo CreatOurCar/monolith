@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { convert } from '@/service/protocol';
-import { times, state, views, telemetry } from '@/service/state';
+import { times, state, telemetry } from '@/service/state';
+import { views } from '@/service/ui';
 
 export const map = ref(null);
 export const line = ref(null);

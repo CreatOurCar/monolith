@@ -1,12 +1,6 @@
 import { reactive } from "vue";
 import dayjs from 'dayjs/esm';
 
-export function format_size(size) {
-  if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + " MB"
-  if (size >= 1024) return (size / 1024).toFixed(2) + " KB"
-  return size + " B"
-}
-
 export const connection = reactive({
   server: { value: 'Uninitialized', severity: 'danger' },
   device: { value: 'Offline', severity: 'danger' },
@@ -90,52 +84,17 @@ export const cons = reactive({
   can: { id: "", data: Array.from({ length: 8 }, () => "") },
 });
 
-export const views = reactive({
-  digital: {
-    name: 'Digital',
-    display: { telemetry: true },
-    ch: {
-      din1: { name: 'DIN1', value: false },
-      din2: { name: 'DIN2', value: false },
-      din3: { name: 'DIN3', value: false },
-      din4: { name: 'DIN4', value: false },
-    }
-  },
-  analog: {
-    name: 'Analog',
-    display: { telemetry: true },
-    ch: {
-      ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain5: { name: 'AIN5', value: 0, multiplier: 1, unit: 'Volt' },
-      ain6: { name: 'AIN6', value: 0, multiplier: 1, unit: 'Volt' },
-      volt: { name: 'PWR', value: 0, multiplier: 15430 / 430 },
-      temp: { name: 'TEMP', value: 0, multiplier: 0.01 },
-    }
-  },
-  gyro: {
-    name: 'Gyro',
-    display: { telemetry: true },
-  },
-  can: {
-    name: 'CAN',
-    display: { telemetry: true }
-  },
-  gps: {
-    name: 'GPS',
-    display: { telemetry: true, viewer: true },
-  },
-});
-
-export const units = reactive([{ name: 'Volt', unit: 'V', display: 'Volt (V)' }]);
-
 export const telemetry = reactive({
   chart: {},
   analog: [[], [], [], [], [], [], [], [], []],
   gyro: [[], [], [], [], [], [], []],
 });
+
+export function format_size(size) {
+  if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + " MB"
+  if (size >= 1024) return (size / 1024).toFixed(2) + " KB"
+  return size + " B"
+}
 
 export const digit = num => num.toFixed(Math.max(0, 3 - Math.trunc(Math.abs(num)).toString().length));
 
