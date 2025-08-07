@@ -499,7 +499,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div v-if="views.gps.display.viewer" class="card">
         <div class="font-semibold text-xl mb-6">GPS</div>
         <div class="flex items-center mb-6">
           <span class="font-semibold mr-6">{{ timelapse_time }}</span>

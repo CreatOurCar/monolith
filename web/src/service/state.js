@@ -92,7 +92,8 @@ export const cons = reactive({
 
 export const views = reactive({
   digital: {
-    display: true,
+    name: 'Digital',
+    display: { telemetry: true },
     ch: {
       din1: { name: 'DIN1', value: false },
       din2: { name: 'DIN2', value: false },
@@ -101,7 +102,8 @@ export const views = reactive({
     }
   },
   analog: {
-    display: true,
+    name: 'Analog',
+    display: { telemetry: true },
     ch: {
       ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1 },
       ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1 },
@@ -113,11 +115,18 @@ export const views = reactive({
       temp: { name: 'TEMP', value: 0, multiplier: 0.01 },
     }
   },
-  gyro: { display: true },
-  gps: { display: true },
+  gyro: {
+    name: 'Gyro',
+    display: { telemetry: true },
+  },
   can: {
-    // TODO:
-  }
+    name: 'CAN',
+    display: { telemetry: true }
+  },
+  gps: {
+    name: 'GPS',
+    display: { telemetry: true, viewer: true },
+  },
 });
 
 export const telemetry = reactive({
@@ -165,7 +174,7 @@ export const fmt = {
     return `${digit(v)} V`;
   },
   temp: (u, v, sidx, didx) => {
-    const d= u.data[sidx];
+    const d = u.data[sidx];
 
     if (didx == null && d) {
       v = d[d.length - 1];

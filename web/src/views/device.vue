@@ -318,14 +318,14 @@
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Inputs</div>
           <div class="grid grid-cols-12 gap-2 items-center">
-            <label for="anl/en" class="flex items-center col-span-3">Analog</label>
+            <label for="dgt/en" class="flex items-center col-span-3">Digital</label>
             <div class="flex items-center col-span-3">
-              <ToggleSwitch id="anl/en" v-model="config.anl.en.value" :disabled="config.disabled"
+              <ToggleSwitch id="dgt/en" v-model="config.dgt.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
             </div>
-            <label for="dgt/en" class="flex items-center col-span-3 col-start-7">Digital</label>
+            <label for="anl/en" class="flex items-center col-span-3 col-start-7">Analog</label>
             <div class="flex items-center col-span-3 col-start-10">
-              <ToggleSwitch id="dgt/en" v-model="config.dgt.en.value" :disabled="config.disabled"
+              <ToggleSwitch id="anl/en" v-model="config.anl.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
             </div>
           </div>

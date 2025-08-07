@@ -258,9 +258,8 @@
         </div>
       </div>
 
-      <div v-if="views.digital.display" class="card">
+      <div v-if="views.digital.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">Digital</div>
-
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           <template v-for="item in views.digital.ch" :key="item.name">
             <div v-if="item.name" class="flex items-center">
@@ -269,20 +268,19 @@
             </div>
           </template>
         </div>
-
       </div>
 
-      <div v-if="views.analog.display" class="card">
+      <div v-if="views.analog.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-4">Analog</div>
         <div class="chart" :ref="container.analog"></div>
       </div>
 
-      <div v-if="views.gyro.display" class="card">
+      <div v-if="views.gyro.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-4">Gyroscope</div>
         <div class="chart" :ref="container.gyro"></div>
       </div>
 
-      <div v-if="views.gps.display" class="card" style="position: relative;">
+      <div v-if="views.gps.display.telemetry" class="card" style="position: relative;">
         <div class="font-semibold text-xl mb-6">GPS</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
           <div class="flex items-center">
