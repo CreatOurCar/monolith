@@ -60,6 +60,8 @@ export const files = reactive({
     buf: [],
     progress: 0,
     size: 0,
+    time: null,
+    speed: "",
   }
 });
 

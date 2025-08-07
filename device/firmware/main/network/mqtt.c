@@ -254,11 +254,11 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
         esp_mqtt_client_publish(mqtt, topic, data, read, MQTT_QOS_0, false);
       }
 
+      snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
+      esp_mqtt_client_publish(mqtt, topic, (char *)&cnt, sizeof(cnt), MQTT_QOS_1, false);
+
       free(data);
       fclose(fp);
-
-      snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
-      esp_mqtt_client_publish(mqtt, topic, (char *)&cnt, sizeof(cnt), MQTT_QOS_2, false);
     }
   }
 }

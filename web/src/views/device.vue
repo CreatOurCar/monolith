@@ -237,6 +237,7 @@
     files.download.name = name;
     files.download.size = size;
     files.download.progress = 0;
+    files.download.time = new Date().getTime();
     files.disabled = true;
     publish(`cmd/get/${name}`, '!', 1);
   }
@@ -447,6 +448,7 @@
         :style="{ width: '25rem' }">
         <div class="flex flex-col items-center">
           <div class="mb-4">{{ files.download.name }}</div>
+          <div class="mb-4">{{ files.download.speed }}</div>
           <ProgressBar :value="files.download.progress" style="width: 100%" />
         </div>
       </Dialog>

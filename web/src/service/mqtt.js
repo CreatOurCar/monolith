@@ -259,7 +259,7 @@ export function init_mqtt() {
 
         ToastEventBus.emit('add', {
           severity: 'success', summary: 'File Downloaded',
-          detail: `${files.download.name} (${format_size(size)} bytes)`,
+          detail: `${files.download.name}\n(${format_size(size)}, ${files.download.speed})`,
           group: 'br', life: 3000
         });
 
@@ -288,6 +288,8 @@ export function init_mqtt() {
         } else if (topic.startsWith('ack/get/')) {
           const index = topic.replace('ack/get/', '');
           files.download.buf[index] = message;
+          files.download.time;
+          files.download.speed = `${format_size(index * 4096 / ((new Date().getTime() - files.download.time) / 1000))}/s`;
           files.download.progress = (index * 4096 / files.download.size * 100).toFixed(1);
           break;
         }
