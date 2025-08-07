@@ -381,7 +381,7 @@ static void peripheral_task_init(void) {
 
   /***** ANALOG *****/
   if (storage.enabled.analog) {
-    if (xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 5, NULL, CORE1) != pdPASS) {
+    if (xTaskCreatePinnedToCore(task_analog, "analog", 4096, NULL, 6, NULL, CORE1) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "ANALOG task create failure", "ANL_TASK_FAIL");
     }
   }
