@@ -503,7 +503,7 @@
         <div class="font-semibold text-xl mb-6">GPS</div>
         <div class="flex items-center mb-6">
           <span class="font-semibold mr-6">{{ timelapse_time }}</span>
-          <Slider v-model="slider" class="w-full" @change="timelapse" />
+          <Slider v-model="slider" :step="0.01" class="w-full" @change="timelapse" />
         </div>
         <div class="mb-6 space-y-4">
           <div class="flex">
