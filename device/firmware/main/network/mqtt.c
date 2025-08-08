@@ -124,7 +124,12 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 
     else if (STREQL(dir[2], "evt")) {  // user event
       log_t log;
-      strncpy(log.payload.user_event.msg, evt->data, sizeof(log.payload.user_event.msg));
+      strncpy(log.payload.user_event.msg, evt->data, evt->data_len);
+
+      if (evt->data_len < sizeof(log.payload.user_event.msg)) {
+        log.payload.user_event.msg[evt->data_len] = '\0';
+      }
+
       LOG(LOG_TYPE_USER_EVENT, &log);
 
       snprintf(topic, sizeof(topic), "%s/ack/evt", storage.device.name);

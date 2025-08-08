@@ -81,7 +81,7 @@
         file.device.value = "I'm sorry Dave,";
         file.statistic.value = "I'm afraid I can't do that.";
         file.boot.value = "";
-        file.duration.value = "";
+        file.duration.value = "Data parse failed.";
         console.error(e);
         return;
       }
@@ -491,9 +491,10 @@
             <div class="flex flex-col">
               <div v-for="(item, index) in slotProps.items" :key="index" class="flex items-center py-2 px-2 gap-2">
                 <div class="w-8 text-center">{{ index + 1 }}</div>
-                <Tag :value="item.time" severity="success" class="timetag" />
-                <Tag :value="item.type" severity="info" class="timetag" />
-                <Tag :value="item.msg" severity="secondary" class="timetag" />
+                <Tag :value="item.time" severity="success" />
+                <Tag :value="item.type"
+                  :severity="item.msg.includes('FAIL') ? 'warn' : (item.type === 'SYS' ? 'info' : 'primary')" />
+                <Tag :value="item.msg" severity="secondary" />
               </div>
             </div>
           </template>
