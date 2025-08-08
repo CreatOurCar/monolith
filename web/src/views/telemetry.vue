@@ -6,7 +6,7 @@
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
   import {state, times, cons, telemetry, fmt, digit} from '@/service/state';
-  import {views} from '@/service/ui';
+  import {views, units} from '@/service/ui';
   import {map, line, path, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 
@@ -48,6 +48,164 @@
     init_chart();
   });
 
+  const axis = {
+    temp: {splits: [], min: 0, max: 0},
+    accel: {splits: [], min: 0, max: 0},
+    gyro: {splits: [], min: 0, max: 0},
+  };
+
+  function init_chart() {
+    const scales = {
+      temp: {
+        range: (u, d_min, d_max) => {
+          axis.temp = split_range(d_min, d_max);
+          return [axis.temp.min, axis.temp.max];
+        }
+      },
+    };
+
+    const axes = [{
+      size: 35,
+      values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
+      stroke: () => dark.value ? '#fff' : '#000',
+      ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+    }, {
+      scale: 'temp',
+      side: 1,
+      size: 50,
+      values: (u, v) => v.map(x => `${digit(x)}°C`),
+      splits: () => axis.temp.splits,
+      stroke: () => dark.value ? '#fff' : '#000',
+      ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+    }];
+
+    for (const [i, [k, o]] of Object.entries(units).entries()) {
+      axis[k] = {splits: [], min: 0, max: 0};
+      scales[k] = {
+        range: (u, d_min, d_max) => {
+          axis[k] = split_range(d_min, d_max);
+          return [axis[k].min, axis[k].max];
+        }
+      };
+      axes.push({
+        scale: k,
+        side: i % 2 ? 1 : 3,
+        size: 50,
+        values: (u, v) => v.map(x => `${digit(x)}${o.unit}`),
+        splits: () => axis[k].splits,
+        stroke: () => dark.value ? '#fff' : '#000',
+        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      });
+    }
+
+    telemetry.chart.analog = new uPlot({
+      width: 600, height: 400,
+      pxAlign: 0, pxSnap: false,
+      scales: scales,
+      series: [
+        {value: fmt.time},
+        {label: views.analog.ch.ain1.name, stroke: colors[0], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain1.unit || 'Volt'},
+        {label: views.analog.ch.ain2.name, stroke: colors[1], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain2.unit || 'Volt'},
+        {label: views.analog.ch.ain3.name, stroke: colors[2], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain3.unit || 'Volt'},
+        {label: views.analog.ch.ain4.name, stroke: colors[3], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain4.unit || 'Volt'},
+        {label: views.analog.ch.ain5.name, stroke: colors[4], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain5.unit || 'Volt'},
+        {label: views.analog.ch.ain6.name, stroke: colors[5], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain6.unit || 'Volt'},
+        {label: views.analog.ch.volt.name, stroke: colors[6], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'Volt'},
+        {label: views.analog.ch.temp.name, stroke: colors[7], value: fmt.temp, points: {show: false}, pxAlign: 0, scale: 'temp', show: false},
+      ],
+      axes: axes,
+    }, telemetry.analog, container.analog.value);
+
+    telemetry.chart.gyro = new uPlot({
+      width: 600, height: 400,
+      pxAlign: 0, pxSnap: false,
+      scales: {
+        accel: {
+          range: (u, d_min, d_max) => {
+            axis.accel = split_range(d_min, d_max);
+            return [axis.accel.min, axis.accel.max];
+          }
+        },
+        gyro: {
+          range: (u, d_min, d_max) => {
+            axis.gyro = split_range(d_min, d_max);
+            return [axis.gyro.min, axis.gyro.max];
+          }
+        }
+      },
+      series: [
+        {value: fmt.time},
+        {label: "Ax", stroke: colors[0], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Ay", stroke: colors[1], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Az", stroke: colors[2], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
+        {label: "Gx", stroke: colors[3], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {label: "Gy", stroke: colors[4], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {label: "Gz", stroke: colors[5], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+      ],
+      axes: [{
+        size: 35,
+        values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
+        stroke: () => dark.value ? '#fff' : '#000',
+        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      }, {
+        scale: 'accel',
+        size: 50,
+        values: (u, v) => v.map(x => `${digit(x)}g`),
+        splits: () => axis.accel.splits,
+        stroke: () => dark.value ? '#fff' : '#000',
+        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      }, {
+        scale: 'gyro',
+        side: 1,
+        size: 60,
+        values: (u, v) => v.map(x => `${digit(x)}°/s`),
+        splits: () => axis.gyro.splits,
+        stroke: () => dark.value ? '#fff' : '#000',
+        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      }],
+    }, telemetry.gyro, container.gyro.value);
+
+    setInterval(() => {
+      Object.entries(telemetry.chart).forEach(e => {
+        telemetry.chart[e[0]].setScale('x', {
+          min: new Date().getTime() / 1000 - 60,
+          max: new Date().getTime() / 1000
+        });
+      });
+    }, 100);
+
+    new ResizeObserver(entries => {
+      for (let entry of entries) {
+        Object.entries(telemetry.chart).forEach(e => {
+          telemetry.chart[e[0]].setSize({
+            width: entry.contentRect.width,
+            height: entry.contentRect.width * 0.6
+          });
+        });
+      }
+    }).observe(container.state.value);
+  }
+
+  function split_range(d_min, d_max) {
+    if (d_min === d_max) {
+      d_min *= 0.85;
+      d_max *= 1.15;
+    }
+
+    const tick = 5;
+    const step = (d_max - d_min) / (tick - 1);
+    const min = Math.floor(d_min / step) * step;
+    const max = min + step * tick;
+    const splits = Array.from({length: tick + 1}, (_, i) => min + i * step);
+    return {min, max, splits};
+  }
+
   function geolocation() {
     if (map) {
       navigator.geolocation.getCurrentPosition((pos) => {
@@ -80,163 +238,6 @@
     if (!/^[0-9A-Fa-fx]*$/.test(event.target.value)) {
       event.target.value = event.target.value.replace(/[^0-9A-Fa-fx]/g, '');
     }
-  }
-
-  const axis = {
-    volt: {splits: [], min: 0, max: 0},
-    temp: {splits: [], min: 0, max: 0},
-    accel: {splits: [], min: 0, max: 0},
-    gyro: {splits: [], min: 0, max: 0},
-  };
-
-  function split_range(d_min, d_max) {
-    if (d_min === d_max) {
-      d_min *= 0.85;
-      d_max *= 1.15;
-    }
-
-    const tick = 5;
-    const step = (d_max - d_min) / (tick - 1);
-    const min = Math.floor(d_min / step) * step;
-    const max = min + step * tick;
-    const splits = Array.from({length: tick + 1}, (_, i) => min + i * step);
-    return {min, max, splits};
-  }
-
-  function init_chart() {
-    telemetry.chart.analog = new uPlot({
-      width: 600, height: 400,
-      pxAlign: 0, pxSnap: false,
-      scales: {
-        volt: {
-          range: (u, d_min, d_max) => {
-            axis.volt = split_range(d_min, d_max);
-            return [axis.volt.min, axis.volt.max];
-          }
-        },
-        temp: {
-          range: (u, d_min, d_max) => {
-            axis.temp = split_range(d_min, d_max);
-            return [axis.temp.min, axis.temp.max];
-          }
-        }
-      },
-      series: [
-        {value: fmt.time},
-        {label: views.analog.ch.ain1.name, stroke: colors[0], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain2.name, stroke: colors[1], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain3.name, stroke: colors[2], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain4.name, stroke: colors[3], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain5.name, stroke: colors[4], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.ain6.name, stroke: colors[5], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.volt.name, stroke: colors[6], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'volt'},
-        {label: views.analog.ch.temp.name, stroke: colors[7], value: fmt.temp, points: {show: false}, pxAlign: 0, scale: 'temp', show: false},
-      ],
-      axes: [
-        {
-          size: 35,
-          values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'volt',
-          size: 50,
-          values: (u, v) => v.map(x => `${digit(x)}V`),
-          splits: () => axis.volt.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'temp',
-          side: 1,
-          size: 50,
-          values: (u, v) => v.map(x => `${digit(x)}°C`),
-          splits: () => axis.temp.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-      ],
-    }, telemetry.analog, container.analog.value);
-
-    telemetry.chart.gyro = new uPlot({
-      width: 600, height: 400,
-      pxAlign: 0, pxSnap: false,
-      scales: {
-        accel: {
-          range: (u, d_min, d_max) => {
-            axis.accel = split_range(d_min, d_max);
-            return [axis.accel.min, axis.accel.max];
-          }
-        },
-        gyro: {
-          range: (u, d_min, d_max) => {
-            axis.gyro = split_range(d_min, d_max);
-            return [axis.gyro.min, axis.gyro.max];
-          }
-        }
-      },
-      series: [
-        {value: fmt.time},
-        {label: "Ax", stroke: colors[0], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Ay", stroke: colors[1], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Az", stroke: colors[2], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Gx", stroke: colors[3], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
-        {label: "Gy", stroke: colors[4], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
-        {label: "Gz", stroke: colors[5], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
-      ],
-      axes: [
-        {
-          size: 35,
-          values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'accel',
-          size: 50,
-          values: (u, v) => v.map(x => `${digit(x)}g`),
-          splits: () => axis.accel.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'gyro',
-          side: 1,
-          size: 60,
-          values: (u, v) => v.map(x => `${digit(x)}°/s`),
-          splits: () => axis.gyro.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-      ],
-    }, telemetry.gyro, container.gyro.value);
-
-    setInterval(() => {
-      Object.entries(telemetry.chart).forEach(e => {
-        telemetry.chart[e[0]].setScale('x', {
-          min: new Date().getTime() / 1000 - 60,
-          max: new Date().getTime() / 1000
-        });
-      });
-    }, 100);
-
-    new ResizeObserver(entries => {
-      for (let entry of entries) {
-        Object.entries(telemetry.chart).forEach(e => {
-          telemetry.chart[e[0]].setSize({
-            width: entry.contentRect.width,
-            height: entry.contentRect.width * 0.6
-          });
-        });
-      }
-    }).observe(container.state.value);
   }
 </script>
 

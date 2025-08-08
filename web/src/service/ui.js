@@ -39,7 +39,9 @@ export const views = reactive({
   },
 });
 
-export const units = reactive([{ name: 'Volt', unit: 'V', display: 'Volt (V)' }]);
+export const units = reactive({
+  Volt: { unit: 'V', display: 'Volt (V)' },
+});
 
 export function save_view() {
   localStorage.setItem('views', JSON.stringify(views));
@@ -48,6 +50,7 @@ export function save_view() {
 
 export function load_view() {
   const v = localStorage.getItem('views');
+  const u = localStorage.getItem('units');
 
   if (v) {
     const parsed = JSON.parse(v);
@@ -61,11 +64,16 @@ export function load_view() {
     }
   }
 
-  const u = localStorage.getItem('units');
-
   if (u) {
-    const parsed = JSON.parse(u)
-    units.splice(0, units.length, ...parsed);
+    const parsed = JSON.parse(u);
+
+    for (const key in parsed) {
+      if (units[key]) {
+        Object.assign(units[key], parsed[key]);
+      } else {
+        units[key] = parsed[key];
+      }
+    }
   }
 }
 

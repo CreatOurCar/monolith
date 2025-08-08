@@ -1,5 +1,5 @@
 <script setup>
-  import {ref} from 'vue';
+  import {ref, computed} from 'vue';
   import {views, units} from '@/service/ui';
 
   import ToastEventBus from 'primevue/toasteventbus';
@@ -9,6 +9,10 @@
   const analogs = Object.keys(views.analog.ch).filter(key => key.includes('ain'))
     .reduce((o, k) => {o[k] = views.analog.ch[k]; return o;}, {});
 
+  const unit_options = computed(() => {
+    return Object.entries(units).map(([name, {unit, display}]) => ({name, unit, display}));
+  });
+
   function add_unit() {
     const name = new_unit.value.name.trim();
     const unit = new_unit.value.unit.trim();
@@ -17,23 +21,21 @@
       return;
     }
 
-    if (units.some(u => u.name === name)) {
+    if (units[name]) {
       ToastEventBus.emit('add', {severity: 'error', summary: 'Unit Already Exists', group: 'br', life: 5000});
       return;
     }
 
-    units.push({name: name, unit: unit, display: `${name} (${unit})`});
+    units[name] = {unit: unit, display: `${name} (${unit})`};
     new_unit.value.name = '';
     new_unit.value.unit = '';
   }
 
-  function remove_unit(index) {
-    if (units[index].name !== 'Volt') {
-      units.splice(index, 1);
+  function remove_unit(key) {
+    if (key !== 'Volt') {
+      delete units[key];
     }
-
   }
-
 </script>
 
 <template>
@@ -48,8 +50,8 @@
             <Button icon="pi pi-plus" @click="add_unit" />
           </InputGroup>
           <div class="mt-2 flex flex-wrap gap-4">
-            <Tag v-for="(u, idx) in units" :key="idx" :value="u.display"
-              class="text-lg cursor-pointer [user-select:none]" @click="remove_unit(idx)" />
+            <Tag v-for="(u, key) in units" :key="key" :value="u.display"
+              class="text-lg cursor-pointer [user-select:none]" @click="remove_unit(key)" />
           </div>
         </div>
 
@@ -112,7 +114,7 @@
               </div>
               <div class="col-span-5 flex items-center">
                 <div class="flex items-center w-full">
-                  <Select v-model="channel.unit" :options="units" optionLabel="display" optionValue="name"
+                  <Select v-model="channel.unit" :options="unit_options" optionLabel="display" optionValue="name"
                     placeholder="Unit" class="w-28" />
                 </div>
               </div>
