@@ -5,7 +5,7 @@
   import {dark} from '@/layout/composables/layout';
   import {parse, convert} from '@/service/protocol';
   import {fmt, digit, format_size} from '@/service/state';
-  import {views} from '@/service/ui';
+  import {views, units, colors} from '@/service/ui';
   import {init_map} from '@/service/map';
 
   import uPlot from 'uplot';
@@ -41,14 +41,6 @@
 
   let events = ref([]);
 
-  const axis = {
-    volt: {splits: [], min: 0, max: 0},
-    temp: {splits: [], min: 0, max: 0},
-    accel: {splits: [], min: 0, max: 0},
-    gyro: {splits: [], min: 0, max: 0},
-    speed: {splits: [], min: 0, max: 0},
-  };
-
   const show = {
     digital: {name: "DIN", ref: ref(false)},
     analog: {name: "AIN", ref: ref(false)},
@@ -57,7 +49,13 @@
     gps: {name: "GPS", ref: ref(false)},
   };
 
-  const colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5', '#7f7f7f', '#c7c7c7'];
+  const axis = {
+    volt: {splits: [], min: 0, max: 0},
+    temp: {splits: [], min: 0, max: 0},
+    accel: {splits: [], min: 0, max: 0},
+    gyro: {splits: [], min: 0, max: 0},
+    speed: {splits: [], min: 0, max: 0},
+  };
 
   onMounted(() => {
     if (!window.kakao) {

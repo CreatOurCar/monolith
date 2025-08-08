@@ -6,7 +6,7 @@
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
   import {state, times, cons, telemetry, fmt, digit} from '@/service/state';
-  import {views, units} from '@/service/ui';
+  import {views, units, colors} from '@/service/ui';
   import {map, line, path, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 
@@ -25,8 +25,6 @@
     gyro: ref(null),
     gps: ref(null),
   };
-
-  const colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#17becf"];
 
   onMounted(() => {
     const fit = new FitAddon.FitAddon();

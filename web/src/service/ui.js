@@ -43,6 +43,11 @@ export const units = reactive({
   Volt: { unit: 'V', display: 'Volt (V)' },
 });
 
+watch(views, save_view, { deep: true })
+watch(units, save_view, { deep: true })
+
+load_view();
+
 export function save_view() {
   localStorage.setItem('views', JSON.stringify(views));
   localStorage.setItem('units', JSON.stringify(units));
@@ -77,7 +82,25 @@ export function load_view() {
   }
 }
 
-watch(views, save_view, { deep: true })
-watch(units, save_view, { deep: true })
+const color_cnt = 50;
 
-load_view();
+export const colors = Array.from({ length: color_cnt }, (_, i) => {
+  const hue = i * 137.508 % 360;
+  const saturation = 70;
+  const lightness = 50;
+  const [r, g, b] = hsl_to_rgb(hue, saturation, lightness);
+  return rgb_to_hex(r, g, b);
+});
+
+function hsl_to_rgb(h, s, l) {
+  s /= 100;
+  l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+}
+
+function rgb_to_hex(r, g, b) {
+  return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
+}
