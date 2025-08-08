@@ -32,7 +32,7 @@
   }
 
   function remove_unit(key) {
-    if (key !== 'Volt') {
+    if (!units[key].default) {
       delete units[key];
     }
   }
@@ -42,6 +42,10 @@
   <Fluid>
     <div class="flex flex-col md:flex-row gap-8">
       <div class="md:w-1/2">
+        <div class="card flex flex-col gap-4" style="line-height: 1.5;">
+          <span><span class="pi pi-info-circle mr-2"></span> Refresh page to apply changes for the charts.</span>
+        </div>
+
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Units</div>
           <InputGroup class="mt-2">
@@ -50,7 +54,7 @@
             <Button icon="pi pi-plus" @click="add_unit" />
           </InputGroup>
           <div class="mt-2 flex flex-wrap gap-4">
-            <Tag v-for="(u, key) in units" :key="key" :value="u.display"
+            <Tag v-for="(u, key) in units" :key="key" :value="u.display" :severity="u.default ? 'success' : 'primary'"
               class="text-lg cursor-pointer [user-select:none]" @click="remove_unit(key)" />
           </div>
         </div>

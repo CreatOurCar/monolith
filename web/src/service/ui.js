@@ -40,7 +40,11 @@ export const views = reactive({
 });
 
 export const units = reactive({
-  Volt: { unit: 'V', display: 'Volt (V)' },
+  Volt: { unit: 'V', display: 'Volt (V)', default: true },
+  Temperature: { unit: '°C', display: 'Temperature (°C)', default: true },
+  Acceleration: { unit: 'g', display: 'Acceleration (g)', default: true },
+  "Angular Velocity": { unit: '°/s', display: 'Angular Velocity (°/s)', default: true },
+  Speed: { unit: 'km/h', display: 'Speed (km/h)', default: true },
 });
 
 watch(views, save_view, { deep: true })

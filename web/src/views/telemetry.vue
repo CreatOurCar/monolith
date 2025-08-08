@@ -53,27 +53,15 @@
   };
 
   function init_chart() {
-    const scales = {
-      temp: {
-        range: (u, d_min, d_max) => {
-          axis.temp = split_range(d_min, d_max);
-          return [axis.temp.min, axis.temp.max];
-        }
-      },
-    };
+    if (telemetry.chart.analog || telemetry.chart.gyro) {
+      telemetry.chart.analog?.destroy();
+      telemetry.chart.gyro?.destroy();
+    }
 
+    const scales = {};
     const axes = [{
       size: 35,
       values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
-      stroke: () => dark.value ? '#fff' : '#000',
-      ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-      grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-    }, {
-      scale: 'temp',
-      side: 1,
-      size: 50,
-      values: (u, v) => v.map(x => `${digit(x)}°C`),
-      splits: () => axis.temp.splits,
       stroke: () => dark.value ? '#fff' : '#000',
       ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
       grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
@@ -81,22 +69,42 @@
 
     for (const [i, [k, o]] of Object.entries(units).entries()) {
       axis[k] = {splits: [], min: 0, max: 0};
+
       scales[k] = {
         range: (u, d_min, d_max) => {
-          axis[k] = split_range(d_min, d_max);
-          return [axis[k].min, axis[k].max];
+          if (d_min === null && d_max === null) {
+            return [null, null];
+          } else {
+            axis[k] = split_range(d_min, d_max);
+            return [axis[k].min, axis[k].max];
+          }
         }
       };
+
       axes.push({
         scale: k,
         side: i % 2 ? 1 : 3,
-        size: 50,
+        size: 50 + (o.unit.length - 1) * 5,
         values: (u, v) => v.map(x => `${digit(x)}${o.unit}`),
         splits: () => axis[k].splits,
         stroke: () => dark.value ? '#fff' : '#000',
         ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
         grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
       });
+
+      fmt[k] = (u, v, sidx, didx) => {
+        const d = u.data[sidx];
+
+        if (didx == null && d) {
+          v = d[d.length - 1];
+        }
+
+        if (isNaN(v) || !v) {
+          return '-';
+        } else {
+          return `${digit(v)} ${o.unit}`;
+        }
+      };
     }
 
     telemetry.chart.analog = new uPlot({
@@ -105,14 +113,14 @@
       scales: scales,
       series: [
         {value: fmt.time},
-        {label: views.analog.ch.ain1.name, stroke: colors[0], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain1.unit || 'Volt'},
-        {label: views.analog.ch.ain2.name, stroke: colors[1], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain2.unit || 'Volt'},
-        {label: views.analog.ch.ain3.name, stroke: colors[2], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain3.unit || 'Volt'},
-        {label: views.analog.ch.ain4.name, stroke: colors[3], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain4.unit || 'Volt'},
-        {label: views.analog.ch.ain5.name, stroke: colors[4], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain5.unit || 'Volt'},
-        {label: views.analog.ch.ain6.name, stroke: colors[5], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain6.unit || 'Volt'},
-        {label: views.analog.ch.volt.name, stroke: colors[6], value: fmt.volt, points: {show: false}, pxAlign: 0, scale: 'Volt'},
-        {label: views.analog.ch.temp.name, stroke: colors[7], value: fmt.temp, points: {show: false}, pxAlign: 0, scale: 'temp', show: false},
+        {label: views.analog.ch.ain1.name, stroke: colors[0], value: fmt[views.analog.ch.ain1.unit], points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain1.unit || 'Volt'},
+        {label: views.analog.ch.ain2.name, stroke: colors[1], value: fmt[views.analog.ch.ain2.unit], points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain2.unit || 'Volt'},
+        {label: views.analog.ch.ain3.name, stroke: colors[2], value: fmt[views.analog.ch.ain3.unit], points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain3.unit || 'Volt'},
+        {label: views.analog.ch.ain4.name, stroke: colors[3], value: fmt[views.analog.ch.ain4.unit], points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain4.unit || 'Volt'},
+        {label: views.analog.ch.ain5.name, stroke: colors[4], value: fmt[views.analog.ch.ain5.unit], points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain5.unit || 'Volt'},
+        {label: views.analog.ch.ain6.name, stroke: colors[5], value: fmt[views.analog.ch.ain6.unit], points: {show: false}, pxAlign: 0, scale: views.analog.ch.ain6.unit || 'Volt'},
+        {label: views.analog.ch.volt.name, stroke: colors[6], value: fmt.Volt, points: {show: false}, pxAlign: 0, scale: 'Volt'},
+        {label: views.analog.ch.temp.name, stroke: colors[7], value: fmt.Temperature, points: {show: false}, pxAlign: 0, scale: 'Temperature', show: false},
       ],
       axes: axes,
     }, telemetry.analog, container.analog.value);
@@ -120,53 +128,17 @@
     telemetry.chart.gyro = new uPlot({
       width: 600, height: 400,
       pxAlign: 0, pxSnap: false,
-      scales: {
-        accel: {
-          range: (u, d_min, d_max) => {
-            axis.accel = split_range(d_min, d_max);
-            return [axis.accel.min, axis.accel.max];
-          }
-        },
-        gyro: {
-          range: (u, d_min, d_max) => {
-            axis.gyro = split_range(d_min, d_max);
-            return [axis.gyro.min, axis.gyro.max];
-          }
-        }
-      },
+      scales: scales,
       series: [
         {value: fmt.time},
-        {label: "Ax", stroke: colors[0], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Ay", stroke: colors[1], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Az", stroke: colors[2], value: fmt.accel, points: {show: false}, pxAlign: 0, scale: 'accel'},
-        {label: "Gx", stroke: colors[3], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
-        {label: "Gy", stroke: colors[4], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
-        {label: "Gz", stroke: colors[5], value: fmt.gyro, points: {show: false}, pxAlign: 0, scale: 'gyro'},
+        {label: "Ax", stroke: colors[0], value: fmt.Acceleration, points: {show: false}, pxAlign: 0, scale: 'Acceleration'},
+        {label: "Ay", stroke: colors[1], value: fmt.Acceleration, points: {show: false}, pxAlign: 0, scale: 'Acceleration'},
+        {label: "Az", stroke: colors[2], value: fmt.Acceleration, points: {show: false}, pxAlign: 0, scale: 'Acceleration'},
+        {label: "Gx", stroke: colors[3], value: fmt['Angular Velocity'], points: {show: false}, pxAlign: 0, scale: 'Angular Velocity'},
+        {label: "Gy", stroke: colors[4], value: fmt['Angular Velocity'], points: {show: false}, pxAlign: 0, scale: 'Angular Velocity'},
+        {label: "Gz", stroke: colors[5], value: fmt['Angular Velocity'], points: {show: false}, pxAlign: 0, scale: 'Angular Velocity'},
       ],
-      axes: [{
-        size: 35,
-        values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
-        stroke: () => dark.value ? '#fff' : '#000',
-        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-      }, {
-        scale: 'accel',
-        size: 50,
-        values: (u, v) => v.map(x => `${digit(x)}g`),
-        splits: () => axis.accel.splits,
-        stroke: () => dark.value ? '#fff' : '#000',
-        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-      }, {
-        scale: 'gyro',
-        side: 1,
-        size: 60,
-        values: (u, v) => v.map(x => `${digit(x)}°/s`),
-        splits: () => axis.gyro.splits,
-        stroke: () => dark.value ? '#fff' : '#000',
-        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-      }],
+      axes: axes,
     }, telemetry.gyro, container.gyro.value);
 
     setInterval(() => {

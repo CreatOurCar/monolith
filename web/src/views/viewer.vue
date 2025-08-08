@@ -49,14 +49,6 @@
     gps: {name: "GPS", ref: ref(false)},
   };
 
-  const axis = {
-    volt: {splits: [], min: 0, max: 0},
-    temp: {splits: [], min: 0, max: 0},
-    accel: {splits: [], min: 0, max: 0},
-    gyro: {splits: [], min: 0, max: 0},
-    speed: {splits: [], min: 0, max: 0},
-  };
-
   onMounted(() => {
     if (!window.kakao) {
       const script = document.createElement("script");
@@ -99,11 +91,6 @@
       file.duration.value += `${seconds} sec`;
 
       events.value = [];
-
-      if (chart.value) {
-        chart.value.destroy();
-      }
-
       const dataset = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
 
       for (const data of result.data) {
@@ -224,7 +211,109 @@
     };
   }
 
+  const axis = {
+    temp: {splits: [], min: 0, max: 0},
+    accel: {splits: [], min: 0, max: 0},
+    gyro: {splits: [], min: 0, max: 0},
+    speed: {splits: [], min: 0, max: 0},
+  };
+
   function init_chart(dataset) {
+    if (chart.value) {
+      chart.value.destroy();
+    }
+
+    const scales = {
+      digital: {
+        range: (u, d_min, d_max) => {
+          if (d_min === null && d_max === null) {
+            return [null, null];
+          } else {
+            return [0, 1];
+          }
+        }
+      },
+    };
+
+    const axes = [{
+      size: 35,
+      values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
+      stroke: () => dark.value ? '#fff' : '#000',
+      ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+    }, {
+      scale: 'digital',
+      size: 20,
+      values: (u, v) => v.map(x => x ? "HI" : "LO"),
+      splits: () => [0, 1],
+      stroke: () => dark.value ? '#fff' : '#000',
+      ticks: {show: false},
+      grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+    }];
+
+    for (const [i, [k, o]] of Object.entries(units).entries()) {
+      axis[k] = {splits: [], min: 0, max: 0};
+
+      scales[k] = {
+        range: (u, d_min, d_max) => {
+          if (d_min === null && d_max === null) {
+            return [null, null];
+          } else {
+            axis[k] = split_range(d_min, d_max);
+            return [axis[k].min, axis[k].max];
+          }
+        }
+      };
+
+      axes.push({
+        scale: k,
+        side: i % 2 ? 1 : 3,
+        size: 50 + (o.unit.length - 1) * 5,
+        values: (u, v) => v.map(x => `${digit(x)}${o.unit}`),
+        splits: () => axis[k].splits,
+        stroke: () => dark.value ? '#fff' : '#000',
+        ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+        grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
+      });
+
+      fmt[k] = (u, v, sidx, didx) => {
+        const d = u.data[sidx];
+
+        if (didx == null && d) {
+          v = d[d.length - 1];
+        }
+
+        if (isNaN(v) || !v) {
+          return '-';
+        } else {
+          return `${digit(v)} ${o.unit}`;
+        }
+      };
+    }
+
+    const series = [
+      {value: fmt.time},
+      {label: views.digital.ch.din1.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[0]},
+      {label: views.digital.ch.din2.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[1]},
+      {label: views.digital.ch.din3.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[2]},
+      {label: views.digital.ch.din4.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[3]},
+      {label: views.analog.ch.ain1.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain1.unit || 'Volt', spanGaps: true, show: false, stroke: colors[4]},
+      {label: views.analog.ch.ain2.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain2.unit || 'Volt', spanGaps: true, show: false, stroke: colors[5]},
+      {label: views.analog.ch.ain3.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain3.unit || 'Volt', spanGaps: true, show: false, stroke: colors[6]},
+      {label: views.analog.ch.ain4.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain4.unit || 'Volt', spanGaps: true, show: false, stroke: colors[7]},
+      {label: views.analog.ch.ain5.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain5.unit || 'Volt', spanGaps: true, show: false, stroke: colors[8]},
+      {label: views.analog.ch.ain6.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain6.unit || 'Volt', spanGaps: true, show: false, stroke: colors[9]},
+      {label: views.analog.ch.volt.name, value: fmt.Volt, scale: 'Volt', spanGaps: true, show: false, stroke: colors[10]},
+      {label: views.analog.ch.temp.name, value: fmt.Temperature, scale: 'Temperature', spanGaps: true, show: false, stroke: colors[11]},
+      {label: "Ax", value: fmt.Acceleration, scale: 'Acceleration', spanGaps: true, show: false, stroke: colors[12]},
+      {label: "Ay", value: fmt.Acceleration, scale: 'Acceleration', spanGaps: true, show: false, stroke: colors[13]},
+      {label: "Az", value: fmt.Acceleration, scale: 'Acceleration', spanGaps: true, show: false, stroke: colors[14]},
+      {label: "Gx", value: fmt['Angular Velocity'], scale: 'Angular Velocity', spanGaps: true, show: false, stroke: colors[15]},
+      {label: "Gy", value: fmt['Angular Velocity'], scale: 'Angular Velocity', spanGaps: true, show: false, stroke: colors[16]},
+      {label: "Gz", value: fmt['Angular Velocity'], scale: 'Angular Velocity', spanGaps: true, show: false, stroke: colors[17]},
+      {label: "SPD", value: fmt.Speed, scale: 'Speed', spanGaps: true, show: false, stroke: colors[18]},
+    ];
+
     chart.value = new uPlot({
       width: 600, height: 400,
       cursor: {
@@ -234,153 +323,9 @@
           skip: [null],
         }
       },
-      scales: {
-        digital: {
-          range: (u, d_min, d_max) => {
-            if (d_min === null && d_max === null) {
-              return [null, null];
-            } else {
-              return [0, 1];
-            }
-          }
-        },
-        volt: {
-          range: (u, d_min, d_max) => {
-            if (d_min === null && d_max === null) {
-              return [null, null];
-            } else {
-              axis.volt = split_range(d_min, d_max);
-              return [axis.volt.min, axis.volt.max];
-            }
-          }
-        },
-        temp: {
-          range: (u, d_min, d_max) => {
-            if (d_min === null && d_max === null) {
-              return [null, null];
-            } else {
-              axis.temp = split_range(d_min, d_max);
-              return [axis.temp.min, axis.temp.max];
-            }
-          }
-        },
-        accel: {
-          range: (u, d_min, d_max) => {
-            if (d_min === null && d_max === null) {
-              return [null, null];
-            } else {
-              axis.accel = split_range(d_min, d_max);
-              return [axis.accel.min, axis.accel.max];
-            }
-          }
-        },
-        gyro: {
-          range: (u, d_min, d_max) => {
-            if (d_min === null && d_max === null) {
-              return [null, null];
-            } else {
-              axis.gyro = split_range(d_min, d_max);
-              return [axis.gyro.min, axis.gyro.max];
-            }
-          }
-        },
-        speed: {
-          range: (u, d_min, d_max) => {
-            if (d_min === null && d_max === null) {
-              return [null, null];
-            } else {
-              axis.speed = split_range(d_min, d_max);
-              return [axis.speed.min, axis.speed.max];
-            }
-          }
-        },
-      },
-      series: [
-        {value: fmt.time},
-        {label: views.digital.ch.din1.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[0]},
-        {label: views.digital.ch.din2.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[1]},
-        {label: views.digital.ch.din3.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[2]},
-        {label: views.digital.ch.din4.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[3]},
-        {label: views.analog.ch.ain1.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[4]},
-        {label: views.analog.ch.ain2.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[5]},
-        {label: views.analog.ch.ain3.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[6]},
-        {label: views.analog.ch.ain4.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[7]},
-        {label: views.analog.ch.ain5.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[8]},
-        {label: views.analog.ch.ain6.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[9]},
-        {label: views.analog.ch.volt.name, value: fmt.volt, scale: 'volt', spanGaps: true, show: false, stroke: colors[10]},
-        {label: views.analog.ch.temp.name, value: fmt.temp, scale: 'temp', spanGaps: true, show: false, stroke: colors[11]},
-        {label: "Ax", value: fmt.accel, scale: 'accel', spanGaps: true, show: false, stroke: colors[12]},
-        {label: "Ay", value: fmt.accel, scale: 'accel', spanGaps: true, show: false, stroke: colors[13]},
-        {label: "Az", value: fmt.accel, scale: 'accel', spanGaps: true, show: false, stroke: colors[14]},
-        {label: "Gx", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[15]},
-        {label: "Gy", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[16]},
-        {label: "Gz", value: fmt.gyro, scale: 'gyro', spanGaps: true, show: false, stroke: colors[17]},
-        {label: "SPD", value: fmt.speed, scale: 'speed', spanGaps: true, show: false, stroke: colors[18]},
-      ],
-      axes: [
-        {
-          size: 35,
-          values: (u, v) => v.map(x => dayjs(x * 1000).format('HH:mm:ss')),
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'accel',
-          values: (u, v) => v.map(x => `${digit(x)}g`),
-          splits: () => axis.accel.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'gyro',
-          side: 1,
-          size: 60,
-          values: (u, v) => v.map(x => `${digit(x)}°/s`),
-          splits: () => axis.gyro.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'volt',
-          values: (u, v) => v.map(x => `${digit(x)}V`),
-          splits: () => axis.volt.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {show: false},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'temp',
-          side: 1,
-          values: (u, v) => v.map(x => `${digit(x)}°C`),
-          splits: () => axis.temp.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {show: false},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'digital',
-          side: 1,
-          size: 20,
-          values: (u, v) => v.map(x => x ? "HI" : "LO"),
-          splits: () => [0, 1],
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {show: false},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        },
-        {
-          scale: 'speed',
-          side: 1,
-          size: 60,
-          values: (u, v) => v.map(x => `${digit(x)}km/h`),
-          splits: () => axis.speed.splits,
-          stroke: () => dark.value ? '#fff' : '#000',
-          ticks: {show: false},
-          grid: {stroke: () => dark.value ? '#24282b' : '#ededed'},
-        }
-      ]
+      scales: scales,
+      series: series,
+      axes: axes,
     }, dataset, graph.value);
 
     new ResizeObserver(entries => {
@@ -492,6 +437,7 @@
               :offLabel="tag.name" @click="toggle_axis(key)" />
           </div>
           <div class="chart" ref="graph"></div>
+          <span><span class="pi pi-info-circle mr-2 mt-4"></span> Click and drag to zoom, double click to reset.</span>
         </div>
         <div v-show="!chart" class="text-center text-gray-400">
           Please select a file to view the graph.
