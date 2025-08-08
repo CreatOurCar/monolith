@@ -66,11 +66,23 @@
 
     const reader = new FileReader();
     reader.readAsArrayBuffer(f.files[0]);
+    reader.onloadstart = () => {
+      file.device.value = "Parsing recorded logs..."
+      file.statistic.value = "Analyzing driver's faults...";
+      file.boot.value = "Waking up all pit crews...";
+      file.duration.value = "Refueling beer...🍺";
+    };
     reader.onload = (e) => {
       let result;
+
       try {
         result = parse(new Uint8Array(e.target.result));
       } catch (e) {
+        file.device.value = "I'm sorry Dave,";
+        file.statistic.value = "I'm afraid I can't do that.";
+        file.boot.value = "";
+        file.duration.value = "";
+        console.error(e);
         return;
       }
 
@@ -268,7 +280,7 @@
       axes.push({
         scale: k,
         side: i % 2 ? 1 : 3,
-        size: 50 + (o.unit.length - 1) * 5,
+        size: 50 + (o.unit.length - 1) * 6,
         values: (u, v) => v.map(x => `${digit(x)}${o.unit}`),
         splits: () => axis[k].splits,
         stroke: () => dark.value ? '#fff' : '#000',
