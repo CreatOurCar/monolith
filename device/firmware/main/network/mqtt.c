@@ -54,6 +54,8 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
         char tz[40];
         snprintf(tz, sizeof(tz), "%.*s", evt->data_len, evt->data);
         nvs_set_str(nvs, "tz", tz);
+      } else if (STREQL(dir[3], "intv")) {
+        nvs_set_u32(nvs, "intv", *(uint32_t *)(evt->data));
       }
     }
 
@@ -328,7 +330,7 @@ static void mqtt_task(void *arg) {
       // TODO: publish can event on demand
     }
 
-    vTaskDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(storage.device.intv));
   }
 }
 

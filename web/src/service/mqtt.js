@@ -96,6 +96,7 @@ export function init_mqtt() {
         config.net.ssid.value = cfg.wifi.ssid;
         config.net.passwd.value = cfg.wifi.passwd;
         config.dev.tz.value = cfg.device.tz;
+        config.dev.intv.value = cfg.device.intv;
         config.gps.en.value = cfg.en.gps ? true : false;
         config.gps.dev.value = cfg.gps.dev;
         config.can.en.value = cfg.en.can ? true : false;

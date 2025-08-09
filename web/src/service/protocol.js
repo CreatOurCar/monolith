@@ -88,20 +88,21 @@ const NVS_POS = {
     NAME: 152,
     KEY: 184,
     TZ: 216,
+    INTV: 256,
   },
   EN: {
-    CAN: 256,
-    GPS: 257,
-    ANALOG: 258,
-    DIGITAL: 259,
+    CAN: 260,
+    GPS: 261,
+    ANALOG: 262,
+    DIGITAL: 263,
   },
   CAN: {
-    BPS: 260,
-    FILTER: 264,
-    MASK: 268,
+    BPS: 264,
+    FILTER: 268,
+    MASK: 272,
   },
   GPS: {
-    DEV: 272,
+    DEV: 276,
   },
 };
 
@@ -181,6 +182,7 @@ export function parse_cfg(buf) {
       name: to_string(buf, NVS_POS.DEVICE.NAME, NVS_POS.DEVICE.KEY),
       key: to_string(buf, NVS_POS.DEVICE.KEY, NVS_POS.DEVICE.TZ),
       tz: to_string(buf, NVS_POS.DEVICE.TZ, NVS_POS.EN.CAN),
+      intv: to_uint(32, buf, NVS_POS.DEVICE.INTV),
     },
     en: {
       can: to_uint(8, buf, NVS_POS.EN.CAN),

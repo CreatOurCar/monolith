@@ -51,6 +51,8 @@
     const target = event.currentTarget.id;
     const [section, field] = target.split("/");
 
+    let buf = null;
+    let view = null;
     let payload = null;
 
     switch (target) {
@@ -60,10 +62,17 @@
         payload = config[section][field].value.trim();
         break;
 
+      case 'dev/intv':
+        buf = new ArrayBuffer(4);
+        view = new DataView(buf);
+        view.setUint32(0, config[section][field].value, true);
+        payload = new Uint8Array(buf);
+        break;
+
       case 'can/filter':
       case 'can/mask':
-        const buf = new ArrayBuffer(4);
-        const view = new DataView(buf);
+        buf = new ArrayBuffer(4);
+        view = new DataView(buf);
         view.setUint32(0, parseInt(config[section][field].value.trim(), 16), true);
         payload = new Uint8Array(buf);
         break;
@@ -147,6 +156,15 @@
       },
     });
   }
+
+  const interval = [
+    {name: '100 ms', value: 100},
+    {name: '200 ms', value: 200},
+    {name: '500 ms', value: 500},
+    {name: '1 s', value: 1000},
+    {name: '2 s', value: 2000},
+    {name: '5 s', value: 5000},
+  ];
 
   const canbps = [
     {name: '1 kbit/s', value: 0},
@@ -310,6 +328,17 @@
                 <InputText v-model="config.dev.tz.value" placeholder="POSIX timezone string" />
                 <Button id="dev/tz" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.dev.tz.loading" @click="set_cfg($event)" />
+              </InputGroup>
+            </div>
+          </div>
+          <div class="grid grid-cols-12 gap-2">
+            <label for="can/bps" class="flex items-center col-span-3">T. Interval</label>
+            <div class="col-span-9">
+              <InputGroup>
+                <Select v-model="config.dev.intv.value" :options="interval" optionLabel="name" optionValue="value"
+                  placeholder="Telemetry Interval" />
+                <Button id="dev/intv" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
+                  :loading="config.dev.intv.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>

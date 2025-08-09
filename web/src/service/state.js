@@ -19,6 +19,7 @@ export const config = reactive({
   },
   dev: {
     tz: { value: "", loading: false },
+    intv: { value: 0, loading: false },
   },
   can: {
     en: { value: false, loading: false },

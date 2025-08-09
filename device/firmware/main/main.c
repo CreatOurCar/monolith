@@ -209,6 +209,11 @@ static void nvs_init(void) {
     nvs_set_str(nvs, "tz", storage.device.tz);
   }
 
+  if (nvs_get_u32(nvs, "intv", &storage.device.intv) != ESP_OK) {
+    nvs_set_u32(nvs, "intv", 500);
+    storage.device.intv = 500;
+  }
+
   // set peripheral enabled default values
   if (nvs_get_u8(nvs, "can_en", &storage.enabled.can) != ESP_OK) {
     nvs_set_u8(nvs, "can_en", true);

@@ -28,6 +28,7 @@ typedef struct {
     char name[32];
     char key[32];
     char tz[40];
+    uint32_t intv;
   } device;
   struct {
     uint8_t can;
