@@ -220,7 +220,7 @@
           <span class="w-24 font-medium">{{ tag.label }}</span>
           <Tag :value="tag.value" severity="info" class="timetag" />
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-sm">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 text-sm">
           <template v-for="item in state" :key="item.name">
             <div v-if="item.name" class="flex items-center cardview">
               <span class="w-full ">{{ item.name }}</span>
@@ -261,11 +261,11 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
           <div class="flex items-center">
             <span class="w-20 font-medium">Speed</span>
-            <Tag :value="speed" severity="info" class="ml-2 state" />
+            <Tag :value="speed" severity="info" class="ml-2 state timetag" />
           </div>
           <div class="flex items-center">
             <span class="w-20 font-medium">Course</span>
-            <Tag :value="course" severity="info" class="ml-2 state" />
+            <Tag :value="course" severity="info" class="ml-2 state timetag" />
           </div>
         </div>
 
@@ -331,38 +331,5 @@
   .can_data {
     font-size: 0.9rem !important;
     height: 2.25rem;
-  }
-
-  .u-legend {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
-  }
-
-  .u-legend table,
-  .u-legend tbody {
-    display: contents;
-  }
-
-  .u-legend tr.u-series {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-    white-space: nowrap;
-    box-sizing: border-box;
-  }
-
-  .u-legend .u-series:first-child .u-marker {
-    display: none;
-  }
-
-  .u-legend tr.u-series:first-child {
-    grid-column: 1 / -1;
-    justify-content: center;
-  }
-
-  .u-series td,
-  .u-series th {
-    padding: 4px 2px;
   }
 </style>

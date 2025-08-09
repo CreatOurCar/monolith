@@ -503,38 +503,3 @@
     </div>
   </div>
 </template>
-
-<style>
-  .u-legend {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
-  }
-
-  .u-legend table,
-  .u-legend tbody {
-    display: contents;
-  }
-
-  .u-legend tr.u-series {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-    white-space: nowrap;
-    box-sizing: border-box;
-  }
-
-  .u-legend .u-series:first-child .u-marker {
-    display: none;
-  }
-
-  .u-legend tr.u-series:first-child {
-    grid-column: 1 / -1;
-    justify-content: center;
-  }
-
-  .u-series td,
-  .u-series th {
-    padding: 4px 2px;
-  }
-</style>
