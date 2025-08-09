@@ -27,10 +27,50 @@ void task_gyroscope(void *pvParameters) {
     vTaskDelete(NULL);
   }
 
-  uint8_t tx[3] = { 0x1B, 1 << 3, 1 << 4 };  // GYRO_CONFIG register address, 500dps and 8g full scale
+  uint8_t tx[7] = { 0x1B, 1 << 3, 1 << 4 };  // GYRO_CONFIG register address, 500dps and 8g full scale
 
-  if (i2c_master_transmit(gyro, tx, sizeof(tx), 10) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, 3, 10) != ESP_OK) {
     ERROR_SYSLOG(&init, GYRO, "gyro init failure", "GYR_CFG_FAIL");
+  }
+
+  const int sample = 100;
+  int valid = 0;
+
+  int32_t sum_x = 0;
+  int32_t sum_y = 0;
+  int32_t sum_z = 0;
+
+  tx[0] = 0x43;  // GYRO_XOUT_H register address
+
+  for (int i = 0; i < sample; i++) {
+    uint8_t rx[6] = { 0 };
+
+    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) == ESP_OK) {
+      int16_t gyro_x = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
+      int16_t gyro_y = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
+      int16_t gyro_z = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
+
+      sum_x += gyro_x;
+      sum_y += gyro_y;
+      sum_z += gyro_z;
+      valid++;
+    }
+  }
+
+  int32_t off_x = -sum_x / valid / 2;
+  int32_t off_y = -sum_y / valid / 2;
+  int32_t off_z = -sum_z / valid / 2;
+
+  tx[0] = 0x13;  // XG_OFFSET_H register address
+  tx[1] = (uint8_t)(off_x >> 8);
+  tx[2] = (uint8_t)(off_x & 0xFF);
+  tx[3] = (uint8_t)(off_y >> 8);
+  tx[4] = (uint8_t)(off_y & 0xFF);
+  tx[5] = (uint8_t)(off_z >> 8);
+  tx[6] = (uint8_t)(off_z & 0xFF);
+
+  if (i2c_master_transmit(gyro, tx, 7, 10) != ESP_OK) {
+    ERROR_SYSLOG(&init, GYRO, "gyro offset write failure", "GYR_OFS_FAIL");
   }
 
   if (IS_OK(&init, GYRO)) {
@@ -56,11 +96,6 @@ void task_gyroscope(void *pvParameters) {
       logbuf.gyro.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
       logbuf.gyro.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
       LOG(LOG_TYPE_GYROSCOPE, &logbuf.gyro);
-
-      INFO(GYRO, "Ax: %d Ay: %d Az: %d Gx: %d Gy: %d Gz: %d T: %d", logbuf.gyro.payload.gyroscope.accel_x,
-        logbuf.gyro.payload.gyroscope.accel_y, logbuf.gyro.payload.gyroscope.accel_z,
-        logbuf.gyro.payload.gyroscope.gyro_x, logbuf.gyro.payload.gyroscope.gyro_y,
-        logbuf.gyro.payload.gyroscope.gyro_z, logbuf.gyro.payload.gyroscope.temperature);
     } else {
       ERROR_SYSLOG(&logbuf.run, GYRO, "read transfer failure", "GYR_READ_FAIL");
     }
