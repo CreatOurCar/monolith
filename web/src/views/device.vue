@@ -427,16 +427,15 @@
           </template>
           <template #list="slotProps">
             <div class="flex flex-col">
-              <div v-for="(item, index) in slotProps.items" :key="index"
-                class="flex items-center border-b py-2 px-2 gap-2">
+              <div v-for="(item, index) in slotProps.items" :key="index" class="flex items-center border-b p-2 gap-2">
                 <div class="w-8 text-center">{{ index + 1 }}</div>
                 <div class="flex-1">
                   <div class="text-sm truncate">{{ item.name }}</div>
                   <div class="text-xs text-gray-500 mt-1">{{ format_size(item.size) }}</div>
                 </div>
-                <Button icon="pi pi-download" class="mx-1" @click="download_file(item.name, item.size, index + 1)"
+                <Button icon="pi pi-download" class="mx-1" text @click="download_file(item.name, item.size, index + 1)"
                   :loading="files.loading.download === index + 1" :disabled="files.disabled" />
-                <Button icon="pi pi-trash" severity="danger" class="mx-1" @click="delete_file(item.name, index)"
+                <Button icon="pi pi-trash" class="mx-1" text severity="danger" @click="delete_file(item.name, index)"
                   :loading="files.loading.del === index" :disabled="files.disabled" />
               </div>
             </div>

@@ -31,7 +31,8 @@ export const views = reactive({
   },
   can: {
     name: 'CAN',
-    display: { telemetry: true }
+    display: { telemetry: true },
+    view: {},
   },
   gps: {
     name: 'GPS',
