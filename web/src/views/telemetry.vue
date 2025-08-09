@@ -99,7 +99,7 @@
           v = d[d.length - 1];
         }
 
-        if (isNaN(v) || !v) {
+        if (isNaN(v) || v === null || v === undefined) {
           return '-';
         } else {
           return `${digit(v)} ${o.unit}`;

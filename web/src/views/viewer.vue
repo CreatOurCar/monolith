@@ -182,43 +182,45 @@
         }
       }
 
-      line.value.setPath(path.value);
-      map.value.setCenter(path.value[0]);
+      if (path.value.length) {
+        line.value.setPath(path.value);
+        map.value.setCenter(path.value[0]);
 
-      new kakao.maps.Circle({
-        center: path.value[0],
-        fillColor: '#00FF00',
-        strokeColor: '#00FF00',
-        fillOpacity: 1,
-        strokeOpacity: 1,
-        radius: 0.5,
-      }).setMap(map.value);
+        new kakao.maps.Circle({
+          center: path.value[0],
+          fillColor: '#00FF00',
+          strokeColor: '#00FF00',
+          fillOpacity: 1,
+          strokeOpacity: 1,
+          radius: 0.5,
+        }).setMap(map.value);
 
-      new kakao.maps.Circle({
-        center: path.value[path.value.length - 1],
-        fillColor: '#FF0000',
-        strokeColor: '#FF0000',
-        fillOpacity: 1,
-        strokeOpacity: 1,
-        radius: 0.5,
-      }).setMap(map.value);
+        new kakao.maps.Circle({
+          center: path.value[path.value.length - 1],
+          fillColor: '#FF0000',
+          strokeColor: '#FF0000',
+          fillOpacity: 1,
+          strokeOpacity: 1,
+          radius: 0.5,
+        }).setMap(map.value);
 
-      timelapse_pos.value = new kakao.maps.Circle({
-        fillColor: '#FF00FF',
-        strokeColor: '#FF00FF',
-        fillOpacity: 1,
-        strokeOpacity: 1,
-        radius: 0.5,
-        zIndex: 2,
-      });
+        timelapse_pos.value = new kakao.maps.Circle({
+          fillColor: '#FF00FF',
+          strokeColor: '#FF00FF',
+          fillOpacity: 1,
+          strokeOpacity: 1,
+          radius: 0.5,
+          zIndex: 2,
+        });
 
-      timelapse_pos.value.setMap(map.value);
-      timelapse_pos.value.setPosition(path.value[0]);
+        timelapse_pos.value.setMap(map.value);
+        timelapse_pos.value.setPosition(path.value[0]);
 
-      timelapse_time.value = dayjs(bt * 1000 + path_history[0].timestamp).format('HH:mm:ss.SSS');
-      timelapse_coord.value = `${path_history[0].gps.latitude.toFixed(7)}, ${path_history[0].gps.longitude.toFixed(7)}`;
-      timelapse_speed.value = `${digit(path_history[0].gps.speed)} km/h`;
-      timelapse_course.value = `${digit(path_history[0].gps.course)} °`;
+        timelapse_time.value = dayjs(bt * 1000 + path_history[0].timestamp).format('HH:mm:ss.SSS');
+        timelapse_coord.value = `${path_history[0].gps.latitude.toFixed(7)}, ${path_history[0].gps.longitude.toFixed(7)}`;
+        timelapse_speed.value = `${digit(path_history[0].gps.speed)} km/h`;
+        timelapse_course.value = `${digit(path_history[0].gps.course)} °`;
+      }
 
       init_chart(dataset);
     };
@@ -296,7 +298,7 @@
           v = d[d.length - 1];
         }
 
-        if (isNaN(v) || !v) {
+        if (isNaN(v) || v === null || v === undefined) {
           return '-';
         } else {
           return `${digit(v)} ${o.unit}`;
