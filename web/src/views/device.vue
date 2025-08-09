@@ -247,7 +247,7 @@
   <Fluid>
     <div class="flex flex-col md:flex-row gap-8">
       <div class="md:w-1/2">
-        <div class="card flex flex-col gap-4">
+        <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">Server</div>
           <div class="grid grid-cols-12 gap-2">
             <label for="server/addr" class="flex items-center col-span-3">Address</label>
@@ -281,7 +281,7 @@
           </div>
         </div>
 
-        <div class="card flex flex-col gap-4">
+        <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">Device</div>
           <div class="grid grid-cols-12 gap-2">
             <label for="net/ssid" class="flex items-center col-span-3">SSID</label>
@@ -315,25 +315,25 @@
           </div>
         </div>
 
-        <div class="card flex flex-col gap-4">
+        <div class="card flex flex-col gap-2">
           <div class="font-semibold text-xl">Inputs</div>
-          <div class="grid grid-cols-12 gap-2 items-center">
-            <label for="dgt/en" class="flex items-center col-span-3">Digital</label>
-            <div class="flex items-center col-span-3">
+          <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <li class="flex items-center justify-between cardview">
+              <label for="dgt/en" class="font-medium pr-3">Digital</label>
               <ToggleSwitch id="dgt/en" v-model="config.dgt.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
-            </div>
-            <label for="anl/en" class="flex items-center col-span-3 col-start-7">Analog</label>
-            <div class="flex items-center col-span-3 col-start-10">
+            </li>
+            <li class="flex items-center justify-between cardview">
+              <label for="anl/en" class="font-medium pr-3">Analog</label>
               <ToggleSwitch id="anl/en" v-model="config.anl.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
-            </div>
-          </div>
+            </li>
+          </ul>
         </div>
       </div>
 
       <div class="md:w-1/2">
-        <div class="card flex flex-col gap-4">
+        <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">CAN</div>
           <div class="grid grid-cols-12 gap-2">
             <label for="can/en" class="flex items-center col-span-3">Enabled</label>
@@ -375,7 +375,7 @@
           </div>
         </div>
 
-        <div class="card flex flex-col gap-4">
+        <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">GPS</div>
           <div class="grid grid-cols-12 gap-2">
             <label for="gps/en" class="flex items-center col-span-3">Enabled</label>
@@ -385,7 +385,7 @@
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="gps/dev" class="flex items-center col-span-3">Unit</label>
+            <label for="gps/dev" class="flex items-center col-span-3">Device</label>
             <div class="col-span-9">
               <InputGroup>
                 <Select v-model="config.gps.dev.value" :options="gpsdev" optionLabel="name" optionValue="value"
@@ -397,10 +397,10 @@
           </div>
         </div>
 
-        <div class="card flex flex-col gap-4">
+        <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">Danger Zone</div>
-          <span>Restart the device to apply changes.</span>
-          <div class="flex gap-4">
+          <span><span class="pi pi-info-circle mr-2"></span> Restart the device to apply changes.</span>
+          <div class="flex gap-6">
             <Button class="flex-1" label="Refresh" icon="pi pi-sync" @click="load_confirm" />
             <Button class="flex-1" label="Restart" icon="pi pi-refresh" severity="warn" @click="restart_confirm" />
             <Button class="flex-1" label="Reset" icon="pi pi-sparkles" severity="danger" @click="reset_confirm" />
@@ -425,10 +425,10 @@
               Load the file list to see available files.<br>The current session won't be listed or deleted.
             </div>
           </template>
-          <template #list="slotProps">
-            <div class="flex flex-col">
-              <div v-for="(item, index) in slotProps.items" :key="index" class="flex items-center border-b p-2 gap-2">
-                <div class="w-8 text-center">{{ index + 1 }}</div>
+          <template #list="slot">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div v-for="(item, index) in slot.items" :key="index" class="flex items-center justify-between cardview">
+                <div class="ml-2 mr-5 text-center">{{ index + 1 }}</div>
                 <div class="flex-1">
                   <div class="text-sm truncate">{{ item.name }}</div>
                   <div class="text-xs text-gray-500 mt-1">{{ format_size(item.size) }}</div>

@@ -222,8 +222,8 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-sm">
           <template v-for="item in state" :key="item.name">
-            <div v-if="item.name" class="flex items-center">
-              <span class="w-16">{{ item.name }}</span>
+            <div v-if="item.name" class="flex items-center cardview">
+              <span class="w-full ">{{ item.name }}</span>
               <Tag :value="item.text" :severity="item.status" class="ml-2 state" />
             </div>
           </template>
@@ -234,9 +234,9 @@
         <div class="font-semibold text-xl mb-6">Digital</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           <template v-for="item in views.digital.ch" :key="item.name">
-            <div v-if="item.name" class="flex items-center">
-              <span class="w-20">{{ item.name }}</span>
-              <Tag :value="item.value ? 'HIGH' : 'LOW'" :severity="item.value ? 'info' : 'secondary'" />
+            <div v-if="item.name" class="flex items-center cardview">
+              <span class="w-full">{{ item.name }}</span>
+              <Tag :value="item.value ? 'HIGH' : 'LOW'" :severity="item.value ? 'info' : 'danger'" />
             </div>
           </template>
         </div>
@@ -250,6 +250,10 @@
       <div v-if="views.gyro.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-4">Gyroscope</div>
         <div class="chart" :ref="container.gyro"></div>
+      </div>
+
+      <div class="card">
+        <div class="font-semibold text-xl mb-6">CAN</div>
       </div>
 
       <div v-if="views.gps.display.telemetry" class="card" style="position: relative;">

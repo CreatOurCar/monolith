@@ -30,3 +30,11 @@
   left: 1.5rem;
   height: calc(100vh - 7rem);
 }
+
+.cardview {
+  @apply rounded-xl border bg-gray-50/60 dark:border-zinc-900 dark:bg-zinc-700/25 px-4 py-3;
+}
+
+.u-select {
+  background: rgba(0, 0, 0, 0.2)!important;
+}

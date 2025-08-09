@@ -421,7 +421,7 @@
             chooseLabel="Select" />
           <span class="ml-4 "> {{ file.name.value ? file.name : "Select a file to view" }}</span>
         </div>
-        <div v-if="file.name" class="mt-4 space-y-4">
+        <div v-if="file.name" class="mt-6 space-y-5">
           <div class="flex">
             <span class="font-semibold w-24">Device:</span>
             <span class="flex-1">{{ file.device }}</span>
@@ -449,7 +449,7 @@
               :offLabel="tag.name" @click="toggle_axis(key)" />
           </div>
           <div class="chart" ref="graph"></div>
-          <span><span class="pi pi-info-circle mr-2 mt-4"></span> Click and drag to zoom, double click to reset.</span>
+          <span><span class="pi pi-info-circle mr-2 mt-6"></span> Click and drag to zoom, double click to reset.</span>
         </div>
         <div v-show="!chart" class="text-center text-gray-400">
           Please select a file to view the graph.
@@ -462,7 +462,7 @@
           <span class="font-semibold mr-6">{{ timelapse_time }}</span>
           <Slider v-model="slider" :step="0.01" class="w-full" @change="timelapse" />
         </div>
-        <div class="mb-6 space-y-4">
+        <div class="mb-6 space-y-5">
           <div class="flex">
             <span class="font-semibold w-24">Coord:</span>
             <Tag :value="timelapse_coord" severity="info" />

@@ -129,39 +129,29 @@
 
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl mb-2">Display</div>
-          <div class="text-lg font-semibold">Telemetry</div>
-          <div class="grid grid-cols-12 gap-6 items-center pl-4">
-            <template v-for="(view, key, idx) in views" :key="key">
-              <label :for="key" class="flex items-center col-span-3 font-medium"
-                :class="{ 'col-start-7': idx % 2 === 1 }">
-                {{ view.name }}
-              </label>
-              <div class="flex items-center col-span-3" :class="{ 'col-start-10': idx % 2 === 1 }">
-                <ToggleSwitch :id="key" v-model="view.display.telemetry" />
-              </div>
-            </template>
+
+          <div>
+            <div class="text-lg font-semibold">Telemetry</div>
+            <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <template v-for="(view, key) in views" :key="key">
+                <li class="flex items-center justify-between cardview">
+                  <label :for="key" class="font-medium pr-3">{{ view.name }}</label>
+                  <ToggleSwitch :id="key" v-model="view.display.telemetry" />
+                </li>
+              </template>
+            </ul>
           </div>
-          <div class="text-lg font-semibold mt-2">Viewer</div>
-          <div class="grid grid-cols-12 gap-4 items-center pl-4">
-            <label class="flex items-center col-span-3 font-medium">GPS</label>
-            <div class="flex items-center col-span-3 col-start-4">
-              <ToggleSwitch v-model="views.gps.display.viewer" />
-            </div>
+          <div>
+            <div class="text-lg font-semibold">Viewer</div>
+            <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <li class="flex items-center justify-between cardview">
+                <label for="viewer-gps" class="font-medium pr-3">GPS</label>
+                <ToggleSwitch id="viewer-gps" v-model="views.gps.display.viewer" />
+              </li>
+            </ul>
           </div>
         </div>
 
-        <div class="card flex flex-col gap-4">
-          <div class="font-semibold text-xl mb-2">Digital</div>
-          <div class="grid grid-cols-2 gap-4">
-            <div v-for="(channel, key) in views.digital.ch" :key="key" class="flex items-center gap-2">
-              <label :for="key" class="w-16 font-medium">{{ key.toUpperCase() }}:</label>
-              <InputText :id="key" v-model="channel.name" placeholder="Name" class="w-20" :fluid="false" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="md:w-1/2">
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl">Units</div>
           <InputGroup class="mt-2">
@@ -176,44 +166,74 @@
         </div>
 
         <div class="card flex flex-col gap-4">
+          <div class="font-semibold text-xl mb-2">Digital</div>
+          <DataView :value="Object.entries(views.digital.ch)" layout="grid">
+            <template #grid="{ items }">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div v-for="([key, channel]) in items" :key="key" class="cardview">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-1 text-base font-semibold uppercase">{{ key }}</span>
+                    </div>
+                  </div>
+                  <label :for="`${key}-name`" class="text-xs opacity-70 block">Name</label>
+                  <InputText :id="`${key}-name`" v-model="channel.name" placeholder="Channel name"
+                    class="w-full text-base font-medium mt-1" :fluid="true" />
+                </div>
+              </div>
+            </template>
+          </DataView>
+        </div>
+      </div>
+
+      <div class="md:w-1/2">
+        <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl mb-2">Analog</div>
-          <div v-for="(channel, key) in analogs" :key="key" class="flex flex-col gap-2 mb-2">
-            <div class="grid grid-cols-12 gap-2 items-center">
-              <label :for="`${key}-name`" class="col-span-3 font-medium">{{ key.toUpperCase() }}:</label>
-              <div class="col-span-4">
-                <InputText :id="`${key}-name`" v-model="channel.name" placeholder="Name" class="w-20" :fluid="false" />
-              </div>
-              <div v-if="['ain1','ain2','ain3','ain4'].includes(key)" class="col-span-5 flex items-center">
-                <label class="mr-4">DIV</label>
-                <ToggleSwitch v-model="channel.divider" />
-              </div>
-            </div>
-            <div class="grid grid-cols-12 gap-2 items-center">
-              <div class="col-span-4 flex items-center gap-2 col-start-4">
-                <div class="flex items-end">
-                  <input v-model.number="channel.multiplier" type="number" step="0.001"
-                    class="w-20 p-inputtext p-component p-filled" />
-                  <span class="mb-1">&ensp;x</span>
+          <DataView :value="Object.entries(analogs)" layout="grid">
+            <template #grid="{ items }">
+              <div class="grid grid-cols-1 gap-6">
+                <div v-for="([key, channel]) in items" :key="key" class="cardview">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-1 text-base font-semibold uppercase">{{ key }}</span>
+                    </div>
+
+                    <div v-if="['ain1','ain2','ain3','ain4'].includes(key)" class="flex items-center gap-2">
+                      <label class="text-xs opacity-70">Voltage Divider</label>
+                      <ToggleSwitch v-model="channel.divider" />
+                    </div>
+                  </div>
+                  <label :for="`${key}-name`" class="text-xs opacity-70">Name</label>
+                  <InputText :id="`${key}-name`" v-model="channel.name" placeholder="Channel name"
+                    class="w-full text-base font-medium mt-1" :fluid="true" />
+                  <div class="mt-3 grid grid-cols-12 gap-2 items-end">
+                    <div class="col-span-6">
+                      <label :for="`${key}-mul`" class="text-xs opacity-70">Multiplier</label>
+                      <div class="flex items-end mt-1">
+                        <input :id="`${key}-mul`" v-model.number="channel.multiplier" type="number" step="0.001"
+                          class="w-20 p-inputtext p-component" aria-label="Multiplier" />
+                        <span class="ml-1 mb-1 text-sm opacity-70">x</span>
+                      </div>
+                    </div>
+                    <div class="col-span-6">
+                      <label :for="`${key}-unit`" class="text-xs opacity-70">Unit</label>
+                      <Select :inputId="`${key}-unit`" v-model="channel.unit" :options="unit_options"
+                        optionLabel="display" optionValue="name" placeholder="Select unit" class="w-full mt-1" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="col-span-5 flex items-center">
-                <div class="flex items-center w-full">
-                  <Select v-model="channel.unit" :options="unit_options" optionLabel="display" optionValue="name"
-                    placeholder="Unit" class="w-28" />
-                </div>
-              </div>
-            </div>
-            <hr v-if="key !== 'ain6'" class='mb-0' />
-          </div>
+            </template>
+          </DataView>
         </div>
 
         <div class="card flex flex-col gap-4">
           <div class="font-semibold text-xl mb-2">CAN</div>
           <Button label="Add Message View" icon="pi pi-plus" @click="display_can_view = true;" />
-          <DataView v-if="can_views.length" :value="can_views" class="rounded-2xl">
+          <DataView v-if="can_views.length" :value="can_views">
             <template #list="{ items }">
-              <div class="flex flex-col gap-2">
-                <div v-for="item in items" :key="item.name" class="flex items-center justify-between border-b p-3">
+              <div class="flex flex-col gap-4 mt-2">
+                <div v-for="item in items" :key="item.name" class="flex items-center justify-between cardview">
                   <div class="flex flex-col">
                     <div class="text-lg font-semibold leading-tight">{{ item.name }}</div>
                     <div class="text-xs opacity-70 leading-tight">0x{{ item.id.toString(16).toUpperCase() }}</div>
@@ -279,7 +299,6 @@
           </div>
         </div>
       </Dialog>
-
     </div>
   </Fluid>
 </template>
