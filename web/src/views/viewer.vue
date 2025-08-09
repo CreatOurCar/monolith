@@ -7,6 +7,7 @@
   import {fmt, digit, format_size} from '@/service/state';
   import {views, units, colors} from '@/service/ui';
   import {init_map} from '@/service/map';
+  import {plugin_wheel_zoom, plugin_touch_zoom} from '@/service/uplot';
 
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
@@ -338,6 +339,10 @@
       scales: scales,
       series: series,
       axes: axes,
+      plugins: [
+        plugin_touch_zoom(),
+        plugin_wheel_zoom(),
+      ],
     }, dataset, graph.value);
 
     new ResizeObserver(entries => {
