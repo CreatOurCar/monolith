@@ -68,6 +68,8 @@ void task_can(void *pvParameters) {
     COPY_STATE(&logbuf.run, &init, CAN);
   }
 
+  uint32_t prev_alerts = 0;
+
   while (true) {
     esp_err_t ret;
     twai_message_t msg;
@@ -101,15 +103,22 @@ void task_can(void *pvParameters) {
     twai_read_alerts(&alerts, 0);
 
     if (alerts) {
+      if (alerts == prev_alerts) {
+        continue;
+      }
+
       char buf[sizeof(system_event_t)];
       snprintf(buf, sizeof(buf), "CANALT:%lX", alerts);
       SYSLOG(buf);
 
       if (alerts & CAN_ALERT_ERROR) {
         SET_ERROR(&logbuf.run, CAN);
+        prev_alerts = alerts;
       } else {
         CLEAR_ERROR(&logbuf.run, CAN);
       }
+    } else if (prev_alerts) {
+      CLEAR_ERROR(&logbuf.run, CAN);
     }
   }
 }

@@ -23,6 +23,7 @@ static i2c_master_bus_handle_t i2c1;
 esp_err_t convert(i2c_master_dev_handle_t adc, uint8_t ch, int16_t *v) {
   esp_err_t ret;
   int cnt = 0;
+
   uint8_t tx_conv = ADS1115_CONVERSION_REG_ADDR;
   uint8_t tx[3]   = { ADS1115_CONFIG_REG_ADDR, ADS1115_CONFIG(ch), ADS1115_CONFIG_L };
   uint8_t rx[2]   = { 0 };
@@ -118,6 +119,10 @@ void task_analog(void *pvParameters) {
       analog.payload.analog.temperature = (int16_t)(temperature * 100);
       LOG(LOG_TYPE_ANALOG, &analog);
       memcpy(&logbuf.analog, &analog, sizeof(log_t));
+
+      if (IS_ERROR(&logbuf.run, ANALOG)) {
+        CLEAR_ERROR(&logbuf.run, ANALOG);
+      }
     } else {
       ERROR_SYSLOG(&logbuf.run, ANALOG, "ADC read failure", "ADC_READ_FAIL");
     }
