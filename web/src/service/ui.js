@@ -48,10 +48,29 @@ export const units = reactive({
   Speed: { unit: 'km/h', display: 'Speed (km/h)', default: true },
 });
 
+export const can_decoder = reactive({});
+
+function load_decoder() {
+  let idx = 1;
+
+  Object.entries(views.can.view).forEach(([k, v]) => {
+    if (!can_decoder[v.id]) {
+      can_decoder[v.id] = [];
+    }
+
+    can_decoder[v.id].push({
+      idx: idx++,
+      name: k,
+      ...v,
+    });
+  });
+}
+
 watch(views, save_view, { deep: true })
 watch(units, save_view, { deep: true })
 
 load_view();
+load_decoder();
 
 export function save_view() {
   localStorage.setItem('views', JSON.stringify(views));

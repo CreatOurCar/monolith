@@ -10,7 +10,7 @@ dayjs.extend(relativeTime);
 import mqtt from 'mqtt';
 
 import { term } from '@/service/terminal';
-import { update_telemetry } from '@/service/telemetry';
+import { update_telemetry, update_can } from '@/service/telemetry';
 import { connection, config, times, files, format_size } from '@/service/state';
 import { parse_cfg, parse_log, parse_logbuf, to_uint } from '@/service/protocol';
 import { update_connection_server, update_connection_device } from '@/service/topbar';
@@ -122,30 +122,20 @@ export function init_mqtt() {
       }
 
       case 'd/can': {
-        try {
+        // try {
           const log = parse_log(message);
-          // TODO:
-        } catch (e) {
-          console.error(e, message);
-        }
+          update_time(log.timestamp);
+          update_can(log);
+        // } catch (e) {
+        //   console.error(`CAN: ${e}`);
+        //   console.error(message);
+        // }
         break;
       }
 
       case 'd': {
         const logbuf = parse_logbuf(message);
-        times.current.value = dayjs(times.boot.raw * 1000 + logbuf.timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");
-
-        const d = dayjs.duration(logbuf.timestamp);
-        const hours = Math.floor(d.asHours());
-        const minutes = d.minutes();
-        const seconds = d.seconds();
-
-        times.uptime.value = '';
-
-        if (hours > 0) times.uptime.value += `${hours} hr `;
-        if (minutes > 0) times.uptime.value += `${minutes} min `;
-        times.uptime.value += `${seconds} sec`;
-
+        update_time(logbuf.timestamp);
         update_telemetry(logbuf);
         break;
       }
@@ -318,3 +308,17 @@ export function publish(topic, payload, qos) {
   mqtt_client.publish(`${localStorage.getItem('server/name')}/${topic}`, payload, { qos: qos });
 }
 
+function update_time(timestamp) {
+  times.current.value = dayjs(times.boot.raw * 1000 + timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");
+
+  const d = dayjs.duration(timestamp);
+  const hours = Math.floor(d.asHours());
+  const minutes = d.minutes();
+  const seconds = d.seconds();
+
+  times.uptime.value = '';
+
+  if (hours > 0) times.uptime.value += `${hours} hr `;
+  if (minutes > 0) times.uptime.value += `${minutes} min `;
+  times.uptime.value += `${seconds} sec`;
+}

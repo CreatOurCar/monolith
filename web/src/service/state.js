@@ -89,6 +89,7 @@ export const telemetry = reactive({
   chart: {},
   analog: [[], [], [], [], [], [], [], [], []],
   gyro: [[], [], [], [], [], [], []],
+  can: [[]],
 });
 
 export function format_size(size) {

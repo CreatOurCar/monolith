@@ -295,7 +295,13 @@
         const d = u.data[sidx];
 
         if (didx == null && d) {
-          v = d[d.length - 1];
+          const i = d.findLastIndex(x => x !== null);
+
+          if (i !== -1) {
+            v = d[i];
+          } else {
+            v = d[d.length - 1];
+          }
         }
 
         if (isNaN(v) || v === null || v === undefined) {

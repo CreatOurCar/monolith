@@ -6,7 +6,7 @@
   import {publish} from '@/service/mqtt';
   import {term} from '@/service/terminal';
   import {state, times, cons, telemetry, fmt, digit} from '@/service/state';
-  import {views, units, colors} from '@/service/ui';
+  import {views, units, can_decoder, colors} from '@/service/ui';
   import {map, line, path, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 
@@ -26,6 +26,7 @@
     analog: ref(null),
     gyro: ref(null),
     gps: ref(null),
+    can: ref(null),
   };
 
   onMounted(() => {
@@ -98,7 +99,13 @@
         const d = u.data[sidx];
 
         if (didx == null && d) {
-          v = d[d.length - 1];
+          const i = d.findLastIndex(x => x !== null);
+
+          if (i !== -1) {
+            v = d[i];
+          } else {
+            v = d[d.length - 1];
+          }
         }
 
         if (isNaN(v) || v === null || v === undefined) {
@@ -142,6 +149,30 @@
       ],
       axes: axes,
     }, telemetry.gyro, container.gyro.value);
+
+    const series = [{value: fmt.time}];
+
+    for (const [k, o] of Object.entries(can_decoder)) {
+      for (const x of o) {
+        series.push({
+          label: x.name,
+          stroke: colors[series.length - 1],
+          value: fmt[x.unit],
+          points: {show: false},
+          pxAlign: 0,
+          scale: x.unit,
+          spanGaps: true,
+        });
+      }
+    }
+
+    telemetry.chart.can = new uPlot({
+      width: 600, height: 400,
+      pxAlign: 0, pxSnap: false,
+      scales: scales,
+      series: series,
+      axes: axes,
+    }, telemetry.can, container.can.value);
 
     setInterval(() => {
       Object.entries(telemetry.chart).forEach(e => {
@@ -291,8 +322,9 @@
         <div class="chart" :ref="container.gyro"></div>
       </div>
 
-      <div class="card">
+      <div v-if="views.can.display.telemetry && Object.keys(can_decoder).length" class="card">
         <div class="font-semibold text-xl mb-6">CAN</div>
+        <div class="chart" :ref="container.can"></div>
       </div>
 
       <div v-if="views.gps.display.telemetry" class="card" style="position: relative;">

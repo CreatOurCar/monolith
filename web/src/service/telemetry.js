@@ -1,7 +1,7 @@
 import { ref } from 'vue';
-import { convert } from '@/service/protocol';
+import { convert, signed } from '@/service/protocol';
 import { times, state, telemetry } from '@/service/state';
-import { views } from '@/service/ui';
+import { can_decoder, views } from '@/service/ui';
 
 export const map = ref(null);
 export const line = ref(null);
@@ -104,5 +104,56 @@ export function update_telemetry(data) {
       line.value.setPath(path.value);
       map.value.panTo(pos);
     }
+  }
+}
+
+export function update_can(log) {
+  if (can_decoder[log.can.id]) {
+    const exist = [];
+
+    for (const decoder of can_decoder[log.can.id]) {
+      if (!telemetry.can[decoder.idx]) {
+        telemetry.can[decoder.idx] = [];
+      }
+
+      let v;
+
+      if (decoder.mode === 'byte') {
+        v = convert.can_byte(log.can.data, decoder.start, decoder.end, decoder.endian);
+      } else {
+        v = convert.can_bit(log.can.data, decoder.start, decoder.end);
+      }
+
+      if (decoder.sign) {
+        v = signed(v, (decoder.end - decoder.start + 1) * (decoder.mode === 'byte' ? 8 : 1));
+      }
+
+      telemetry.can[decoder.idx].push(v * decoder.multiplier);
+      exist.push(decoder.idx);
+    }
+
+    if (exist.length) {
+      telemetry.can[0].push(times.boot.raw + log.timestamp / 1000);
+
+      Object.values(can_decoder).forEach((v, i) => {
+        v.forEach(decoder => {
+          if (!telemetry.can[decoder.idx]) {
+            telemetry.can[decoder.idx] = [];
+          }
+
+          if (!exist.includes(decoder.idx)) {
+            telemetry.can[decoder.idx].push(null);
+          }
+        });
+      });
+    }
+  }
+
+  if (telemetry.chart.can) {
+    telemetry.chart.can.setData(telemetry.can);
+    telemetry.chart.can.setScale('x', {
+      min: new Date().getTime() / 1000 - 60,
+      max: new Date().getTime() / 1000
+    });
   }
 }

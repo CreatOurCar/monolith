@@ -135,8 +135,8 @@ export function parse(buf) {
     try {
       ret = parse_log(buf.slice(i, i + LOG_SIZE));
     } catch (e) {
-      console.error(e);
-      // TODO:
+      logs.error.push(`#${i}: ${e.message}`);
+      continue;
     }
 
     if (!header && i === 0 && ret.type !== "BOOT") {
@@ -388,8 +388,10 @@ export function validate_checksum(buf) {
 export const convert = {
   adc_to_v: v => v / (1 << 15) * 4.096, // +-4.096V FSRadc_to_v(value),
   accel_to_g: v => v / (1 << 15) * 8, // +-8g FSR
-  gyro_to_dps: v => v / (1 << 15) * 500
-}
+  gyro_to_dps: v => v / (1 << 15) * 500,
+  can_byte: (v, start, end, endian) => to_uint((end - start + 1) * 8, v, start, endian === "big"),
+  can_bit: (v, start, end) => Number((new DataView(v.buffer, v.byteOffset, 8).getBigUint64(0, true) >> BigInt(start)) & ((1n << BigInt(end - start + 1)) - 1n)),
+};
 
 export function to_string(buffer, start, end) {
   const str = String.fromCharCode(...buffer.slice(start, end));
@@ -397,7 +399,7 @@ export function to_string(buffer, start, end) {
   return nl === -1 ? str : str.slice(0, nl);
 }
 
-export function to_uint(bit, buffer, start) {
+export function to_uint(bit, buffer, start, be = false) {
   if (bit <= 0 || bit & (bit - 1) !== 0) {
     throw new Error("Invalid bit count: bit must be a power of two");
   }
@@ -405,7 +407,8 @@ export function to_uint(bit, buffer, start) {
   let ret = 0;
 
   for (let i = 0; i < bit / 8; i++) {
-    ret += buffer[start + i] * Math.pow(2, i * 8); // little endian
+    const idx = be ? (start + bit / 8 - 1 - i) : (start + i);
+    ret += buffer[idx] * Math.pow(2, i * 8);
   }
 
   return ret >>> 0;
@@ -420,6 +423,5 @@ export function signed(value, bit) {
 }
 
 export function to_float(buffer, start) {
-  const view = new DataView(buffer.buffer, buffer.byteOffset + start, 4);
-  return view.getFloat32(0, true); // little endian
+  return new DataView(buffer.buffer, buffer.byteOffset + start, 4).getFloat32(0, true); // little endian
 }
