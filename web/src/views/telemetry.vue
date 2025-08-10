@@ -10,6 +10,8 @@
   import {map, line, path, speed, course} from '@/service/telemetry';
   import {init_map} from '@/service/map';
 
+  import ToastEventBus from 'primevue/toasteventbus';
+
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
 
@@ -195,7 +197,44 @@
   }
 
   function send_can() {
-    // TODO:
+    const id = parseInt(cons.can.id.trim(), 16);
+
+    if (isNaN(id)) {
+      return ToastEventBus.emit('add', {severity: 'error', summary: 'Invalid CAN ID', group: 'br', life: 3000});
+    }
+
+    if (id < 0 || id > (1 << 29) - 1) {
+      return ToastEventBus.emit('add', {
+        severity: 'error',
+        summary: 'CAN ID out of range',
+        detail: 'ID must be within 29 bits.',
+        group: 'br',
+        life: 3000
+      });
+    }
+
+    const payload = new Uint8Array(8);
+
+    for (let i = 0; i < cons.can.data.length; i++) {
+      if (cons.can.data[i].trim() === '') {
+        cons.can.data[i] = '00';
+      }
+
+      const v = parseInt(cons.can.data[i].trim(), 16);
+
+      if (isNaN(v) || v < 0 || v > 255) {
+        return ToastEventBus.emit('add', {
+          severity: 'error',
+          summary: `Invalid CAN Data Byte D${i}`,
+          group: 'br',
+          life: 3000
+        });
+      }
+
+      payload[i] = v;
+    }
+
+    publish(`cmd/can/${id}`, payload, 1);
   }
 
   function ascii_only(event) {
@@ -293,7 +332,7 @@
             <Button icon="pi pi-send" @click="send_can" />
           </InputGroup>
           <InputGroup class="mt-4 mb-3">
-            <InputText v-model="cons.can.data[n - 1]" v-for="n in 8" :key="n" :placeholder="`D${n - 1}`" maxlength="2"
+            <InputText v-model="cons.can.data[n - 1]" v-for="n in 8" :key="n" :placeholder="`D${n - 1}`" maxlength="4"
               @keyup="hex_only" class="can_data" />
           </InputGroup>
           <Message size="small" severity="secondary" variant="simple">CAN msg ID and data bytes in HEX format.</Message>

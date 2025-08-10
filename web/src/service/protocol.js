@@ -334,8 +334,10 @@ export function parse_logbuf(buf) {
   try {
     logbuf.gps = parse_log(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
   } catch (e) {
-    console.error(`GPS: ${e}`);
-    console.error(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
+    if (buf[LOGBUF_POS.GPS] !== 0) {
+      console.error(`GPS: ${e}`);
+      console.error(buf.slice(LOGBUF_POS.GPS, LOGBUF_POS.GPS + LOG_SIZE));
+    }
   }
 
   try {

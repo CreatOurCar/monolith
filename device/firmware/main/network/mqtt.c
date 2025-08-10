@@ -4,6 +4,8 @@
 
 #include "main.h"
 
+#include "driver/twai.h"
+
 log_buf_t logbuf;
 esp_mqtt_client_handle_t mqtt = NULL;
 
@@ -139,7 +141,26 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     else if (STREQL(dir[2], "can")) {  // transmit CAN message
-      // TODO:
+      twai_message_t message = {
+        .identifier       = atol(dir[3]),
+        .extd             = false,
+        .rtr              = false,
+        .ss               = false,
+        .self             = false,
+        .dlc_non_comp     = false,
+        .data_length_code = evt->data_len > 8 ? 8 : evt->data_len,
+      };
+
+      if (message.identifier == 0) {
+        snprintf(topic, sizeof(topic), "%s/ack/can", storage.device.name);
+        esp_mqtt_client_publish(mqtt, topic, "fail:invalid_id", __builtin_strlen("fail:invalid_id"), MQTT_QOS_2, false);
+        return;
+      } else if (message.identifier > 0x7FF) {
+        message.extd = true;
+      }
+
+      memcpy(message.data, evt->data, message.data_length_code);
+      xQueueSend(cantxqueue, &message, 0);
     }
 
     else if (STREQL(dir[2], "ls")) {  // list files

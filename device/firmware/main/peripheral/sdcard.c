@@ -5,6 +5,7 @@
 #include "main.h"
 
 #include "driver/sdmmc_host.h"
+#include "driver/twai.h"
 #include "esp_vfs_fat.h"
 
 extern struct timeval boot;
@@ -94,9 +95,10 @@ void sdcard_init(void) {
   }
 
   // create log queue and sdcard task
-  logqueue = xQueueCreate(32, sizeof(log_t));
+  logqueue    = xQueueCreate(32, sizeof(log_t));
   syslogqueue = xQueueCreate(16, sizeof(log_t));
   canlogqueue = xQueueCreate(16, sizeof(log_t));
+  cantxqueue  = xQueueCreate(4, sizeof(twai_message_t));
 
   if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, CORE0) != pdPASS) {
     FATAL_LOG(&init, SD, "task create failure");

@@ -121,6 +121,16 @@ export function init_mqtt() {
         break;
       }
 
+      case 'd/can': {
+        try {
+          const log = parse_log(message);
+          // TODO:
+        } catch (e) {
+          console.error(e, message);
+        }
+        break;
+      }
+
       case 'd': {
         const logbuf = parse_logbuf(message);
         times.current.value = dayjs(times.boot.raw * 1000 + logbuf.timestamp).format("YYYY-MM-DD HH:mm:ss.SSS");

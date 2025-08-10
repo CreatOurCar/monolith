@@ -15,6 +15,7 @@ TaskHandle_t led;
 QueueHandle_t logqueue;
 QueueHandle_t syslogqueue;
 QueueHandle_t canlogqueue;
+QueueHandle_t cantxqueue;
 
 nvs_storage_t storage;
 
