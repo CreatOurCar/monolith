@@ -33,6 +33,18 @@ void task_gyroscope(void *pvParameters) {
     ERROR_SYSLOG(&init, GYRO, "gyro init failure", "GYR_CFG_FAIL");
   }
 
+  tx[0] = 0x13;  // XG_OFFSET_H register address
+  tx[1] = 0;
+  tx[2] = 0;
+  tx[3] = 0;
+  tx[4] = 0;
+  tx[5] = 0;
+  tx[6] = 0;
+
+  if (i2c_master_transmit(gyro, tx, 7, 10) != ESP_OK) {
+    ERROR_SYSLOG(&init, GYRO, "gyro offset reset failure", "GYR_OFSRST_FAIL");
+  }
+
   const int sample = 100;
   int valid = 0;
 
