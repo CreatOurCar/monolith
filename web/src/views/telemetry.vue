@@ -303,10 +303,10 @@
       <div v-if="views.digital.display.telemetry" class="card">
         <div class="font-semibold text-xl mb-6">Digital</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          <template v-for="item in views.digital.ch" :key="item.name">
-            <div v-if="item.name" class="flex items-center cardview">
-              <span class="w-full">{{ item.name }}</span>
-              <Tag :value="item.value ? 'HIGH' : 'LOW'" :severity="item.value ? 'info' : 'danger'" />
+          <template v-for="(tag, key) in telemetry.digital" :key="key">
+            <div class="flex items-center cardview">
+              <span class="w-full">{{ views.digital.ch[key].name }}</span>
+              <Tag :value="tag ? 'HIGH' : 'LOW'" :severity="tag ? 'info' : 'danger'" />
             </div>
           </template>
         </div>

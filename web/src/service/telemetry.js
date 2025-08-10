@@ -37,10 +37,10 @@ export function update_telemetry(data) {
   }
 
   if (data.digital) {
-    views.digital.ch.din1.value = data.digital.digital.din1;
-    views.digital.ch.din2.value = data.digital.digital.din2;
-    views.digital.ch.din3.value = data.digital.digital.din3;
-    views.digital.ch.din4.value = data.digital.digital.din4;
+    telemetry.digital.din1 = data.digital.digital.din1;
+    telemetry.digital.din2 = data.digital.digital.din2;
+    telemetry.digital.din3 = data.digital.digital.din3;
+    telemetry.digital.din4 = data.digital.digital.din4;
   }
 
   if (data.analog) {

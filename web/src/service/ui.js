@@ -5,24 +5,24 @@ export const views = reactive({
     name: 'Digital',
     display: { telemetry: true },
     ch: {
-      din1: { name: 'DIN1', value: false },
-      din2: { name: 'DIN2', value: false },
-      din3: { name: 'DIN3', value: false },
-      din4: { name: 'DIN4', value: false },
+      din1: { name: 'DIN1' },
+      din2: { name: 'DIN2' },
+      din3: { name: 'DIN3' },
+      din4: { name: 'DIN4' },
     }
   },
   analog: {
     name: 'Analog',
     display: { telemetry: true },
     ch: {
-      ain1: { name: 'AIN1', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain2: { name: 'AIN2', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain3: { name: 'AIN3', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain4: { name: 'AIN4', value: 0, divider: false, multiplier: 1, unit: 'Volt' },
-      ain5: { name: 'AIN5', value: 0, multiplier: 1, unit: 'Volt' },
-      ain6: { name: 'AIN6', value: 0, multiplier: 1, unit: 'Volt' },
-      volt: { name: 'PWR', value: 0, multiplier: 15430 / 430 },
-      temp: { name: 'TEMP', value: 0, multiplier: 0.01 },
+      ain1: { name: 'AIN1', divider: false, multiplier: 1, unit: 'Volt' },
+      ain2: { name: 'AIN2', divider: false, multiplier: 1, unit: 'Volt' },
+      ain3: { name: 'AIN3', divider: false, multiplier: 1, unit: 'Volt' },
+      ain4: { name: 'AIN4', divider: false, multiplier: 1, unit: 'Volt' },
+      ain5: { name: 'AIN5', multiplier: 1, unit: 'Volt' },
+      ain6: { name: 'AIN6', multiplier: 1, unit: 'Volt' },
+      volt: { name: 'PWR', multiplier: 15430 / 430 },
+      temp: { name: 'TEMP', multiplier: 0.01 },
     }
   },
   gyro: {

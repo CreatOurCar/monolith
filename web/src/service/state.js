@@ -87,6 +87,7 @@ export const cons = reactive({
 
 export const telemetry = reactive({
   chart: {},
+  digital: { din1: false, din2: false, din3: false, din4: false },
   analog: [[], [], [], [], [], [], [], [], []],
   gyro: [[], [], [], [], [], [], []],
   can: [[]],
