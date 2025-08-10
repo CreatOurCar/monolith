@@ -310,11 +310,14 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 static void mqtt_task(void *arg) {
   int ret;
   log_t syslog;
+  log_t canlog;
   char topic[40];
   char syslog_topic[40];
+  char canlog_topic[40];
 
   snprintf(topic, sizeof(topic), "%s/d", storage.device.name);
   snprintf(syslog_topic, sizeof(syslog_topic), "%s/d/sl", storage.device.name);
+  snprintf(canlog_topic, sizeof(canlog_topic), "%s/d/can", storage.device.name);
 
   while (true) {
     if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
@@ -327,7 +330,11 @@ static void mqtt_task(void *arg) {
         }
       } while (ret);
 
-      // TODO: publish can event on demand
+      do {
+        if ((ret = xQueueReceive(canlogqueue, &canlog, 0)) == true) {
+          esp_mqtt_client_publish(mqtt, canlog_topic, (char *)&canlog, sizeof(canlog), MQTT_QOS_0, false);
+        }
+      } while (ret);
     }
 
     vTaskDelay(pdMS_TO_TICKS(storage.device.intv));

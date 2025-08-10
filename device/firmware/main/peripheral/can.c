@@ -7,7 +7,7 @@
     TWAI_ALERT_BUS_ERROR | TWAI_ALERT_TX_FAILED | TWAI_ALERT_RX_QUEUE_FULL | TWAI_ALERT_ERR_PASS |             \
     TWAI_ALERT_BUS_OFF | TWAI_ALERT_RX_FIFO_OVERRUN)
 
-#define CAN_ALERT_ENABLED (CAN_ALERT_ERROR | TWAI_ALERT_RX_DATA | TWAI_ALERT_TX_SUCCESS)
+#define CAN_ALERT_ENABLED (CAN_ALERT_ERROR)
 
 static inline twai_timing_config_t select_baud(uint8_t can_bps) {
   switch (can_bps) {
@@ -85,7 +85,10 @@ void task_can(void *pvParameters) {
     }
 
     twai_message_t msg;
-    twai_receive(&msg, portMAX_DELAY);
+
+    if (twai_receive(&msg, portMAX_DELAY) != ESP_OK) {
+      continue;
+    }
 
     log_t log;
     log.payload.can.id       = msg.identifier;
@@ -94,5 +97,6 @@ void task_can(void *pvParameters) {
     log.payload.can.len      = msg.data_length_code;
     memcpy(log.payload.can.data, msg.data, msg.data_length_code);
     LOG(LOG_TYPE_CAN, &log);
+    xQueueSend(canlogqueue, &log, 0);
   }
 }

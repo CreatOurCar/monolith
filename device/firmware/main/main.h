@@ -13,6 +13,7 @@ extern nvs_handle_t nvs;
 extern TaskHandle_t led;
 extern QueueHandle_t logqueue;
 extern QueueHandle_t syslogqueue;
+extern QueueHandle_t canlogqueue;
 extern esp_mqtt_client_handle_t mqtt;
 
 /***** nvs storage *****/

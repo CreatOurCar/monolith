@@ -96,6 +96,7 @@ void sdcard_init(void) {
   // create log queue and sdcard task
   logqueue = xQueueCreate(32, sizeof(log_t));
   syslogqueue = xQueueCreate(16, sizeof(log_t));
+  canlogqueue = xQueueCreate(16, sizeof(log_t));
 
   if (xTaskCreatePinnedToCore(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL, CORE0) != pdPASS) {
     FATAL_LOG(&init, SD, "task create failure");
