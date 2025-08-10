@@ -158,14 +158,32 @@
 
     delete units[key];
   }
+
+  function export_cfg() {
+    const data = JSON.stringify({views: views, units: units}, null, 2);
+    const blob = new Blob([data], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'config.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 </script>
 
 <template>
   <Fluid>
     <div class="flex flex-col md:flex-row gap-8">
       <div class="md:w-1/2">
-        <div class="card flex flex-col gap-4" style="line-height: 1.5;">
-          <span><span class="pi pi-info-circle mr-2"></span> Refresh page to apply changes for the charts.</span>
+        <div class="card flex flex-col gap-6">
+          <div class="font-semibold text-xl">Import / Export Configurations</div>
+          <span><span class="pi pi-info-circle mr-2"></span> Refresh the page to apply changes.</span>
+          <div class="flex gap-6">
+            <Button class="flex-1" label="Import" icon="pi pi-file-import" severity="success" @click="" />
+            <Button class="flex-1" label="Export" icon="pi pi-file-export" severity="info" @click="export_cfg" />
+          </div>
         </div>
 
         <div class="card flex flex-col gap-4">
