@@ -268,30 +268,30 @@
         <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">Server</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="server/addr" class="flex items-center col-span-3">Address</label>
+            <label for="server-addr" class="flex items-center col-span-3">Address</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.server.addr.value" placeholder="MQTT Server Address" />
+                <InputText id="server-addr" v-model="config.server.addr.value" placeholder="MQTT Server Address" />
                 <Button id="server/addr" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
                   :loading="config.server.addr.loading" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="server/name" class="flex items-center col-span-3">Name</label>
+            <label for="server-name" class="flex items-center col-span-3">Name</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.server.name.value" placeholder="Device Name" />
+                <InputText id="server-name" v-model="config.server.name.value" placeholder="Device Name" />
                 <Button id="server/name" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
                   :loading="config.server.name.loading" @click="save($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="server/key" class="flex items-center col-span-3">Key</label>
+            <label for="server-key" class="flex items-center col-span-3">Key</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.server.key.value" placeholder="Device Key" />
+                <InputText id="server-key" v-model="config.server.key.value" placeholder="Device Key" />
                 <Button id="server/key" class="mr-2 mb-2" icon="pi pi-save" :disabled="config.disabled"
                   :loading="config.server.key.loading" @click="save($event)" />
               </InputGroup>
@@ -302,40 +302,40 @@
         <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">Device</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="net/ssid" class="flex items-center col-span-3">SSID</label>
+            <label for="net-ssid" class="flex items-center col-span-3">SSID</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.net.ssid.value" placeholder="Wi-Fi SSID" />
+                <InputText id="net-ssid" v-model="config.net.ssid.value" placeholder="Wi-Fi SSID" />
                 <Button id="net/ssid" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.net.ssid.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="net/passwd" class="flex items-center col-span-3">Password</label>
+            <label for="net-passwd" class="flex items-center col-span-3">Password</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.net.passwd.value" placeholder="Wi-Fi Password" />
+                <InputText id="net-passwd" v-model="config.net.passwd.value" placeholder="Wi-Fi Password" />
                 <Button id="net/passwd" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.net.passwd.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="dev/tz" class="flex items-center col-span-3">Timezone</label>
+            <label for="dev-tz" class="flex items-center col-span-3">Timezone</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.dev.tz.value" placeholder="POSIX timezone string" />
+                <InputText id="dev-tz" v-model="config.dev.tz.value" placeholder="POSIX timezone string" />
                 <Button id="dev/tz" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.dev.tz.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/bps" class="flex items-center col-span-3">T. Interval</label>
+            <label for="dev-intv" class="flex items-center col-span-3">T. Interval</label>
             <div class="col-span-9">
               <InputGroup>
-                <Select v-model="config.dev.intv.value" :options="interval" optionLabel="name" optionValue="value"
+                <Select id="dev-intv" v-model="config.dev.intv.value" :options="interval" optionLabel="name" optionValue="value"
                   placeholder="Telemetry Interval" />
                 <Button id="dev/intv" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.dev.intv.loading" @click="set_cfg($event)" />
@@ -348,12 +348,12 @@
           <div class="font-semibold text-xl">Inputs</div>
           <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <li class="flex items-center justify-between cardview">
-              <label for="dgt/en" class="font-medium pr-3">Digital</label>
+              <label for="dgt-en" class="font-medium pr-3">Digital</label>
               <ToggleSwitch id="dgt/en" v-model="config.dgt.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
             </li>
             <li class="flex items-center justify-between cardview">
-              <label for="anl/en" class="font-medium pr-3">Analog</label>
+              <label for="anl-en" class="font-medium pr-3">Analog</label>
               <ToggleSwitch id="anl/en" v-model="config.anl.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
             </li>
@@ -365,17 +365,17 @@
         <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">CAN</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/en" class="flex items-center col-span-3">Enabled</label>
+            <label for="can-en" class="flex items-center col-span-3">Enabled</label>
             <div class="col-span-9">
               <ToggleSwitch id="can/en" v-model="config.can.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/bps" class="flex items-center col-span-3">Bit rate</label>
+            <label for="can-bps" class="flex items-center col-span-3">Bit rate</label>
             <div class="col-span-9">
               <InputGroup>
-                <Select v-model="config.can.bps.value" :options="canbps" optionLabel="name" optionValue="value"
+                <Select id="can-bps" v-model="config.can.bps.value" :options="canbps" optionLabel="name" optionValue="value"
                   placeholder="CAN bps" />
                 <Button id="can/bps" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.can.bps.loading" @click="set_cfg($event)" />
@@ -383,20 +383,20 @@
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/filter" class="flex items-center col-span-3">Filter</label>
+            <label for="can-filter" class="flex items-center col-span-3">Filter</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.can.filter.value" placeholder="CAN filter ID" />
+                <InputText id="can-filter" v-model="config.can.filter.value" placeholder="CAN filter ID" />
                 <Button id="can/filter" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.can.filter.loading" @click="set_cfg($event)" />
               </InputGroup>
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="can/mask" class="flex items-center col-span-3">Mask</label>
+            <label for="can-mask" class="flex items-center col-span-3">Mask</label>
             <div class="col-span-9">
               <InputGroup>
-                <InputText v-model="config.can.mask.value" placeholder="CAN filter mask" />
+                <InputText id="can-mask" v-model="config.can.mask.value" placeholder="CAN filter mask" />
                 <Button id="can/mask" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.can.mask.loading" @click="set_cfg($event)" />
               </InputGroup>
@@ -407,17 +407,17 @@
         <div class="card flex flex-col gap-6">
           <div class="font-semibold text-xl">GPS</div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="gps/en" class="flex items-center col-span-3">Enabled</label>
+            <label for="gps-en" class="flex items-center col-span-3">Enabled</label>
             <div class="col-span-9">
               <ToggleSwitch id="gps/en" v-model="config.gps.en.value" :disabled="config.disabled"
                 @click="set_cfg($event)" />
             </div>
           </div>
           <div class="grid grid-cols-12 gap-2">
-            <label for="gps/dev" class="flex items-center col-span-3">Device</label>
+            <label for="gps-dev" class="flex items-center col-span-3">Device</label>
             <div class="col-span-9">
               <InputGroup>
-                <Select v-model="config.gps.dev.value" :options="gpsdev" optionLabel="name" optionValue="value"
+                <Select id="gps-dev" v-model="config.gps.dev.value" :options="gpsdev" optionLabel="name" optionValue="value"
                   placeholder="GPS device" />
                 <Button id="gps/dev" class="mr-2 mb-2" icon="pi pi-upload" :disabled="config.disabled"
                   :loading="config.gps.dev.loading" @click="set_cfg($event)" />
