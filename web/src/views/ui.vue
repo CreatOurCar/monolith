@@ -1,8 +1,11 @@
 <script setup>
   import {ref, reactive, computed} from 'vue';
-  import {views, units} from '@/service/ui';
+  import {views, units, defaults} from '@/service/ui';
 
+  import {useConfirm} from "primevue/useconfirm";
   import ToastEventBus from 'primevue/toasteventbus';
+
+  const confirm = useConfirm();
 
   const new_unit = ref({name: '', unit: ''});
 
@@ -26,7 +29,11 @@
     }))
   })
 
+  const file = ref('');
+
+  const display_import = ref(false);
   const display_can_view = ref(false);
+
   const can_cfg = reactive({
     name: '',
     id: '',
@@ -74,6 +81,55 @@
 
       display_can_view.value = false;
     }
+  }
+
+  function import_cfg(f) {
+    f = f.files[0];
+
+    if (!f) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        Object.assign(views, data.views);
+        Object.assign(units, data.units);
+        ToastEventBus.emit('add', {severity: 'success', summary: 'Configuration Imported', group: 'br', life: 5000});
+        display_import.value = false;
+        window.location.reload();
+      } catch (error) {
+        ToastEventBus.emit('add', {severity: 'error', summary: 'Invalid Configuration File', group: 'br', life: 5000});
+      }
+    };
+    reader.readAsText(f);
+    file.value = f.name;
+  }
+
+  function reset_cfg() {
+    confirm.require({
+      header: 'UI Reset Confirmation',
+      message: 'Reset the UI configuration to default?',
+      icon: 'pi pi-exclamation-triangle',
+      rejectProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      acceptProps: {
+        label: 'Reset',
+        severity: 'danger',
+      },
+      accept: () => {
+        Object.keys(views).forEach(key => delete views[key]);
+        Object.keys(units).forEach(key => delete units[key]);
+        Object.assign(views, defaults.views);
+        Object.assign(units, defaults.units);
+        ToastEventBus.emit('add', {severity: 'success', summary: 'UI Reset Done', group: 'br', life: 5000});
+        window.location.reload();
+      },
+    });
   }
 
   function can_add() {
@@ -181,8 +237,10 @@
           <div class="font-semibold text-xl">Import / Export Configurations</div>
           <span><span class="pi pi-info-circle mr-2"></span> Refresh the page to apply changes.</span>
           <div class="flex gap-6">
-            <Button class="flex-1" label="Import" icon="pi pi-file-import" severity="success" @click="" />
+            <Button class="flex-1" label="Import" icon="pi pi-file-import" severity="success"
+              @click="display_import = true;" />
             <Button class="flex-1" label="Export" icon="pi pi-file-export" severity="info" @click="export_cfg" />
+            <Button class="flex-1" label="Reset" icon="pi pi-sparkles" severity="danger" @click="reset_cfg" />
           </div>
         </div>
 
@@ -306,6 +364,16 @@
           </DataView>
         </div>
       </div>
+
+      <ConfirmDialog style="maxWidth: 400px" />
+
+      <Dialog v-model:visible="display_import" modal header="Import UI Configurations" :style="{ width: '25rem' }">
+        <div class="flex justify-start mt-4 w-full" style="align-items: center;">
+          <FileUpload mode="basic" accept=".json" @uploader="import_cfg" :auto="true" customUpload
+            chooseIcon="pi pi-file" chooseLabel="Select" />
+          <span class="ml-4 "> {{ file.value ? file.value : "Select a file to import" }}</span>
+        </div>
+      </Dialog>
 
       <Dialog v-model:visible="display_can_view" modal header="CAN Message Decoder" :style="{ width: '25rem' }">
         <div class="flex flex-col gap-4">

@@ -48,6 +48,11 @@ export const units = reactive({
   Speed: { unit: 'km/h', display: 'Speed (km/h)', default: true },
 });
 
+export const defaults = {
+  views: JSON.parse(JSON.stringify(views)),
+  units: JSON.parse(JSON.stringify(units)),
+};
+
 export const can_decoder = reactive({});
 
 function load_decoder() {
