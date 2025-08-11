@@ -108,6 +108,10 @@ void task_gyroscope(void *pvParameters) {
       logbuf.gyro.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
       logbuf.gyro.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
       LOG(LOG_TYPE_GYROSCOPE, &logbuf.gyro);
+
+      if (IS_ERROR(&logbuf.run, GYRO)) {
+        CLEAR_ERROR(&logbuf.run, GYRO);
+      }
     } else {
       ERROR_SYSLOG(&logbuf.run, GYRO, "read transfer failure", "GYR_READ_FAIL");
     }
