@@ -119,6 +119,7 @@ void task_can(void *pvParameters) {
       }
     } else if (prev_alerts) {
       CLEAR_ERROR(&logbuf.run, CAN);
+      prev_alerts = 0;
     }
   }
 }
