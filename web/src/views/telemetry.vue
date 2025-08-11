@@ -15,7 +15,7 @@
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
 
-  import "@xterm/addon-fit";
+  import { FitAddon } from '@xterm/addon-fit';
   import "@xterm/xterm/css/xterm.css";
 
   import dayjs from 'dayjs/esm';
@@ -30,7 +30,7 @@
   };
 
   onMounted(() => {
-    const fit = new FitAddon.FitAddon();
+    const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(terminal.value);
     fit.fit();

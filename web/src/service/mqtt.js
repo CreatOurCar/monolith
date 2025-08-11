@@ -25,7 +25,7 @@ export function init_mqtt() {
   }
 
   if (!localStorage.getItem('server/addr')) {
-    localStorage.setItem('server/addr', 'monolith-v2.luftaquila.io');
+    localStorage.setItem('server/addr', 'v2.monolith.luftaquila.io');
   }
 
   mqtt_client = mqtt.connect({
