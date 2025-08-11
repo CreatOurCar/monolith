@@ -209,14 +209,6 @@
     return {min, max, splits};
   }
 
-  function geolocation() {
-    if (map) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        map.value.setCenter(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
-      });
-    }
-  }
-
   function send_usrevt() {
     cons.usrevt = cons.usrevt.replace(/[^\x20-\x7E]/g, '').trim().slice(0, 16);
 
@@ -339,11 +331,8 @@
             <Tag :value="course" severity="info" class="ml-2 state timetag" />
           </div>
         </div>
-
-        <div class="relative">
+        <div>
           <div :ref="container.gps" style="width: 100%; aspect-ratio: 1 / 0.7;"></div>
-          <Button class="!absolute bottom-3 right-3 z-10 h-10" severity="secondary" icon="pi pi-map-marker"
-            @click="geolocation" />
         </div>
       </div>
 
