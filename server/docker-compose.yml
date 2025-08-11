@@ -1,4 +1,4 @@
-name: monolith
+name: monolith-v2
 
 services:
   traefik:
@@ -27,7 +27,7 @@ services:
       - traefik
     restart: unless-stopped
     env_file:
-        - .env
+      - .env
 
   mosquitto:
     image: eclipse-mosquitto:2.0
@@ -51,11 +51,11 @@ services:
     image: nginx:latest
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.monolith.rule=Host(`${DOMAIN_NAME}`)"
-      - "traefik.http.routers.monolith.entrypoints=websecure"
-      - "traefik.http.routers.monolith.tls=true"
-      - "traefik.http.routers.monolith.tls.certresolver=le"
-      - "traefik.http.services.monolith.loadbalancer.server.port=7000"
+      - "traefik.http.routers.monolith-v2.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.monolith-v2.entrypoints=websecure"
+      - "traefik.http.routers.monolith-v2.tls=true"
+      - "traefik.http.routers.monolith-v2.tls.certresolver=le"
+      - "traefik.http.services.monolith-v2.loadbalancer.server.port=7000"
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ../web/dist:/var/public
