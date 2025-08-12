@@ -7,7 +7,7 @@ import { connection } from '@/service/state';
  *******************************************************************************/
 export const update_connection_server = (value) => {
   if (value === false) {
-    connection.server.value = 'Disconnected';
+    connection.server.value = 'Offline';
     connection.server.severity = 'danger';
     connection.status = 'text-gray-500';
   } else {

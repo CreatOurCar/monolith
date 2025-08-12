@@ -1,3 +1,59 @@
 # monolith
 
-![image](.github/assets/wide.jpg)
+![](.github/assets/wide.jpg)
+
+DIY wireless data logging platform for Student Formula and Baja.
+
+## Features
+
+* 📡 Full wireless support
+   * Real-time telemetry
+   * Download recorded data 
+   * Transmit User Events
+   * Transmit CAN messages
+   * Configure device (e.g. CAN bit rate)
+
+* 📀 10 Hz data rate with various signals
+   * 1x CAN 2.0(A/B)
+   * 1x External GPS
+   * 1x Internal 6-axis Accelerometer & Gyroscope
+   * 4x Digital input channels
+   * 6x Analog input channels
+   * 1x Power supply voltage sensor
+   * 1x Chip temperature sensor
+
+* 💡 Customizable web-based data analysis tool
+* 🍺 Fully Open-source & Open-hardware project under the Beerware license
+
+## Preview
+
+[Web Control Hub](https://v2.monolith.luftaquila.io) for live telemetry, data viewer and device/ui configurations.
+
+![](docs/images/pcb.png)
+
+## Documentation
+
+[Full documentation](https://v2.monolith.luftaquila.io/docs) for DIY your own monolith device and usage details.
+
+## Others
+
+The name of the project was inspired by Arthur C. Clark's novel `2001: A Space Odyssey`.
+
+## LICENSE
+
+For non-commercial use only:
+
+```
+"THE BEERWARE LICENSE" (Revision 42):
+LUFT-AQUILA wrote this project. As long as you retain this notice,
+you can do whatever you want with this stuff. If we meet someday,
+and you think this stuff is worth it, you can buy me a beer in return.
+```
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=luftaquila/monolith&type=Date&theme=dark" />
+  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=luftaquila/monolith&type=Date" />
+  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=star-history/star-history&type=Date" />
+</picture>

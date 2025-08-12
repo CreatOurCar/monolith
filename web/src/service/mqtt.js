@@ -58,7 +58,7 @@ export function init_mqtt() {
   });
 
   mqtt_client.on('close', () => {
-    if (connection.server.value !== 'Disconnected') {
+    if (connection.server.value !== 'Offline') {
       ToastEventBus.emit('add', { severity: 'error', summary: 'Server Connection Closed', group: 'br', life: 5000 });
     }
     update_connection_server(false);
