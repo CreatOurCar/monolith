@@ -122,14 +122,14 @@ export function init_mqtt() {
       }
 
       case 'd/can': {
-        // try {
+        try {
           const log = parse_log(message);
           update_time(log.timestamp);
           update_can(log);
-        // } catch (e) {
-        //   console.error(`CAN: ${e}`);
-        //   console.error(message);
-        // }
+        } catch (e) {
+          console.error(`CAN: ${e}`);
+          console.error(message);
+        }
         break;
       }
 

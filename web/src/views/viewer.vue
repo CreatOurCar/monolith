@@ -5,7 +5,7 @@
   import {dark} from '@/layout/composables/layout';
   import {parse, convert} from '@/service/protocol';
   import {fmt, digit, format_size} from '@/service/state';
-  import {views, units, colors} from '@/service/ui';
+  import {views, units, can_decoder, colors} from '@/service/ui';
   import {init_map} from '@/service/map';
   import {plugin_wheel_zoom, plugin_touch_zoom} from '@/service/uplot';
 
@@ -46,8 +46,8 @@
     digital: {name: "DIN", ref: ref(false)},
     analog: {name: "AIN", ref: ref(false)},
     gyro: {name: "Gyro", ref: ref(false)},
-    can: {name: "CAN", ref: ref(false)},
     gps: {name: "GPS", ref: ref(false)},
+    can: {name: "CAN", ref: ref(false)},
   };
 
   onMounted(() => {
@@ -103,126 +103,8 @@
       if (minutes > 0) file.duration.value += `${minutes} min `;
       file.duration.value += `${seconds} sec`;
 
-      events.value = [];
-      const dataset = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
-
-      for (const data of result.data) {
-        switch (data.type) {
-          case "DIGITAL":
-            dataset[0].push(bt + data.timestamp / 1000);
-            dataset[1].push(data.digital.din1);
-            dataset[2].push(data.digital.din2);
-            dataset[3].push(data.digital.din3);
-            dataset[4].push(data.digital.din4);
-
-            for (let i = 5; i < dataset.length; i++) {
-              dataset[i].push(null);
-            }
-            break;
-
-          case "ANALOG":
-            dataset[0].push(bt + data.timestamp / 1000);
-            dataset[5].push(convert.adc_to_v(data.analog.ain1) * views.analog.ch.ain1.multiplier * (views.analog.ch.ain1.devider ? 0.5 : 1));
-            dataset[6].push(convert.adc_to_v(data.analog.ain2) * views.analog.ch.ain2.multiplier * (views.analog.ch.ain2.devider ? 0.5 : 1));
-            dataset[7].push(convert.adc_to_v(data.analog.ain3) * views.analog.ch.ain3.multiplier * (views.analog.ch.ain3.devider ? 0.5 : 1));
-            dataset[8].push(convert.adc_to_v(data.analog.ain4) * views.analog.ch.ain4.multiplier * (views.analog.ch.ain4.devider ? 0.5 : 1));
-            dataset[9].push(convert.adc_to_v(data.analog.ain5) * views.analog.ch.ain5.multiplier);
-            dataset[10].push(convert.adc_to_v(data.analog.ain6) * views.analog.ch.ain6.multiplier);
-            dataset[11].push(convert.adc_to_v(data.analog.voltage) * views.analog.ch.volt.multiplier);
-            dataset[12].push(data.analog.temperature * views.analog.ch.temp.multiplier);
-
-            for (let i = 1; i < dataset.length; i++) {
-              if (i < 5 || i > 12) {
-                dataset[i].push(null);
-              }
-            }
-            break;
-
-          case "GYROSCOPE":
-            dataset[0].push(bt + data.timestamp / 1000);
-            dataset[13].push(convert.accel_to_g(data.gyro.accel_x));
-            dataset[14].push(convert.accel_to_g(data.gyro.accel_y));
-            dataset[15].push(convert.accel_to_g(data.gyro.accel_z));
-            dataset[16].push(convert.gyro_to_dps(data.gyro.gyro_x));
-            dataset[17].push(convert.gyro_to_dps(data.gyro.gyro_y));
-            dataset[18].push(convert.gyro_to_dps(data.gyro.gyro_z));
-
-            for (let i = 1; i < dataset.length; i++) {
-              if (i < 13 || i > 18) {
-                dataset[i].push(null);
-              }
-            }
-            break;
-
-          case "CAN":
-            // TODO:
-            break;
-
-          case "GPS":
-            dataset[0].push(bt + data.timestamp / 1000);
-            dataset[19].push(data.gps.speed);
-
-            for (let i = 1; i < 19; i++) {
-              dataset[i].push(null);
-            }
-
-            const pos = new kakao.maps.LatLng(data.gps.latitude, data.gps.longitude);
-            path.value.push(pos);
-            path_history.push(data);
-            break;
-
-          case "SYSTEM":
-          case "USER_EVENT":
-            events.value.push({
-              time: dayjs(bt * 1000 + data.timestamp).format('HH:mm:ss.SSS'),
-              type: data.type === "SYSTEM" ? "SYS" : "USR",
-              msg: data.type === "SYSTEM" ? data.sys.msg : data.user.msg,
-            });
-            break;
-        }
-      }
-
-      if (path.value.length) {
-        line.value.setPath(path.value);
-        map.value.setCenter(path.value[0]);
-
-        new kakao.maps.Circle({
-          center: path.value[0],
-          fillColor: '#00FF00',
-          strokeColor: '#00FF00',
-          fillOpacity: 1,
-          strokeOpacity: 1,
-          radius: 0.5,
-        }).setMap(map.value);
-
-        new kakao.maps.Circle({
-          center: path.value[path.value.length - 1],
-          fillColor: '#FF0000',
-          strokeColor: '#FF0000',
-          fillOpacity: 1,
-          strokeOpacity: 1,
-          radius: 0.5,
-        }).setMap(map.value);
-
-        timelapse_pos.value = new kakao.maps.Circle({
-          fillColor: '#FF00FF',
-          strokeColor: '#FF00FF',
-          fillOpacity: 1,
-          strokeOpacity: 1,
-          radius: 0.5,
-          zIndex: 2,
-        });
-
-        timelapse_pos.value.setMap(map.value);
-        timelapse_pos.value.setPosition(path.value[0]);
-
-        timelapse_time.value = dayjs(bt * 1000 + path_history[0].timestamp).format('HH:mm:ss.SSS');
-        timelapse_coord.value = `${path_history[0].gps.latitude.toFixed(7)}, ${path_history[0].gps.longitude.toFixed(7)}`;
-        timelapse_speed.value = `${digit(path_history[0].gps.speed)} km/h`;
-        timelapse_course.value = `${digit(path_history[0].gps.course)} °`;
-      }
-
-      init_chart(dataset);
+      init_chart();
+      set_data(result.data);
     };
   }
 
@@ -233,7 +115,7 @@
     speed: {splits: [], min: 0, max: 0},
   };
 
-  function init_chart(dataset) {
+  function init_chart() {
     if (chart.value) {
       chart.value.destroy();
     }
@@ -335,6 +217,21 @@
       {label: "SPD", value: fmt.Speed, scale: 'Speed', spanGaps: true, show: false, stroke: colors[18]},
     ];
 
+    for (const [k, o] of Object.entries(can_decoder)) {
+      for (const x of o) {
+        series.push({
+          label: x.name,
+          stroke: colors[series.length - 1],
+          value: fmt[x.unit],
+          points: {show: false},
+          pxAlign: 0,
+          scale: x.unit,
+          spanGaps: true,
+          show: false,
+        });
+      }
+    }
+
     chart.value = new uPlot({
       width: 600, height: 400,
       cursor: {
@@ -351,7 +248,7 @@
         plugin_touch_zoom(),
         plugin_wheel_zoom(),
       ],
-    }, dataset, graph.value);
+    }, null, graph.value);
 
     new ResizeObserver(entries => {
       for (let entry of entries) {
@@ -361,6 +258,162 @@
         });
       }
     }).observe(container.value);
+  }
+
+  function set_data(raw) {
+    events.value = [];
+    const dataset = Array.from({length: chart.value.series.length}, () => []);
+
+    for (const data of raw) {
+      switch (data.type) {
+        case "DIGITAL":
+          dataset[0].push(bt + data.timestamp / 1000);
+          dataset[1].push(data.digital.din1);
+          dataset[2].push(data.digital.din2);
+          dataset[3].push(data.digital.din3);
+          dataset[4].push(data.digital.din4);
+
+          for (let i = 5; i < dataset.length; i++) {
+            dataset[i].push(null);
+          }
+          break;
+
+        case "ANALOG":
+          dataset[0].push(bt + data.timestamp / 1000);
+          dataset[5].push(convert.adc_to_v(data.analog.ain1) * views.analog.ch.ain1.multiplier * (views.analog.ch.ain1.devider ? 0.5 : 1));
+          dataset[6].push(convert.adc_to_v(data.analog.ain2) * views.analog.ch.ain2.multiplier * (views.analog.ch.ain2.devider ? 0.5 : 1));
+          dataset[7].push(convert.adc_to_v(data.analog.ain3) * views.analog.ch.ain3.multiplier * (views.analog.ch.ain3.devider ? 0.5 : 1));
+          dataset[8].push(convert.adc_to_v(data.analog.ain4) * views.analog.ch.ain4.multiplier * (views.analog.ch.ain4.devider ? 0.5 : 1));
+          dataset[9].push(convert.adc_to_v(data.analog.ain5) * views.analog.ch.ain5.multiplier);
+          dataset[10].push(convert.adc_to_v(data.analog.ain6) * views.analog.ch.ain6.multiplier);
+          dataset[11].push(convert.adc_to_v(data.analog.voltage) * views.analog.ch.volt.multiplier);
+          dataset[12].push(data.analog.temperature * views.analog.ch.temp.multiplier);
+
+          for (let i = 1; i < dataset.length; i++) {
+            if (i < 5 || i > 12) {
+              dataset[i].push(null);
+            }
+          }
+          break;
+
+        case "GYROSCOPE":
+          dataset[0].push(bt + data.timestamp / 1000);
+          dataset[13].push(convert.accel_to_g(data.gyro.accel_x));
+          dataset[14].push(convert.accel_to_g(data.gyro.accel_y));
+          dataset[15].push(convert.accel_to_g(data.gyro.accel_z));
+          dataset[16].push(convert.gyro_to_dps(data.gyro.gyro_x));
+          dataset[17].push(convert.gyro_to_dps(data.gyro.gyro_y));
+          dataset[18].push(convert.gyro_to_dps(data.gyro.gyro_z));
+
+          for (let i = 1; i < dataset.length; i++) {
+            if (i < 13 || i > 18) {
+              dataset[i].push(null);
+            }
+          }
+          break;
+
+        case "GPS":
+          dataset[0].push(bt + data.timestamp / 1000);
+          dataset[19].push(data.gps.speed);
+
+          for (let i = 1; i < dataset.length; i++) {
+            if (i !== 19) {
+              dataset[i].push(null);
+            }
+          }
+
+          const pos = new kakao.maps.LatLng(data.gps.latitude, data.gps.longitude);
+          path.value.push(pos);
+          path_history.push(data);
+          break;
+
+        case "CAN":
+          const CAN_START = 19;
+
+          if (can_decoder[data.can.id]) {
+            const exist = [];
+
+            for (const decoder of can_decoder[data.can.id]) {
+              let v;
+
+              if (decoder.mode === 'byte') {
+                v = convert.can_byte(data.can.data, decoder.start, decoder.end, decoder.endian);
+              } else {
+                v = convert.can_bit(data.can.data, decoder.start, decoder.end);
+              }
+
+              if (decoder.sign) {
+                v = signed(v, (decoder.end - decoder.start + 1) * (decoder.mode === 'byte' ? 8 : 1));
+              }
+
+              dataset[CAN_START + decoder.idx].push(v * decoder.multiplier);
+              exist.push(decoder.idx);
+            }
+
+            if (exist.length) {
+              dataset[0].push(bt + data.timestamp / 1000);
+
+              for (let i = 1; i < dataset.length; i++) {
+                if (i <= CAN_START || !exist.includes(i - CAN_START)) {
+                  dataset[i].push(null);
+                }
+              }
+            }
+          }
+          break;
+
+        case "SYSTEM":
+        case "USER_EVENT":
+          events.value.push({
+            time: dayjs(bt * 1000 + data.timestamp).format('HH:mm:ss.SSS'),
+            type: data.type === "SYSTEM" ? "SYS" : "USR",
+            msg: data.type === "SYSTEM" ? data.sys.msg : data.user.msg,
+          });
+          break;
+      }
+    }
+
+    chart.value.setData(dataset);
+
+    if (path.value.length) {
+      line.value.setPath(path.value);
+      map.value.setCenter(path.value[0]);
+
+      new kakao.maps.Circle({
+        center: path.value[0],
+        fillColor: '#00FF00',
+        strokeColor: '#00FF00',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        radius: 0.5,
+      }).setMap(map.value);
+
+      new kakao.maps.Circle({
+        center: path.value[path.value.length - 1],
+        fillColor: '#FF0000',
+        strokeColor: '#FF0000',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        radius: 0.5,
+      }).setMap(map.value);
+
+      timelapse_pos.value = new kakao.maps.Circle({
+        fillColor: '#FF00FF',
+        strokeColor: '#FF00FF',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        radius: 0.5,
+        zIndex: 2,
+      });
+
+      timelapse_pos.value.setMap(map.value);
+      timelapse_pos.value.setPosition(path.value[0]);
+
+      timelapse_time.value = dayjs(bt * 1000 + path_history[0].timestamp).format('HH:mm:ss.SSS');
+      timelapse_coord.value = `${path_history[0].gps.latitude.toFixed(7)}, ${path_history[0].gps.longitude.toFixed(7)}`;
+      timelapse_speed.value = `${digit(path_history[0].gps.speed)} km/h`;
+      timelapse_course.value = `${digit(path_history[0].gps.course)} °`;
+    }
   }
 
   function toggle_axis(key) {
@@ -380,10 +433,13 @@
           chart.value.setSeries(i, {show: show[key].ref});
         }
         break;
-      case 'can':
-        break;
       case 'gps':
         chart.value.setSeries(19, {show: show[key].ref});
+        break;
+      case 'can':
+        for (let i = 20; i < chart.value.series.length; i++) {
+          chart.value.setSeries(i, {show: show[key].ref});
+        }
         break;
     }
   }
