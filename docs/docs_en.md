@@ -1,6 +1,6 @@
 # Monolith v2
 
-![](images/logo-white.png)
+![](images/wide.jpg)
 
 ## Overview
 
