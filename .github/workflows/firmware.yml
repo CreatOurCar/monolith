@@ -2,6 +2,8 @@ name: ESP-IDF Firmware Build
 
 on:
   push:
+    paths:
+      - 'device/firmware/**'
   workflow_dispatch:
 
 jobs:
