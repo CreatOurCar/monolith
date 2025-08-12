@@ -1,0 +1,64 @@
+name: Build PCB
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'device/hardware/**'
+  workflow_call:
+  workflow_dispatch:
+  
+jobs:
+  build-pcb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo add-apt-repository ppa:kicad/kicad-8.0-releases
+          sudo apt-get update
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: kicad imagemagick
+          version: 1.0
+
+      # - name: Test schematic ERC and PCB DRC
+      #   run: |
+      #     cd device/hardware
+      #     kicad-cli --version
+      #     kicad-cli sch erc -o monolith-erc.rpt --severity-error --severity-warning --exit-code-violations monolith.kicad_sch
+      #     cat monolith-erc.rpt
+      #     kicad-cli pcb drc -o monolith-drc.rpt --schematic-parity --severity-error --severity-warning --exit-code-violations monolith.kicad_pcb
+      #     cat monolith-drc.rpt
+      #
+      # - if: ${{ failure() }}
+      #   run: |
+      #     echo "##### ERC REPORT #####"
+      #     cat device/hardware/monolith-erc.rpt
+      #     echo "##### DRC REPORT #####"
+      #     cat device/hardware/monolith-drc.rpt
+
+      - name: Build PCB schematic, artwork and 3d models
+        run: |
+          sudo apt-get install imagemagick
+          npm i -g svgexport
+          mkdir -p kicad
+          kicad-cli sch export svg device/hardware/monolith.kicad_sch -o kicad --exclude-drawing-sheet --no-background-color
+          kicad-cli pcb export svg device/hardware/monolith.kicad_pcb -o kicad/monolith-artwork.svg --layers "B.Cu,B.Silkscreen,F.Cu,F.Silkscreen,Edge.Cuts" --exclude-drawing-sheet
+          svgexport kicad/monolith.svg kicad/monolith-schematic-transparent.png 8000:
+          convert kicad/monolith-schematic-transparent.png -trim -bordercolor transparent -border 100x100 kicad/monolith-schematic-transparent.png
+          svgexport kicad/monolith.svg kicad/monolith-schematic.png 8000: "svg{background:white;}"
+          convert kicad/monolith-schematic.png -trim -bordercolor white -border 100x100 kicad/monolith-schematic.png
+          mv kicad/monolith.svg kicad/monolith-schematic.svg
+          svgexport kicad/monolith-artwork.svg kicad/monolith-artwork-transparent.png 8000:
+          convert kicad/monolith-artwork-transparent.png -trim -bordercolor transparent -border 100x100 kicad/monolith-artwork-transparent.png
+          svgexport kicad/monolith-artwork.svg kicad/monolith-artwork.png 8000: "svg{background:#001023;}"
+          convert kicad/monolith-artwork.png -trim -bordercolor "#001023" -border 100x100 kicad/monolith-artwork.png
+          kicad-cli pcb export step -o kicad/monolith-3d.stp --include-tracks device/hardware/monolith.kicad_pcb
+          kicad-cli pcb export vrml -o kicad/monolith-3d.wrl device/hardware/monolith.kicad_pcb
+          cp -r device/hardware/jlcpcb/production_files kicad/gerbers
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pcb
+          path: kicad

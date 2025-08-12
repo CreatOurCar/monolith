@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build-firmware:
+    uses: ./.github/workflows/firmware.yml
+  build-pcb:
+    uses: ./.github/workflows/pcb.yml
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    needs: [build-firmware, build-pcb]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+      - run: zip -r monolith-${{ github.ref_name }}.zip pcb firmware
+      - uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifacts: monolith-${{ github.ref_name }}.zip
+          commit: ${{ github.sha }}
+          tag: ${{ github.ref_name }}
+          body: |
+            ### Monolith ${{ github.ref_name }}

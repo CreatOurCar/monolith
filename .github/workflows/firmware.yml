@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'device/firmware/**'
+  workflow_call:
   workflow_dispatch:
 
 jobs:
