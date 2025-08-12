@@ -1,13 +1,13 @@
 #! /bin/bash
 
-echo "$(cat package.json | jq '."single-page-markdown-website".links[1] = {"text":"Home", "url": "https://v2.monolith.luftaquila.io"}')" > package.json
+echo "$(cat package.json | jq '."single-page-markdown-website".links[1] = {"text":"Home", "url": "/"}')" > package.json
 echo "$(cat package.json | jq '."single-page-markdown-website".links[2] = {"text":"GitHub", "url": "https://github.com/luftaquila/monolith"}')" > package.json
 
-echo "$(cat package.json | jq '."single-page-markdown-website".links[0] = {"text":"English", "url": "https://luftaquila.github.io/monolith"}')" > package.json
+echo "$(cat package.json | jq '."single-page-markdown-website".links[0] = {"text":"English", "url": "index.html"}')" > package.json
 npx --yes -- single-page-markdown-website docs_ko.md --output .
 mv index.html korean.html
 
-echo "$(cat package.json | jq '."single-page-markdown-website".links[0] = {"text":"한국어", "url": "https://luftaquila.github.io/monolith/korean.html"}')" > package.json
+echo "$(cat package.json | jq '."single-page-markdown-website".links[0] = {"text":"한국어", "url": "korean.html"}')" > package.json
 npx --yes -- single-page-markdown-website docs_en.md --output .
 
 echo "$(cat package.json | jq 'del(."single-page-markdown-website".links[0])')" > package.json

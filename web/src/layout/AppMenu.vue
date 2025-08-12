@@ -17,6 +17,12 @@
       label: 'Get Started',
       items: [
         {
+          label: 'Documentation',
+          icon: 'pi pi-fw pi-book',
+          url: '/docs',
+          target: '_blank'
+        },
+        {
           label: 'GitHub',
           icon: 'pi pi-fw pi-github',
           url: 'https://github.com/luftaquila/monolith',
@@ -26,12 +32,6 @@
           label: 'DNF Forum',
           icon: 'pi pi-fw pi-link',
           url: 'https://dnf.luftaquila.io',
-          target: '_blank'
-        },
-        {
-          label: 'Documentation',
-          icon: 'pi pi-fw pi-book',
-          url: 'https://monolith.github.io',
           target: '_blank'
         },
       ]
