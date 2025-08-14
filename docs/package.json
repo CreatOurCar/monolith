@@ -5,7 +5,7 @@
   "author": "luftaquila <mail@luftaquila.io>",
   "scripts": {
     "build": "./build.sh",
-    "live": "npx --yes -- single-page-markdown-website docs_en.md --output . --watch"
+    "live": "find . -type f -name '*.md' | entr -r ./build.sh"
   },
   "single-page-markdown-website": {
     "title": "Monolith v2 Documentation",
