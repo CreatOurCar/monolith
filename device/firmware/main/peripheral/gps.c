@@ -44,8 +44,25 @@ bool parse_nmea_gprmc(nmea_gprmc_t *gprmc, uint8_t *data) {
 }
 
 void init_ublox(void) {
+  uart_bitrate_res_t res;
+  uart_bitrate_detect_config_t bitrate_config = {
+    .rx_io_num = GPIO_NUM_18,
+  };
+
+  esp_err_t ret = uart_detect_bitrate_start(UART_NUM_1, &bitrate_config);
+
+  vTaskDelay(pdMS_TO_TICKS(300));
+
+  ret |= uart_detect_bitrate_stop(UART_NUM_1, true, &res);
+
+  uint32_t bitrate = 9600;
+
+  if (ret == ESP_OK) {
+    bitrate = res.clk_freq_hz * 2 / (res.low_period + res.high_period);
+  }
+
   uart_config_t uart_config = {
-    .baud_rate = 9600,
+    .baud_rate = bitrate,
     .data_bits = UART_DATA_8_BITS,
     .parity    = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
@@ -114,29 +131,18 @@ void task_gps(void *pvParameters) {
   nmea_gprmc_t gprmc;
 
   while (true) {
-    if (xQueueReceive(uart_queue, &event, portMAX_DELAY) != pdTRUE) {
-      continue;
-    }
-
-    if (event.type != UART_PATTERN_DET) {
+    if (xQueueReceive(uart_queue, &event, portMAX_DELAY) != pdTRUE || event.type != UART_PATTERN_DET) {
       continue;
     }
 
     int pos = uart_pattern_pop_pos(UART_NUM_1);
 
-    if (pos < 0) {
+    if (pos < 0 || pos >= sizeof(data) || uart_read_bytes(UART_NUM_1, data, pos + 1, pdMS_TO_TICKS(50)) < 6) {
       uart_flush_input(UART_NUM_1);
       continue;
     }
 
-    int len = uart_read_bytes(UART_NUM_1, data, pos + 1, 50);
-
-    if (len < 0) {
-      uart_flush_input(UART_NUM_1);
-      continue;
-    }
-
-    if (strncmp((char *)data, "$GPRMC", 6) == 0) {
+    if (strncmp((char *)data, "$GNRMC", 6) == 0 || strncmp((char *)data, "$GPRMC", 6) == 0) {
       if (parse_nmea_gprmc(&gprmc, data)) {
         gps.payload.gps.latitude  = (uint32_t)(atof((char *)gprmc.lat) * 100000.0f);
         gps.payload.gps.longitude = (uint32_t)(atof((char *)gprmc.lon) * 100000.0f);
