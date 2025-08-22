@@ -86,6 +86,10 @@ void init_ublox(void) {
     0x00, 0x01, 0x03, 0x39 };
   const uint8_t GPS_DISABLE_NMEA_GxVTG[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x01, 0x05, 0x47 };
+  const uint8_t GPS_DISABLE_NMEA_GxZDA[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x08, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x07, 0x5B };
+  const uint8_t GPS_DISABLE_NMEA_GxTXT[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x41, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x40, 0xEA };
 
   const uint8_t GPS_PMS_FULL[]  = { 0xB5, 0x62, 0x06, 0x86, 0x00, 0x00, 0x8C, 0xAA };
   const uint8_t GPS_RATE_10HZ[] = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A,
@@ -96,6 +100,8 @@ void init_ublox(void) {
       uart_write_bytes(UART_NUM_1, GPS_DISABLE_NMEA_GxGSA, sizeof(GPS_DISABLE_NMEA_GxGSA)) < 0 ||
       uart_write_bytes(UART_NUM_1, GPS_DISABLE_NMEA_GxGSV, sizeof(GPS_DISABLE_NMEA_GxGSV)) < 0 ||
       uart_write_bytes(UART_NUM_1, GPS_DISABLE_NMEA_GxVTG, sizeof(GPS_DISABLE_NMEA_GxVTG)) < 0 ||
+      uart_write_bytes(UART_NUM_1, GPS_DISABLE_NMEA_GxZDA, sizeof(GPS_DISABLE_NMEA_GxZDA)) < 0 ||
+      uart_write_bytes(UART_NUM_1, GPS_DISABLE_NMEA_GxTXT, sizeof(GPS_DISABLE_NMEA_GxTXT)) < 0 ||
       uart_write_bytes(UART_NUM_1, GPS_PMS_FULL, sizeof(GPS_PMS_FULL)) < 0 ||
       uart_write_bytes(UART_NUM_1, GPS_RATE_10HZ, sizeof(GPS_RATE_10HZ)) < 0) {
     ERROR_SYSLOG(&init, GPS, "module config failure", "GPS_CFG_FAIL");
