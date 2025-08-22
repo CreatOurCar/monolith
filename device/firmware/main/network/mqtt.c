@@ -398,7 +398,7 @@ void mqtt_init(void) {
   }
 
   // create mqtt publisher task
-  if (xTaskCreatePinnedToCore(mqtt_task, "mqtt", 4096, NULL, 5, NULL, CORE0) != pdPASS) {
+  if (xTaskCreate(mqtt_task, "mqtt", 4096, NULL, 5, NULL) != pdPASS) {
     ERROR_SYSLOG(&init, MQTT, "task create failure", "MQTT_TASK_FAIL");
     esp_mqtt_client_stop(mqtt);
     esp_mqtt_client_destroy(mqtt);
