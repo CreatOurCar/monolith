@@ -143,7 +143,7 @@ void task_gps(void *pvParameters) {
 
     int pos = uart_pattern_pop_pos(UART_NUM_1);
 
-    if (pos < 0 || pos >= sizeof(data) || uart_read_bytes(UART_NUM_1, data, pos + 1, pdMS_TO_TICKS(50)) < 6) {
+    if (pos < 0 || pos >= sizeof(data) || uart_read_bytes(UART_NUM_1, data, pos + 1, pdMS_TO_TICKS(1)) < 6) {
       uart_flush_input(UART_NUM_1);
       continue;
     }

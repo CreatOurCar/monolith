@@ -305,4 +305,19 @@ enum {
   GPS_DEV_MAX,
 };
 
+/***** task time slots *****/
+#define TASK_INTERVAL pdMS_TO_TICKS(100)
+#define TASK_SLOT_SD 0
+#define TASK_SLOT_ANALOG pdMS_TO_TICKS(40)
+#define TASK_SLOT_GYRO pdMS_TO_TICKS(80)
+
+static inline void sync_slot(TickType_t *xLastWakeTime, TickType_t slot) {
+  TickType_t rel = (*xLastWakeTime - slot) % TASK_INTERVAL;
+  TickType_t wait = rel ? (TASK_INTERVAL - rel) : 0;
+
+  if (wait > 0) {
+    xTaskDelayUntil(xLastWakeTime, wait);
+  }
+}
+
 #endif  // MAIN_H

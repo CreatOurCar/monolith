@@ -16,12 +16,14 @@ char logpath[64];
  * save log queue to SD card every 1000 ms
  ******************************************************************************/
 static void task_sdcard(void *pvParameters) {
-  int fd                   = (int)pvParameters;
   TickType_t xLastWakeTime = xTaskGetTickCount();
+  sync_slot(&xLastWakeTime, TASK_SLOT_SD);
+
+  int ret;
+  int fd = (int)pvParameters;
+  log_t log;
 
   while (true) {
-    int ret;
-    log_t log;
     int sync = false;
 
     do {
@@ -39,7 +41,7 @@ static void task_sdcard(void *pvParameters) {
       INFO(SD, "log sync");
     }
 
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+    xTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
   }
 }
 

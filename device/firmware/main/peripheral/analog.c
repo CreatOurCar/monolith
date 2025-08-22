@@ -82,7 +82,7 @@ void task_analog(void *pvParameters) {
   i2c_device_config_t adc2_cfg = {
     .dev_addr_length = I2C_ADDR_BIT_LEN_7,
     .device_address  = 0x49,
-    .scl_speed_hz    = 100000,
+    .scl_speed_hz    = 400000,
   };
 
   esp_err_t ret = i2c_master_bus_add_device(i2c1, &adc1_cfg, &adc1);
@@ -102,6 +102,8 @@ void task_analog(void *pvParameters) {
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
+  sync_slot(&xLastWakeTime, TASK_SLOT_ANALOG);
+
   float temperature;
   log_t analog;
 
@@ -127,6 +129,6 @@ void task_analog(void *pvParameters) {
       ERROR_SYSLOG(&logbuf.run, ANALOG, "ADC read failure", "ADC_READ_FAIL");
     }
 
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
+    xTaskDelayUntil(&xLastWakeTime, TASK_INTERVAL);
   }
 }

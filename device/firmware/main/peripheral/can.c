@@ -115,7 +115,7 @@ void task_can(void *pvParameters) {
 
     // receive CAN messages
     while (true) {
-      if (twai_receive(&msg, pdMS_TO_TICKS(300)) != ESP_OK) {
+      if (twai_receive(&msg, pdMS_TO_TICKS(100)) != ESP_OK) {
         break;
       }
 

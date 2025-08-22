@@ -17,7 +17,7 @@ void task_gyroscope(void *pvParameters) {
   i2c_device_config_t gyro_cfg = {
     .dev_addr_length = I2C_ADDR_BIT_LEN_7,
     .device_address  = 0x68,
-    .scl_speed_hz    = 100000,
+    .scl_speed_hz    = 400000,
   };
 
   i2c_master_dev_handle_t gyro;
@@ -93,6 +93,7 @@ void task_gyroscope(void *pvParameters) {
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
+  sync_slot(&xLastWakeTime, TASK_SLOT_GYRO);
 
   tx[0] = 0x3B;  // ACCEL_XOUT_H register address
 
@@ -116,6 +117,6 @@ void task_gyroscope(void *pvParameters) {
       ERROR_SYSLOG(&logbuf.run, GYRO, "read transfer failure", "GYR_READ_FAIL");
     }
 
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
+    xTaskDelayUntil(&xLastWakeTime, TASK_INTERVAL);
   }
 }
