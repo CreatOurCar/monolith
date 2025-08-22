@@ -49,6 +49,7 @@ static inline twai_timing_config_t select_baud(uint8_t can_bps) {
  ******************************************************************************/
 void task_can(void *pvParameters) {
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_7, GPIO_NUM_6, TWAI_MODE_NORMAL);
+  g_config.rx_queue_len          = 16;
   g_config.alerts_enabled        = CAN_ALERT_ENABLED;
   twai_timing_config_t t_config  = select_baud(storage.can.bps);
   twai_filter_config_t f_config  = {
@@ -71,34 +72,7 @@ void task_can(void *pvParameters) {
   uint32_t prev_alerts = 0;
 
   while (true) {
-    esp_err_t ret;
-    twai_message_t msg;
-
-    do {
-      if ((ret = xQueueReceive(cantxqueue, &msg, 0)) == true) {
-        if (twai_transmit(&msg, pdMS_TO_TICKS(1)) != ESP_OK) {
-          ERROR_SYSLOG(&logbuf.run, CAN, "transmit failure", "CAN_TX_FAIL");
-        } else {
-          char buf[sizeof(system_event_t)];
-          snprintf(buf, sizeof(buf), "CANTX:%lX", msg.identifier);
-          SYSLOG(buf);
-        }
-      }
-    } while (ret);
-
-    if (twai_receive(&msg, pdMS_TO_TICKS(120)) != ESP_OK) {
-      continue;
-    }
-
-    log_t log;
-    log.payload.can.id       = msg.identifier;
-    log.payload.can.extended = msg.extd;
-    log.payload.can.remote   = msg.rtr;
-    log.payload.can.len      = msg.data_length_code;
-    memcpy(log.payload.can.data, msg.data, msg.data_length_code);
-    LOG(LOG_TYPE_CAN, &log);
-    xQueueSend(canlogqueue, &log, 0);
-
+    // check CAN alerts
     uint32_t alerts = 0;
     twai_read_alerts(&alerts, 0);
 
@@ -120,6 +94,39 @@ void task_can(void *pvParameters) {
     } else if (prev_alerts) {
       CLEAR_ERROR(&logbuf.run, CAN);
       prev_alerts = 0;
+    }
+
+    // transmit CAN messages
+    twai_message_t msg;
+
+    while (true) {
+      if (xQueueReceive(cantxqueue, &msg, pdMS_TO_TICKS(0)) != pdTRUE) {
+        break;
+      }
+
+      if (twai_transmit(&msg, pdMS_TO_TICKS(0)) == ESP_OK) {
+        char buf[sizeof(system_event_t)];
+        snprintf(buf, sizeof(buf), "CANTX:%lX", msg.identifier);
+        SYSLOG(buf);
+      } else {
+        ERROR_SYSLOG(&logbuf.run, CAN, "transmit failure", "CAN_TX_FAIL");
+      }
+    }
+
+    // receive CAN messages
+    while (true) {
+      if (twai_receive(&msg, pdMS_TO_TICKS(300)) != ESP_OK) {
+        break;
+      }
+
+      log_t log;
+      log.payload.can.id       = msg.identifier;
+      log.payload.can.extended = msg.extd;
+      log.payload.can.remote   = msg.rtr;
+      log.payload.can.len      = msg.data_length_code;
+      memcpy(log.payload.can.data, msg.data, msg.data_length_code);
+      LOG(LOG_TYPE_CAN, &log);
+      xQueueSend(canlogqueue, &log, 0);
     }
   }
 }

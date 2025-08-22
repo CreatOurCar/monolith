@@ -25,7 +25,7 @@ static void task_sdcard(void *pvParameters) {
     int sync = false;
 
     do {
-      if ((ret = xQueueReceive(logqueue, &log, 0)) == true) {
+      if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
         write(fd, &log, sizeof(log));
         sync = true;
       }

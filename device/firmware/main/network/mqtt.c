@@ -346,13 +346,13 @@ static void mqtt_task(void *arg) {
       esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, false);
 
       do {
-        if ((ret = xQueueReceive(syslogqueue, &syslog, 0)) == true) {
+        if ((ret = xQueueReceive(syslogqueue, &syslog, 0)) == pdTRUE) {
           esp_mqtt_client_publish(mqtt, syslog_topic, (char *)&syslog, sizeof(syslog), MQTT_QOS_0, false);
         }
       } while (ret);
 
       do {
-        if ((ret = xQueueReceive(canlogqueue, &canlog, 0)) == true) {
+        if ((ret = xQueueReceive(canlogqueue, &canlog, 0)) == pdTRUE) {
           esp_mqtt_client_publish(mqtt, canlog_topic, (char *)&canlog, sizeof(canlog), MQTT_QOS_0, false);
         }
       } while (ret);
