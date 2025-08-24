@@ -136,6 +136,11 @@ export function parse(buf) {
       ret = parse_log(buf.slice(i, i + LOG_SIZE));
     } catch (e) {
       logs.error.push(`#${i}: ${e.message}`);
+
+      do {
+        i++;
+      } while (i < buf.length && buf[i] !== LOG_MAGIC);
+
       continue;
     }
 

@@ -78,6 +78,12 @@
 
       try {
         result = parse(new Uint8Array(e.target.result));
+
+        if (result.error.length) {
+          console.warn(result.error);
+        }
+
+        console.log(result.data);
       } catch (e) {
         file.device.value = "I'm sorry Dave,";
         file.statistic.value = "I'm afraid I can't do that.";

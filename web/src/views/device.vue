@@ -435,7 +435,7 @@
             <Button class="flex-1" label="Reset" icon="pi pi-sparkles" severity="danger" @click="reset_confirm" />
           </div>
         </div>
-        <ConfirmDialog style="maxWidth: 400px" />
+        <ConfirmDialog group="confirm" style="maxWidth: 400px" />
       </div>
     </div>
 
