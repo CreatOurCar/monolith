@@ -23,7 +23,7 @@ DIY wireless data logging platform for Student Formula and Baja.
    * 1x Chip temperature sensor
 
 * 💡 Customizable web-based data analysis tool
-* 🍺 Fully Open-source & Open-hardware project under the Beerware license
+* 🍺 Fully Open-source & Open-hardware under the Beerware license
 
 ## Preview
 
@@ -33,7 +33,7 @@ DIY wireless data logging platform for Student Formula and Baja.
 
 ## Documentation
 
-[Full documentation](https://v2.monolith.luftaquila.io/docs) for DIY your own monolith device and usage details.
+[Full documentation](https://v2.monolith.luftaquila.io/docs) for DIY and usage details.
 
 ## Others
 

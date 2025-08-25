@@ -8,7 +8,7 @@ Monolith is a wireless data logger platform with logger hardware (a.k.a. TMA-1) 
 
 The project's inspiration was to help students (me 3 years ago) participating in Formula Student and Baja easily collect data from their cars, but it can be used in any other applications, or just as an ESP32-S3 development board.
 
-This is an open-(source & hardware) project, licensed under the 🍺[Beerware License](https://spdx.org/licenses/Beerware.html) for all non-commercial use.
+This is an open-(source & hardware) project, licensed under the 🍺[Beerware License](https://spdx.org/licenses/Beerware.html) for all non-commercial use. You can find more details on the [GitHub](https://github.com/luftaquila/monolith).
 
 ![](images/pcb.png)
 
@@ -41,6 +41,17 @@ A. Bring a phone with Wi-Fi hotspot on board!
 It will also make you available to blame the driver by calling them while driving.
 
 ### Preview
+
+#### Compare with v1
+
+![](images/compare.jpg)
+
+* Size and build cost reduced to about 1/3.
+* Better performance and telemetry stability.
+* Wireless data download & configuration.
+* Remote user event & CAN message transmit.
+
+#### Data Viewer Demo
 
 ## Do It Yourself!
 
