@@ -76,9 +76,9 @@ typedef enum {
 #define ALL_ERROR_FATAL (COMPONENT_ALL | (COMPONENT_ALL << COMPONENT_MAX))
 
 typedef enum {
-  STATE_OK    = 1000,
-  STATE_ERROR = 250,
-  STATE_FATAL = 100,
+  STATE_OK    = pdMS_TO_TICKS(1000),
+  STATE_ERROR = pdMS_TO_TICKS(250),
+  STATE_FATAL = pdMS_TO_TICKS(100),
 } state_led_interval_t;
 
 static inline void SET_ERROR(state_t *state, state_component_t component) {

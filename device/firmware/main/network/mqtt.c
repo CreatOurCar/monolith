@@ -340,6 +340,8 @@ static void mqtt_task(void *arg) {
   snprintf(syslog_topic, sizeof(syslog_topic), "%s/d/sl", storage.device.name);
   snprintf(canlog_topic, sizeof(canlog_topic), "%s/d/can", storage.device.name);
 
+  const TickType_t interval = pdMS_TO_TICKS(storage.device.intv);
+
   while (true) {
     if (mqtt != NULL && IS_OK(&logbuf.run, MQTT)) {
       logbuf.timestamp = (uint32_t)(esp_timer_get_time() / 1000);
@@ -358,7 +360,7 @@ static void mqtt_task(void *arg) {
       } while (ret);
     }
 
-    vTaskDelay(pdMS_TO_TICKS(storage.device.intv));
+    vTaskDelay(interval);
   }
 }
 

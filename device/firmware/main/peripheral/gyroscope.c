@@ -29,7 +29,7 @@ void task_gyroscope(void *pvParameters) {
 
   uint8_t tx[7] = { 0x1B, 1 << 3, 1 << 4 };  // GYRO_CONFIG register address, 500dps and 8g full scale
 
-  if (i2c_master_transmit(gyro, tx, 3, 10) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, 3, portTICK_PERIOD_MS) != ESP_OK) {
     ERROR_SYSLOG(&init, GYRO, "gyro init failure", "GYR_CFG_FAIL");
   }
 
@@ -41,12 +41,11 @@ void task_gyroscope(void *pvParameters) {
   tx[5] = 0;
   tx[6] = 0;
 
-  if (i2c_master_transmit(gyro, tx, 7, 10) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, 7, portTICK_PERIOD_MS) != ESP_OK) {
     ERROR_SYSLOG(&init, GYRO, "gyro offset reset failure", "GYR_OFSRST_FAIL");
   }
 
-  const int sample = 100;
-  int valid = 0;
+  const int sample = 32;
 
   int32_t sum_x = 0;
   int32_t sum_y = 0;
@@ -57,7 +56,7 @@ void task_gyroscope(void *pvParameters) {
   for (int i = 0; i < sample; i++) {
     uint8_t rx[6] = { 0 };
 
-    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) == ESP_OK) {
+    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), portTICK_PERIOD_MS) == ESP_OK) {
       int16_t gyro_x = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
       int16_t gyro_y = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
       int16_t gyro_z = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
@@ -65,13 +64,12 @@ void task_gyroscope(void *pvParameters) {
       sum_x += gyro_x;
       sum_y += gyro_y;
       sum_z += gyro_z;
-      valid++;
     }
   }
 
-  int32_t off_x = -sum_x / valid / 2;
-  int32_t off_y = -sum_y / valid / 2;
-  int32_t off_z = -sum_z / valid / 2;
+  int32_t off_x = -sum_x / sample / 2;
+  int32_t off_y = -sum_y / sample / 2;
+  int32_t off_z = -sum_z / sample / 2;
 
   tx[0] = 0x13;  // XG_OFFSET_H register address
   tx[1] = (uint8_t)(off_x >> 8);
@@ -81,7 +79,7 @@ void task_gyroscope(void *pvParameters) {
   tx[5] = (uint8_t)(off_z >> 8);
   tx[6] = (uint8_t)(off_z & 0xFF);
 
-  if (i2c_master_transmit(gyro, tx, 7, 10) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, 7, portTICK_PERIOD_MS) != ESP_OK) {
     ERROR_SYSLOG(&init, GYRO, "gyro offset write failure", "GYR_OFS_FAIL");
   }
 
@@ -100,7 +98,7 @@ void task_gyroscope(void *pvParameters) {
   while (true) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
-    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), 10) == ESP_OK) {
+    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), portTICK_PERIOD_MS) == ESP_OK) {
       logbuf.gyro.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
       logbuf.gyro.payload.gyroscope.accel_y     = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
       logbuf.gyro.payload.gyroscope.accel_z     = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);

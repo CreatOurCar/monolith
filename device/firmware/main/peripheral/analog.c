@@ -33,9 +33,9 @@ esp_err_t convert(i2c_master_dev_handle_t adc, uint8_t ch, int16_t *v) {
       i2c_master_bus_reset(i2c1);
     }
 
-    ret = i2c_master_transmit(adc, tx, sizeof(tx), 20);
+    ret = i2c_master_transmit(adc, tx, sizeof(tx), portTICK_PERIOD_MS);
     esp_rom_delay_us(1200);  // wait for conversion complete
-    ret |= i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), 10);
+    ret |= i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), portTICK_PERIOD_MS);
     cnt++;
   } while (ret != ESP_OK && cnt < 2);
 

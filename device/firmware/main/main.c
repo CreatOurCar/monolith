@@ -105,7 +105,7 @@ static void task_led(void *pvParameters) {
     led_state = !led_state;
     gpio_set_level(GPIO_NUM_5, led_state);
 
-    vTaskDelay(pdMS_TO_TICKS(interval));
+    vTaskDelay(interval);
   }
 }
 
@@ -314,7 +314,7 @@ static void rtc_init(void) {
   int cnt = 0;
 
   do {
-    ret = i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), 10);
+    ret = i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), portTICK_PERIOD_MS);
     cnt++;
   } while (ret != ESP_OK && cnt < 3);
 

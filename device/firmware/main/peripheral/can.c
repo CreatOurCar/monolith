@@ -175,6 +175,6 @@ void task_can(void *pvParameters) {
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(portTICK_PERIOD_MS));
   }
 }
