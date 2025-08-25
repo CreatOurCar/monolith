@@ -374,7 +374,7 @@ finish:
 static void peripheral_task_init(void) {
   /***** CAN *****/
   if (storage.enabled.can) {
-    if (xTaskCreate(task_can, "can", 4096, NULL, 5, NULL) != pdPASS) {
+    if (xTaskCreate(task_can, "can", 4096, NULL, 4, NULL) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "CAN task create failure", "CAN_TASK_FAIL");
     }
   }

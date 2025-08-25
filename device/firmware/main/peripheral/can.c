@@ -87,7 +87,7 @@ static inline TickType_t *hash_table_lookup(uint32_t id) {
  ******************************************************************************/
 void task_can(void *pvParameters) {
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_7, GPIO_NUM_6, TWAI_MODE_NORMAL);
-  g_config.rx_queue_len          = 32;
+  g_config.rx_queue_len          = 1024;
   g_config.alerts_enabled        = CAN_ALERT_ENABLED;
   twai_timing_config_t t_config  = select_baud(storage.can.bps);
   twai_filter_config_t f_config  = {

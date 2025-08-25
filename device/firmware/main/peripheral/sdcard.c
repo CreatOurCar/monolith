@@ -97,9 +97,9 @@ void sdcard_init(void) {
   }
 
   // create log queue and sdcard task
-  logqueue    = xQueueCreate(32, sizeof(log_t));
-  syslogqueue = xQueueCreate(16, sizeof(log_t));
-  canlogqueue = xQueueCreate(32, sizeof(log_t));
+  logqueue    = xQueueCreate(2048, sizeof(log_t));
+  syslogqueue = xQueueCreate(32, sizeof(log_t));
+  canlogqueue = xQueueCreate(1024, sizeof(log_t));
   cantxqueue  = xQueueCreate(4, sizeof(twai_message_t));
 
   if (xTaskCreate(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL) != pdPASS) {
