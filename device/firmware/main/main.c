@@ -386,6 +386,7 @@ static void peripheral_task_init(void) {
     }
   }
 
+#ifndef CONFIG_MONOLITH_MINI
   /***** ANALOG *****/
   if (storage.enabled.analog) {
     if (xTaskCreate(task_analog, "analog", 4096, NULL, 5, NULL) != pdPASS) {
@@ -399,6 +400,7 @@ static void peripheral_task_init(void) {
       ERROR_SYSLOG(&init, CORE, "DIGITAL task create failure", "DGT_TASK_FAIL");
     }
   }
+#endif
 
   /***** GYROSCOPE (always enabled) *****/
   if (xTaskCreate(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL) != pdPASS) {

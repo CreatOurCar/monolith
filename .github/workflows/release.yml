@@ -17,7 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-      - run: zip -r monolith-${{ github.ref_name }}.zip pcb firmware
+      - run: |
+          mkdir -p firmware
+          mv firmware-monolith firmware/monolith
+          mv firmware-monolith-mini firmware/monolith-mini
+          zip -r monolith-${{ github.ref_name }}.zip pcb firmware
       - uses: ncipollo/release-action@v1
         with:
           allowUpdates: true

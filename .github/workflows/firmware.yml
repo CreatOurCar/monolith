@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-monolith:
     name: Build firmware
     runs-on: ubuntu-latest
 
@@ -30,5 +30,31 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: firmware-monolith
+          path: release
+
+  build-monolith-mini:
+    name: Build mini firmware
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5
+          target: esp32s3
+          path: 'device/firmware'
+          command: idf.py build -DCMAKE_C_FLAGS="-DCONFIG_MONOLITH_MINI"
+
+      - run: |
+          mkdir -p release/bootloader
+          cp device/firmware/build/flash_args release
+          cp device/firmware/build/monolith.* release
+          cp device/firmware/build/bootloader/bootloader.* release/bootloader
+          cp -r device/firmware/build/partition_table release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-monolith-mini
           path: release
