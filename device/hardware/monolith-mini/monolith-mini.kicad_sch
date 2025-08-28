@@ -9065,7 +9065,7 @@
 		)
 		(uuid "3ed33ba5-0d11-4b32-8bf9-a09e83d688bf")
 	)
-	(label "DBGRX"
+	(label "DBGTX"
 		(at 140.97 166.37 180)
 		(effects
 			(font
@@ -9073,7 +9073,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "489fc4c7-8637-4fa3-8522-d9986191e876")
+		(uuid "47bbfdd6-39c7-44d9-bc23-f8de69e08718")
 	)
 	(label "RTS"
 		(at 134.62 102.87 180)
@@ -9115,16 +9115,6 @@
 		)
 		(uuid "5a4fb1a3-d369-4d38-b587-40c101ae6713")
 	)
-	(label "DBGTX"
-		(at 140.97 168.91 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "611cf73b-f3e4-4532-bd07-a41ed6efb8e8")
-	)
 	(label "CANTX"
 		(at 93.98 179.07 0)
 		(effects
@@ -9154,6 +9144,16 @@
 			(justify left bottom)
 		)
 		(uuid "7120cc6c-d216-4429-9123-54f84f297e3f")
+	)
+	(label "DBGRX"
+		(at 140.97 168.91 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "73b86107-2f3b-4446-9169-ecda86587bf7")
 	)
 	(label "RTS"
 		(at 171.45 209.55 0)

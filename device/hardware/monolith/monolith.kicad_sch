@@ -700,169 +700,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Connector:Conn_01x02_Pin"
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 0 2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "Conn_01x02_Pin"
-				(at 0 -5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Generic connector, single row, 01x02, script generated"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_locked" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "connector"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "Connector*:*_1x??_*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "Conn_01x02_Pin_1_1"
-				(rectangle
-					(start 0.8636 0.127)
-					(end 0 -0.127)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start 0.8636 -2.413)
-					(end 0 -2.667)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 0) (xy 0.8636 0)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -2.54) (xy 0.8636 -2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin passive line
-					(at 5.08 0 180)
-					(length 3.81)
-					(name "Pin_1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 -2.54 180)
-					(length 3.81)
-					(name "Pin_2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Connector:Micro_SD_Card"
 			(pin_names
 				(offset 1.016)
@@ -7832,6 +7669,10 @@
 		(uuid "4bf1c93a-e50d-48d7-a7fd-994ce0f67e97")
 	)
 	(no_connect
+		(at 99.06 158.75)
+		(uuid "55eb7ffb-f480-43c2-96bb-f5029f659b20")
+	)
+	(no_connect
 		(at 332.74 224.79)
 		(uuid "66b9ec95-27c7-4ce6-a3e3-4b4496655daf")
 	)
@@ -7878,6 +7719,10 @@
 	(no_connect
 		(at 264.16 157.48)
 		(uuid "e4708477-d086-403a-b5a7-76e7aeb069f1")
+	)
+	(no_connect
+		(at 99.06 161.29)
+		(uuid "e9813b8e-c2ca-47ec-b722-fdd1a1c295a3")
 	)
 	(no_connect
 		(at 264.16 144.78)
@@ -8732,6 +8577,16 @@
 			(type default)
 		)
 		(uuid "33b2d614-0b14-4144-b4f9-2dcded0c7715")
+	)
+	(wire
+		(pts
+			(xy 129.54 128.27) (xy 138.43 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "33fc4461-caea-4a8f-a084-bea2e6d529ff")
 	)
 	(wire
 		(pts
@@ -9745,16 +9600,6 @@
 	)
 	(wire
 		(pts
-			(xy 91.44 158.75) (xy 99.06 158.75)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6c037d0d-bc61-4636-994f-ac7039b9c70b")
-	)
-	(wire
-		(pts
 			(xy 177.8 44.45) (xy 215.9 44.45)
 		)
 		(stroke
@@ -10765,16 +10610,6 @@
 	)
 	(wire
 		(pts
-			(xy 91.44 161.29) (xy 99.06 161.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9bcc74f5-6942-4acc-a6f7-1aefafacbfd8")
-	)
-	(wire
-		(pts
 			(xy 261.62 194.31) (xy 267.97 194.31)
 		)
 		(stroke
@@ -11172,6 +11007,16 @@
 			(type default)
 		)
 		(uuid "afe05525-174b-458f-b563-88f8a3963db9")
+	)
+	(wire
+		(pts
+			(xy 129.54 125.73) (xy 138.43 125.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b0cd5188-2da1-4b2f-84c1-a57712920dfc")
 	)
 	(wire
 		(pts
@@ -12674,16 +12519,6 @@
 		)
 		(uuid "33d764f2-0c41-4cbb-ba69-adcc0e6fee73")
 	)
-	(label "DBGTX"
-		(at 91.44 158.75 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "36f2651e-215d-4c0a-b528-822c11a1f1c6")
-	)
 	(label "TX"
 		(at 138.43 115.57 180)
 		(effects
@@ -13128,16 +12963,6 @@
 		)
 		(uuid "a2c257ac-2994-49fe-b876-5178b006d668")
 	)
-	(label "DBGRX"
-		(at 91.44 161.29 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "a417d048-6d7b-400d-a9f0-e26cc5338a72")
-	)
 	(label "RX"
 		(at 143.51 36.83 0)
 		(effects
@@ -13239,6 +13064,16 @@
 		)
 		(uuid "c3caf14d-69e8-4178-a1e0-57633698cde0")
 	)
+	(label "DBGRX"
+		(at 138.43 128.27 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ca30695f-58d6-487f-98ed-4d33b221e954")
+	)
 	(label "ADC3"
 		(at 270.51 232.41 0)
 		(effects
@@ -13268,6 +13103,16 @@
 			(justify left bottom)
 		)
 		(uuid "d244aace-1ad5-4a4c-b74a-2373cafa46a2")
+	)
+	(label "DBGTX"
+		(at 138.43 125.73 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "dab48f9d-6d9a-4357-adf2-89b91c60a4f1")
 	)
 	(label "DIN1"
 		(at 165.1 67.31 180)
@@ -18967,77 +18812,6 @@
 			(project "monolith"
 				(path "/b7db850d-5ff4-4f11-a513-b813e630d63a"
 					(reference "R7")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:Conn_01x02_Pin")
-		(at 134.62 125.73 0)
-		(mirror y)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "4170ee49-9197-4c23-8e7d-5a296fc24975")
-		(property "Reference" "J7"
-			(at 135.636 127 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-		(property "Value" "USB"
-			(at 135.636 127 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "Connector_PinHeader_1.00mm:PinHeader_1x02_P1.00mm_Vertical"
-			(at 134.62 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 134.62 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x02, script generated"
-			(at 134.62 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "abe58558-4411-4ad4-add8-9a7ec8728c6c")
-		)
-		(pin "2"
-			(uuid "5b1ff7b9-7a39-4d8d-be91-8380a3407570")
-		)
-		(instances
-			(project "monolith"
-				(path "/b7db850d-5ff4-4f11-a513-b813e630d63a"
-					(reference "J7")
 					(unit 1)
 				)
 			)
