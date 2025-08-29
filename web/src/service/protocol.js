@@ -391,7 +391,7 @@ export function validate_checksum(buf) {
 }
 
 export const convert = {
-  adc_to_v: v => v / (1 << 15) * 4.096, // +-4.096V FSRadc_to_v(value),
+  adc_to_v: v => v / (1 << 15) * 4.096, // +-4.096V FSR
   accel_to_g: v => v / (1 << 15) * 8, // +-8g FSR
   gyro_to_dps: v => v / (1 << 15) * 500,
   can_byte: (v, start, end, endian) => to_uint((end - start + 1) * 8, v, start, endian === "big"),

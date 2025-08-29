@@ -4,7 +4,7 @@ ifneq (,$(filter mini,$(MAKECMDGOALS)))
 	IDF_FLAGS := -DCMAKE_C_FLAGS="-DCONFIG_MONOLITH_MINI"
 endif
 
-.PHONY: build run sim clean config dump
+.PHONY: build run sim clean config dump mini
 
 build:
 	export IDF_PATH=$(IDF_PATH) && \

@@ -386,7 +386,6 @@ static void peripheral_task_init(void) {
     }
   }
 
-#ifndef CONFIG_MONOLITH_MINI
   /***** ANALOG *****/
   if (storage.enabled.analog) {
     if (xTaskCreate(task_analog, "analog", 4096, NULL, 5, NULL) != pdPASS) {
@@ -394,6 +393,7 @@ static void peripheral_task_init(void) {
     }
   }
 
+#ifndef CONFIG_MONOLITH_MINI
   /***** DIGITAL *****/
   if (storage.enabled.digital) {
     if (xTaskCreate(task_digital, "digital", 4096, NULL, 5, NULL) != pdPASS) {

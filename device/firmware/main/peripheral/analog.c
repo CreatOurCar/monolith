@@ -1,7 +1,9 @@
 #include "main.h"
 
-#include "driver/i2c_master.h"
 #include "driver/temperature_sensor.h"
+
+#ifndef CONFIG_MONOLITH_MINI
+#include "driver/i2c_master.h"
 
 #define ADS1115_CONVERSION_REG_ADDR 0x00
 #define ADS1115_CONFIG_REG_ADDR 0x01
@@ -132,3 +134,83 @@ void task_analog(void *pvParameters) {
     xTaskDelayUntil(&xLastWakeTime, TASK_INTERVAL);
   }
 }
+#else
+#include "esp_adc/adc_oneshot.h"
+
+void task_analog(void *pvParameters) {
+  // initialize temperature sensor
+  temperature_sensor_handle_t sensor     = NULL;
+  temperature_sensor_config_t sensor_cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 80);
+
+  if (temperature_sensor_install(&sensor_cfg, &sensor) != ESP_OK || temperature_sensor_enable(sensor) != ESP_OK) {
+    ERROR_SYSLOG(&init, ANALOG, "temperature sensor init failure", "TMP_INIT_FAIL");
+  }
+
+  // initialize internal ADC
+  adc_oneshot_unit_handle_t adc_handle;
+  adc_oneshot_unit_init_cfg_t adc_config = {
+    .unit_id = ADC_UNIT_1,
+  };
+
+  if (adc_oneshot_new_unit(&adc_config, &adc_handle) != ESP_OK) {
+    ERROR_SYSLOG(&init, ANALOG, "init failure", "ANL_INIT_FAIL");
+  }
+
+  adc_oneshot_chan_cfg_t channel_config = {
+    .atten    = ADC_ATTEN_DB_0,
+    .bitwidth = ADC_BITWIDTH_DEFAULT,
+  };
+
+  if (adc_oneshot_config_channel(adc_handle, ADC_CHANNEL_7, &channel_config) != ESP_OK) {
+    adc_oneshot_del_unit(adc_handle);
+    ERROR_SYSLOG(&init, ANALOG, "channel config failure", "ANL_CH_CFG_FAIL");
+  }
+
+  adc_cali_handle_t cal_handle               = NULL;
+  adc_cali_curve_fitting_config_t cal_config = {
+    .unit_id  = ADC_UNIT_1,
+    .chan     = ADC_CHANNEL_7,
+    .atten    = ADC_ATTEN_DB_0,
+    .bitwidth = ADC_BITWIDTH_DEFAULT,
+  };
+
+  if (adc_cali_create_scheme_curve_fitting(&cal_config, &cal_handle) != ESP_OK) {
+    ERROR_SYSLOG(&init, ANALOG, "calibration failure", "ANL_CAL_FAIL");
+  }
+
+  if (IS_OK(&init, ANALOG)) {
+    CLEAR_ALL(&logbuf.run, ANALOG);
+    SYSLOG("ANL_RDY");
+  } else {
+    COPY_STATE(&logbuf.run, &init, ANALOG);
+  }
+
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  sync_slot(&xLastWakeTime, TASK_SLOT_ANALOG);
+
+  int raw, mv;
+  float temperature;
+  log_t analog;
+
+  while (true) {
+    esp_err_t err = temperature_sensor_get_celsius(sensor, &temperature);
+    err |= adc_oneshot_read(adc_handle, ADC_CHANNEL_7, &raw);
+    err |= adc_cali_raw_to_voltage(cal_handle, raw, &mv);
+
+    if (err == ESP_OK) {
+      analog.payload.analog.voltage = (int16_t)(mv * 8); // to match ADS1115 range (mV / 1000 * 32768 / 4.096)
+      analog.payload.analog.temperature = (int16_t)(temperature * 100);
+      LOG(LOG_TYPE_ANALOG, &analog);
+      memcpy(&logbuf.analog, &analog, sizeof(log_t));
+
+      if (IS_ERROR(&logbuf.run, ANALOG)) {
+        CLEAR_ERROR(&logbuf.run, ANALOG);
+      }
+    } else {
+      ERROR_SYSLOG(&logbuf.run, ANALOG, "read failure", "ANL_READ_FAIL");
+    }
+
+    xTaskDelayUntil(&xLastWakeTime, TASK_INTERVAL);
+  }
+}
+#endif
