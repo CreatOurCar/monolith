@@ -31,6 +31,8 @@ DIY wireless data logging platform for Student Formula and Baja.
 
 ![](docs/images/pcb.png)
 
+![](docs/images/pcb.jpg)
+
 ## Documentation
 
 [Full documentation](https://v2.monolith.luftaquila.io/docs) for DIY and usage details.
@@ -44,6 +46,8 @@ The name of the project was inspired by Arthur C. Clark's novel `2001: A Space O
 <img src='https://github.com/luftaquila/monolith/assets/17094868/2a893442-4d76-4828-a763-64865f9e481f' width='200px'>
 
 The prototype PCBs for the Monolith v1, v2, and v2 mini were sponsored by [PCBWay](https://www.pcbway.com/).
+
+For the detailed review of the manufactured PCB, see [here](https://v2.monolith.luftaquila.io/docs/#sponsor).
 
 ### Individuals
 

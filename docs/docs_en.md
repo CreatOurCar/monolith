@@ -46,12 +46,12 @@ It will also make you available to blame the driver by calling them while drivin
 
 ![](images/compare.jpg)
 
+![](images/pcb.jpg)
+
 * Size and build cost reduced to about 1/3.
 * Better performance and telemetry stability.
 * Wireless data download & configuration.
 * Remote user event & CAN message transmit.
-
-#### Data Viewer Demo
 
 ## Do It Yourself!
 
@@ -452,3 +452,19 @@ npm run build
 ```
 
 </details>
+
+## Sponsor
+
+All PCBs for the Monolith project were supported by PCBWay for the prototyping.
+
+![](images/pcb.jpg)
+
+When selecting white, black, or matte PCB colors, the boards must meet a minimum copper-to-copper spacing requirement of 0.22 mm. In the most recent v2 mini PCB, which uses the MPU-6500 accelerometer, the pin pitch is 0.2 mm. Since I ordered the black one, I received an email that it was not possible to produce. The simplest solution was to change the color to green, blue, red, or purple. So I took the rarest one - purple.
+
+![](images/mini.jpg)
+
+After that, I received mails about the quotation, BOM list, and the issues present. Once manufacturing was complete, I received photos of the finished boards, and it took exactly two weeks from the order date to the shipping date.
+
+![](images/pack.jpg)
+
+The delivered PCBs came individually packed in anti-static bags. It was surprising as I used to receive a bunch of boards wrapped together in bubble wrap. The tested board worked perfectly, and all SMD components were properly soldered with no issues such as solder bridges. Even the pads for the unassembled components came pre-tinned, making manual soldering much easier. The color of the board was beautiful as well.
