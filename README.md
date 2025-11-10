@@ -47,7 +47,7 @@ The prototype PCBs for the Monolith v1, v2, and v2 mini were sponsored by [PCBWa
 
 ### Individuals
 
-<!-- sponsors --><!-- sponsors -->
+<!-- sponsors --><a href="https://github.com/"><img src="https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;JamesIves&#x2F;github-sponsors-readme-action&#x2F;dev&#x2F;.github&#x2F;assets&#x2F;placeholder.png" width="60px" alt="User avatar: Private Sponsor" /></a><!-- sponsors -->
 
 ## LICENSE
 
