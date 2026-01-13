@@ -21,6 +21,9 @@ jobs:
           mkdir -p firmware
           mv firmware-monolith firmware/monolith
           mv firmware-monolith-mini firmware/monolith-mini
+          mkdir -p pcb
+          mv pcb-monolith pcb/monolith
+          mv pcb-monolith-mini pcb/monolith-mini
           zip -r monolith-${{ github.ref_name }}.zip pcb firmware
       - uses: ncipollo/release-action@v1
         with:
