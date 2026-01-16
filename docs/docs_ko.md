@@ -101,11 +101,9 @@ PCBA Qty를 5에서 2로 조정하면 완성된 기판이 2장만 오는 대신 
 1. 모노리스의 각 핀을 다음과 같이 연결합니다.
     * `3V3`, `GND`, `DTR`, `RTS`: 컨버터에 있는 같은 이름의 핀과 연결
     * `RX`, `TX`: 컨버터의 핀과 서로 교차하여 연결 (`RX` ↔ `TX`)
-1. [esptool](https://github.com/espressif/esptool/releases/latest)을 다운받고 압축을 해제합니다.
 1. [Release](https://github.com/luftaquila/monolith/releases/latest)에서 `monolith-{version}.zip`을 다운받고 압축을 해제합니다.
-1. `esptool` 바이너리를 압축을 해제한 *firmware/* 디렉터리로 복사합니다.
-1. 터미널을 열어 *firmware/* 경로로 이동한 뒤 다음 명령을 실행합니다.\
-   `./esptool --chip esp32s3 -b 460800 --before default-reset --after hard-reset write-flash "@flash_args"`
+1. `flash.sh` (Linux/macOS) 또는 `flash.bat` (Windows) 파일을 실행합니다.
+    * `python` 이 설치되어 있어야 합니다.
 
 ### 서버 준비
 

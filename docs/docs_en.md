@@ -109,11 +109,9 @@ It will save you another $20 and give you 3 empty PCBs as souvenir.
 1. Connect each pin of the Monolith PCB with the following pinout:
     * `3V3`, `GND`, `DTR`, `RTS`: corresponding pins on the converter.
     * `RX`, `TX`: cross-connect with the converter (`RX` ↔ `TX`).
-1. Download and unzip `esptool` from [here](https://github.com/espressif/esptool/releases/latest).
 1. Download and unzip `monolith-{version}.zip` from the [Release](https://github.com/luftaquila/monolith/releases/latest).
-1. Copy the `esptool` binary into the unzipped *firmware/* directory.
-1. Open a command prompt, cd to the *firmware/* directory and run:\
-    `./esptool --chip esp32s3 -b 460800 --before default-reset --after hard-reset write-flash "@flash_args"`
+1. Run `flash.sh` (Linux/macOS) or `flash.bat` (Windows).
+    * `python` is required to execute.
 
 ### Prepare Server
 

@@ -24,7 +24,7 @@ jobs:
           mkdir -p pcb
           mv pcb-monolith pcb/monolith
           mv pcb-monolith-mini pcb/monolith-mini
-          zip -r monolith-${{ github.ref_name }}.zip pcb firmware
+          zip -r monolith-${{ github.ref_name }}.zip pcb firmware .github/scripts/flash.*
       - uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
