@@ -34,3 +34,4 @@ jobs:
           tag: ${{ github.ref_name }}
           body: |
             ### Monolith ${{ github.ref_name }}
+            Please read documentation at https://v2.monolith.luftaquila.io/docs/

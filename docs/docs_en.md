@@ -27,10 +27,12 @@ This is an open-(source & hardware) project, licensed under the 🍺[Beerware Li
 * 1x CAN 2.0(A/B)
 * 1x External GPS
 * 1x Internal 6-axis accelerometer & gyroscope
-* 4x Digital input channels
-* 6x Analog input channels
+* 4x Digital input channels<sup>1</sup>
+* 6x Analog input channels<sup>1</sup>
 * 1x Power supply voltage sensor
 * 1x Chip temperature sensor
+
+<sup>1</sup> Not supported on mini version.
 
 💡 Customizable web-based data analysis tool
 
@@ -52,6 +54,12 @@ It will also make you available to blame the driver by calling them while drivin
 * Better performance and telemetry stability.
 * Wireless data download & configuration.
 * Remote user event & CAN message transmit.
+
+#### Original vs mini
+
+The Mini version is nearly half the size of the Original, with a footprint even smaller than a credit card.
+
+To achieve this, the digital and analog input channels have been removed. However, all other functionalities remain identical.
 
 ## Do It Yourself!
 
