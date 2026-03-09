@@ -56,19 +56,27 @@ export const defaults = {
 export const can_decoder = reactive({});
 
 function load_decoder() {
-  let idx = 1;
-
+  // First pass: group decoders by CAN ID
   Object.entries(views.can.view).forEach(([k, v]) => {
     if (!can_decoder[v.id]) {
       can_decoder[v.id] = [];
     }
 
     can_decoder[v.id].push({
-      idx: idx++,
       name: k,
       ...v,
     });
   });
+
+  // Second pass: assign idx in can_decoder iteration order
+  // Object.entries() sorts integer keys numerically, which is the same
+  // order used when building chart series in telemetry.vue and viewer.vue
+  let idx = 1;
+  for (const decoders of Object.values(can_decoder)) {
+    for (const decoder of decoders) {
+      decoder.idx = idx++;
+    }
+  }
 }
 
 watch(views, save_view, { deep: true })
