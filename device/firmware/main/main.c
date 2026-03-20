@@ -1,6 +1,8 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include <stdbool.h>
+
 #include "main.h"
 
 #include "driver/gpio.h"
@@ -26,7 +28,7 @@ const char components[][8] = { "CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN"
 /***** function prototypes *****/
 void sdcard_init(void);
 void mqtt_init(void);
-void network_init(void);
+bool network_init(void);
 static void core_init(void);
 static void nvs_init(void);
 static void rtc_init(void);
@@ -62,13 +64,12 @@ void app_main(void) {
   peripheral_task_init();
 
   /*** Wi-Fi ***/
-  network_init();
-
-  /*** MQTT ***/
-  mqtt_init();
+  if (network_init()) {
+    /*** MQTT ***/
+    mqtt_init();
+  }
 
   SYSLOG("INIT_DONE");
-  INFO(CORE, "initialization complete");
 }
 
 /*******************************************************************************
