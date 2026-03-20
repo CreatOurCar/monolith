@@ -91,7 +91,6 @@ void task_gyroscope(void *pvParameters) {
   }
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  sync_slot(&xLastWakeTime, TASK_SLOT_GYRO);
 
   tx[0] = 0x3B;  // ACCEL_XOUT_H register address
 
@@ -99,14 +98,16 @@ void task_gyroscope(void *pvParameters) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
     if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), portTICK_PERIOD_MS) == ESP_OK) {
-      logbuf.gyro.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
-      logbuf.gyro.payload.gyroscope.accel_y     = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
-      logbuf.gyro.payload.gyroscope.accel_z     = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
-      logbuf.gyro.payload.gyroscope.temperature = (int16_t)(((uint16_t)rx[6] << 8) | rx[7]);
-      logbuf.gyro.payload.gyroscope.gyro_x      = (int16_t)(((uint16_t)rx[8] << 8) | rx[9]);
-      logbuf.gyro.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
-      logbuf.gyro.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
-      LOG(LOG_TYPE_GYROSCOPE, &logbuf.gyro);
+      log_t gyro_log;
+      gyro_log.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
+      gyro_log.payload.gyroscope.accel_y     = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
+      gyro_log.payload.gyroscope.accel_z     = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
+      gyro_log.payload.gyroscope.temperature = (int16_t)(((uint16_t)rx[6] << 8) | rx[7]);
+      gyro_log.payload.gyroscope.gyro_x      = (int16_t)(((uint16_t)rx[8] << 8) | rx[9]);
+      gyro_log.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
+      gyro_log.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
+      LOG(LOG_TYPE_GYROSCOPE, &gyro_log);
+      memcpy(&logbuf.gyro, &gyro_log, sizeof(log_t));
 
       if (IS_ERROR(&logbuf.run, GYRO)) {
         CLEAR_ERROR(&logbuf.run, GYRO);
@@ -115,6 +116,6 @@ void task_gyroscope(void *pvParameters) {
       ERROR_SYSLOG(&logbuf.run, GYRO, "read transfer failure", "GYR_READ_FAIL");
     }
 
-    xTaskDelayUntil(&xLastWakeTime, TASK_INTERVAL);
+    xTaskDelayUntil(&xLastWakeTime, TASK_INTERVAL_GYRO);
   }
 }

@@ -17,11 +17,12 @@ char logpath[64];
  ******************************************************************************/
 static void task_sdcard(void *pvParameters) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
-  sync_slot(&xLastWakeTime, TASK_SLOT_SD);
 
   int ret;
   int fd = (int)pvParameters;
   log_t log;
+  int write_count = 0;
+  int cycle_count = 0;
 
   while (true) {
     int sync = false;
@@ -30,18 +31,22 @@ static void task_sdcard(void *pvParameters) {
       if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
         write(fd, &log, sizeof(log));
         sync = true;
+        write_count++;
       }
     } while (ret);
 
-    if (sync) {
+    cycle_count++;
+
+    if (sync && (write_count >= 512 || cycle_count >= 3)) {
       if (fsync(fd) != 0 && !IS_FATAL(&logbuf.run, SD)) {
         FATAL_LOG(&logbuf.run, SD, "fsync failure");
       }
-
+      write_count = 0;
+      cycle_count = 0;
       INFO(SD, "log sync");
     }
 
-    xTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+    xTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));
   }
 }
 
@@ -97,7 +102,7 @@ void sdcard_init(void) {
   }
 
   // create log queue and sdcard task
-  logqueue    = xQueueCreate(2048, sizeof(log_t));
+  logqueue    = xQueueCreate(3072, sizeof(log_t));
   syslogqueue = xQueueCreate(32, sizeof(log_t));
   canlogqueue = xQueueCreate(1024, sizeof(log_t));
   cantxqueue  = xQueueCreate(4, sizeof(twai_message_t));

@@ -110,7 +110,7 @@ void network_init(void) {
   wifi_config_t wifi = { 0 };
   snprintf((char *)wifi.sta.ssid, sizeof(wifi.sta.ssid), "%s", storage.wifi.ssid);
   snprintf((char *)wifi.sta.password, sizeof(wifi.sta.password), "%s", storage.wifi.passwd);
-  wifi.sta.scan_method        = WIFI_ALL_CHANNEL_SCAN;
+  wifi.sta.scan_method        = WIFI_FAST_SCAN;
   wifi.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
   if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wifi) != ESP_OK) {
