@@ -25,19 +25,16 @@ static void task_sdcard(void *pvParameters) {
   int cycle_count = 0;
 
   while (true) {
-    int sync = false;
-
     do {
       if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
         write(fd, &log, sizeof(log));
-        sync = true;
         write_count++;
       }
     } while (ret);
 
     cycle_count++;
 
-    if (sync && (write_count >= 512 || cycle_count >= 3)) {
+    if (write_count > 0 && (write_count >= 512 || cycle_count >= 3)) {
       if (fsync(fd) != 0 && !IS_FATAL(&logbuf.run, SD)) {
         FATAL_LOG(&logbuf.run, SD, "fsync failure");
       }

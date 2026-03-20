@@ -206,7 +206,7 @@ void task_analog(void *pvParameters) {
 
   int raw, mv;
   float temperature;
-  log_t analog;
+  log_t analog = {0};
 
   while (true) {
     esp_err_t err = temperature_sensor_get_celsius(sensor, &temperature);
