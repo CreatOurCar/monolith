@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 
 import AppMenuItem from './AppMenuItem.vue';
+import { announcement, showAnnouncement } from '@/service/announcement';
 
-const model = ref([
+const model = computed(() => [
     {
         label: 'Main',
         items: [
@@ -16,6 +17,12 @@ const model = ref([
     {
         label: 'Get Started',
         items: [
+            {
+                label: 'Announcement',
+                icon: 'pi pi-fw pi-megaphone',
+                command: () => showAnnouncement(),
+                visible: !!announcement.message
+            },
             {
                 label: 'Documentation',
                 icon: 'pi pi-fw pi-book',

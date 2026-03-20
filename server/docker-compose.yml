@@ -64,6 +64,7 @@ services:
     depends_on:
       init-log:
         condition: service_completed_successfully
+    command: /bin/sh -c 'printf "%s" "$$ANNOUNCEMENT" > /tmp/announcement && exec nginx -g "daemon off;"'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.monolith-v2.rule=Host(`${DOMAIN_NAME}`)"

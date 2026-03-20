@@ -1,11 +1,16 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import AppFooter from './AppFooter.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
+import { announcement, fetchAnnouncement, dismissAnnouncement } from '@/service/announcement';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
+
+onMounted(() => {
+    fetchAnnouncement();
+});
 
 const outsideClickListener = ref(null);
 
@@ -72,4 +77,21 @@ function isOutsideClicked(event) {
         <div class="layout-mask animate-fadein"></div>
     </div>
     <Toast />
+    <Dialog v-model:visible="announcement.visible" modal header="공지사항" :style="{ width: '30rem', maxWidth: '90vw' }">
+        <p class="announcement-body" style="white-space: pre-wrap;" v-html="announcement.message"></p>
+        <div class="flex items-center mt-4">
+            <Checkbox v-model="announcement.dontShowAgain" :binary="true" inputId="dontShowAgain" />
+            <label for="dontShowAgain" class="ml-2 cursor-pointer select-none">다시 보지 않기</label>
+        </div>
+        <template #footer>
+            <Button label="확인" @click="dismissAnnouncement" :autofocus="false" />
+        </template>
+    </Dialog>
 </template>
+
+<style scoped>
+.announcement-body :deep(a) {
+    color: var(--p-primary-color);
+    text-decoration: underline;
+}
+</style>
