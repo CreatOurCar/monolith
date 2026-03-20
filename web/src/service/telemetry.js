@@ -2,6 +2,7 @@ import { ref } from 'vue';
 import { convert, signed } from '@/service/protocol';
 import { times, state, telemetry } from '@/service/state';
 import { can_decoder, views } from '@/service/ui';
+import L from 'leaflet';
 
 export const map = ref(null);
 export const line = ref(null);
@@ -101,23 +102,23 @@ export function update_telemetry(data) {
         speed.value = `${data.gps.gps.speed.toFixed(1)} km/h`;
         course.value = `${data.gps.gps.course.toFixed(1)}°`;
 
-        if (window.kakao && map.value) {
+        if (map.value) {
+            const latlng = [data.gps.gps.latitude, data.gps.gps.longitude];
+
             if (!current_pos) {
-                current_pos = new kakao.maps.Circle({
+                current_pos = L.circleMarker(latlng, {
+                    color: '#00FF00',
                     fillColor: '#00FF00',
-                    strokeColor: '#00FF00',
                     fillOpacity: 1,
-                    strokeOpacity: 1,
-                    radius: 0.3
-                });
-                current_pos.setMap(map.value);
+                    radius: 5
+                }).addTo(map.value);
+            } else {
+                current_pos.setLatLng(latlng);
             }
 
-            const pos = new kakao.maps.LatLng(data.gps.gps.latitude, data.gps.gps.longitude);
-            current_pos.setPosition(pos);
-            path.value.push(pos);
-            line.value.setPath(path.value);
-            map.value.panTo(pos);
+            path.value.push(latlng);
+            line.value.setLatLngs(path.value);
+            map.value.panTo(latlng);
         }
     }
 }

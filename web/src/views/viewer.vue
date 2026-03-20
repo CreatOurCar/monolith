@@ -9,6 +9,8 @@ import { views, units, can_decoder, colors } from '@/service/ui';
 import { init_map } from '@/service/map';
 import { plugin_wheel_zoom, plugin_touch_zoom } from '@/service/uplot';
 
+import L from 'leaflet';
+
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 
@@ -51,15 +53,7 @@ const show = {
 };
 
 onMounted(() => {
-    if (!window.kakao) {
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false';
-        script.onload = () => init_map(map, line, path, gps);
-        document.head.appendChild(script);
-    } else {
-        init_map(map, line, path, gps);
-    }
+    init_map(map, line, path, gps);
 });
 
 function upload(f) {
@@ -346,8 +340,7 @@ function set_data(raw) {
                     }
                 }
 
-                const pos = new kakao.maps.LatLng(data.gps.latitude, data.gps.longitude);
-                path.value.push(pos);
+                path.value.push([data.gps.latitude, data.gps.longitude]);
                 path_history.push(data);
                 break;
 
@@ -400,38 +393,30 @@ function set_data(raw) {
     chart.value.setData(dataset);
 
     if (path.value.length) {
-        line.value.setPath(path.value);
-        map.value.setCenter(path.value[0]);
+        line.value.setLatLngs(path.value);
+        map.value.setView(path.value[0], 17);
 
-        new kakao.maps.Circle({
-            center: path.value[0],
+        L.circleMarker(path.value[0], {
+            color: '#00FF00',
             fillColor: '#00FF00',
-            strokeColor: '#00FF00',
             fillOpacity: 1,
-            strokeOpacity: 1,
-            radius: 0.5
-        }).setMap(map.value);
+            radius: 5
+        }).addTo(map.value);
 
-        new kakao.maps.Circle({
-            center: path.value[path.value.length - 1],
+        L.circleMarker(path.value[path.value.length - 1], {
+            color: '#FF0000',
             fillColor: '#FF0000',
-            strokeColor: '#FF0000',
             fillOpacity: 1,
-            strokeOpacity: 1,
-            radius: 0.5
-        }).setMap(map.value);
+            radius: 5
+        }).addTo(map.value);
 
-        timelapse_pos.value = new kakao.maps.Circle({
+        timelapse_pos.value = L.circleMarker(path.value[0], {
+            color: '#FF00FF',
             fillColor: '#FF00FF',
-            strokeColor: '#FF00FF',
             fillOpacity: 1,
-            strokeOpacity: 1,
-            radius: 0.5,
-            zIndex: 2
-        });
-
-        timelapse_pos.value.setMap(map.value);
-        timelapse_pos.value.setPosition(path.value[0]);
+            radius: 5,
+            pane: 'markerPane'
+        }).addTo(map.value);
 
         timelapse_time.value = dayjs(bt * 1000 + path_history[0].timestamp).format('HH:mm:ss.SSS');
         timelapse_coord.value = `${path_history[0].gps.latitude.toFixed(7)}, ${path_history[0].gps.longitude.toFixed(7)}`;
@@ -489,7 +474,7 @@ function timelapse() {
     }
 
     const pos = Math.floor(((path.value.length - 1) * slider.value) / 100);
-    timelapse_pos.value.setPosition(path.value[pos]);
+    timelapse_pos.value.setLatLng(path.value[pos]);
     timelapse_time.value = dayjs(bt * 1000 + path_history[pos].timestamp).format('HH:mm:ss.SSS');
     timelapse_coord.value = `${path_history[pos].gps.latitude.toFixed(7)}, ${path_history[pos].gps.longitude.toFixed(7)}`;
     timelapse_speed.value = `${digit(path_history[pos].gps.speed)} km/h`;

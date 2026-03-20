@@ -36,15 +36,7 @@ onMounted(() => {
     fit.fit();
     window.addEventListener('resize', () => fit.fit());
 
-    if (!window.kakao) {
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=5a6908c6e8974084c9c219f330401972&autoload=false';
-        script.onload = () => init_map(map, line, path, container.gps);
-        document.head.appendChild(script);
-    } else {
-        init_map(map, line, path, container.gps);
-    }
+    init_map(map, line, path, container.gps);
 
     init_chart();
 });
