@@ -401,6 +401,8 @@ static void peripheral_task_init(void) {
       ERROR_SYSLOG(&init, CORE, "DIGITAL task create failure", "DGT_TASK_FAIL");
     }
   }
+#else
+  CLEAR_ALL(&logbuf.run, DIGITAL);
 #endif
 
   /***** GYROSCOPE (always enabled) *****/
