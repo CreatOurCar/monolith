@@ -4,62 +4,50 @@
 #include "esp_http_server.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
-#include "lwip/sockets.h"
+#include "lwip/udp.h"
 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_end");
 
-static void dns_server(void *arg) {
-  int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  if (sock < 0) {
-    vTaskDelete(NULL);
+static const uint8_t dns_answer[] = {
+  0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01,
+  0x00, 0x00, 0x00, 0x3C, 0x00, 0x04,
+  192, 168, 4, 1,
+};
+
+static void dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port) {
+  if (p == NULL || p->len < 12) {
+    if (p) pbuf_free(p);
     return;
   }
 
-  struct sockaddr_in addr = {
-    .sin_family      = AF_INET,
-    .sin_port        = htons(53),
-    .sin_addr.s_addr = htonl(INADDR_ANY),
-  };
+  uint8_t *buf = (uint8_t *)p->payload;
 
-  if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    close(sock);
-    vTaskDelete(NULL);
+  // set response flags: QR=1, AA=1, RA=1
+  buf[2] = 0x81;
+  buf[3] = 0x80;
+  buf[6] = 0x00; // ANCOUNT = 1
+  buf[7] = 0x01;
+
+  // skip question section
+  int qend = 12;
+  while (qend < (int)p->len && buf[qend] != 0) qend += buf[qend] + 1;
+  qend += 5; // null + QTYPE(2) + QCLASS(2)
+
+  if (qend > (int)p->len) {
+    pbuf_free(p);
     return;
   }
 
-  uint8_t buf[512];
-  struct sockaddr_in client;
-  socklen_t client_len;
-
-  while (1) {
-    client_len = sizeof(client);
-    int len = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&client, &client_len);
-    if (len < 12) continue;
-
-    // set response flags: QR=1, AA=1, RA=1
-    buf[2] = 0x81;
-    buf[3] = 0x80;
-    buf[6] = 0x00; // ANCOUNT = 1
-    buf[7] = 0x01;
-
-    // skip question section
-    int qend = 12;
-    while (qend < len && buf[qend] != 0) qend += buf[qend] + 1;
-    qend += 5; // null + QTYPE(2) + QCLASS(2)
-
-    if (qend > len || qend + 16 > (int)sizeof(buf)) continue;
-
-    // answer: pointer to name, type A, class IN, TTL 60, 192.168.4.1
-    uint8_t answer[] = {
-      0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01,
-      0x00, 0x00, 0x00, 0x3C, 0x00, 0x04,
-      192, 168, 4, 1,
-    };
-
-    memcpy(buf + qend, answer, sizeof(answer));
-    sendto(sock, buf, qend + sizeof(answer), 0, (struct sockaddr *)&client, client_len);
+  struct pbuf *resp = pbuf_alloc(PBUF_TRANSPORT, qend + sizeof(dns_answer), PBUF_RAM);
+  if (resp) {
+    memcpy(resp->payload, buf, qend);
+    memcpy((uint8_t *)resp->payload + qend, dns_answer, sizeof(dns_answer));
+    udp_sendto(pcb, resp, addr, port);
+    pbuf_free(resp);
   }
+
+  pbuf_free(p);
 }
 
 static esp_err_t redirect_root(httpd_req_t *req) {
@@ -221,12 +209,17 @@ void webserver(void) {
     return;
   }
 
-  xTaskCreate(dns_server, "dns", 2048, NULL, 5, NULL);
+  struct udp_pcb *dns = udp_new();
+  if (dns) {
+    udp_bind(dns, IP_ADDR_ANY, 53);
+    udp_recv(dns, dns_recv, NULL);
+  }
 
   httpd_handle_t server   = NULL;
   httpd_config_t config   = HTTPD_DEFAULT_CONFIG();
   config.server_port      = 80;
   config.max_uri_handlers = 16;
+  config.max_req_hdr_len  = 1024;
   config.lru_purge_enable = true;
 
   httpd_uri_t root      = { .uri = "/", .method = HTTP_GET, .handler = html, .user_ctx = NULL };
