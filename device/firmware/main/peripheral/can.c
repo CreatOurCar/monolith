@@ -175,6 +175,6 @@ void task_can(void *pvParameters) {
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(portTICK_PERIOD_MS));
+    vTaskDelay(1);  // 1 tick = 1ms at 1000Hz
   }
 }

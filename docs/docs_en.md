@@ -165,6 +165,14 @@ vi .env # set `ACME_EMAIL` and `DOMAIN_NAME` to your own
 sudo docker compose up -d
 ```
 
+##### Server Announcement
+
+Set the `ANNOUNCEMENT` environment variable in the `.env` file to display a notice popup when users open the Control Hub.
+
+```sh
+ANNOUNCEMENT=Scheduled maintenance: 2025-01-15 02:00 ~ 04:00 (UTC)
+```
+
 </details>
 
 ## Usage

@@ -111,6 +111,31 @@ void init_ublox(void) {
 }
 
 /*******************************************************************************
+ * Integer-only fixed-point NMEA field parser
+ * Parses decimal string to integer scaled by 10^target_frac_digits.
+ ******************************************************************************/
+static uint32_t parse_nmea_fixed(const char *s, int target_frac_digits) {
+  uint32_t integer = 0, frac = 0;
+  int frac_digits = 0;
+
+  while (*s >= '0' && *s <= '9') { integer = integer * 10 + (*s++ - '0'); }
+  if (*s == '.') {
+    s++;
+    while (*s >= '0' && *s <= '9' && frac_digits < target_frac_digits + 1) {
+      frac = frac * 10 + (*s++ - '0');
+      frac_digits++;
+    }
+  }
+
+  while (frac_digits < target_frac_digits) { frac *= 10; frac_digits++; }
+  while (frac_digits > target_frac_digits) { frac = (frac + 5) / 10; frac_digits--; }
+
+  uint32_t scale = 1;
+  for (int i = 0; i < target_frac_digits; i++) scale *= 10;
+  return integer * scale + frac;
+}
+
+/*******************************************************************************
  * GPS NMEA GPRMC message monitor task
  ******************************************************************************/
 void task_gps(void *pvParameters) {
@@ -150,12 +175,13 @@ void task_gps(void *pvParameters) {
 
     if (strncmp((char *)data, "$GNRMC", 6) == 0 || strncmp((char *)data, "$GPRMC", 6) == 0) {
       if (parse_nmea_gprmc(&gprmc, data)) {
-        gps.payload.gps.latitude  = (uint32_t)(atof((char *)gprmc.lat) * 100000.0f);
-        gps.payload.gps.longitude = (uint32_t)(atof((char *)gprmc.lon) * 100000.0f);
+        gps.payload.gps.latitude  = parse_nmea_fixed((char *)gprmc.lat, 5);
+        gps.payload.gps.longitude = parse_nmea_fixed((char *)gprmc.lon, 5);
         gps.payload.gps.lat_dir   = *gprmc.north;
         gps.payload.gps.lon_dir   = *gprmc.east;
-        gps.payload.gps.speed     = (uint16_t)(atof((char *)gprmc.speed) * 1.852f * 100.0f);
-        gps.payload.gps.course    = (uint16_t)(atof((char *)gprmc.course) * 100.0f);
+        uint32_t speed_x100       = parse_nmea_fixed((char *)gprmc.speed, 2);
+        gps.payload.gps.speed     = (uint16_t)((speed_x100 * 1852 + 500) / 1000);
+        gps.payload.gps.course    = (uint16_t)parse_nmea_fixed((char *)gprmc.course, 2);
         LOG(LOG_TYPE_GPS, &gps);
         memcpy(&logbuf.gps, &gps, sizeof(log_t));
       }

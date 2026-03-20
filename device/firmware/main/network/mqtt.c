@@ -328,10 +328,10 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
   }
 }
 
+static log_t batch_sl[32];
+static log_t batch_can[128];
+
 static void mqtt_task(void *arg) {
-  int ret;
-  log_t syslog;
-  log_t canlog;
   char topic[40];
   char syslog_topic[40];
   char canlog_topic[40];
@@ -347,17 +347,24 @@ static void mqtt_task(void *arg) {
       logbuf.timestamp = (uint32_t)(esp_timer_get_time() / 1000);
       esp_mqtt_client_publish(mqtt, topic, (char *)&logbuf, sizeof(logbuf), MQTT_QOS_0, false);
 
-      do {
-        if ((ret = xQueueReceive(syslogqueue, &syslog, 0)) == pdTRUE) {
-          esp_mqtt_client_publish(mqtt, syslog_topic, (char *)&syslog, sizeof(syslog), MQTT_QOS_0, false);
-        }
-      } while (ret);
+      int sl_count = 0;
+      while (sl_count < 32 && xQueueReceive(syslogqueue, &batch_sl[sl_count], 0) == pdTRUE) {
+        sl_count++;
+      }
+      if (sl_count > 0) {
+        esp_mqtt_client_publish(mqtt, syslog_topic, (char *)batch_sl, sizeof(log_t) * sl_count, MQTT_QOS_0, false);
+      }
 
+      int can_count;
       do {
-        if ((ret = xQueueReceive(canlogqueue, &canlog, 0)) == pdTRUE) {
-          esp_mqtt_client_publish(mqtt, canlog_topic, (char *)&canlog, sizeof(canlog), MQTT_QOS_0, false);
+        can_count = 0;
+        while (can_count < 128 && xQueueReceive(canlogqueue, &batch_can[can_count], 0) == pdTRUE) {
+          can_count++;
         }
-      } while (ret);
+        if (can_count > 0) {
+          esp_mqtt_client_publish(mqtt, canlog_topic, (char *)batch_can, sizeof(log_t) * can_count, MQTT_QOS_0, false);
+        }
+      } while (can_count == 128);
     }
 
     vTaskDelay(interval);
@@ -381,7 +388,7 @@ void mqtt_init(void) {
     .session.last_will.msg               = "OFFLINE",
     .session.last_will.qos               = MQTT_QOS_1,
     .session.last_will.retain            = true,
-    .buffer.size                         = 2048,
+    .buffer.size                         = 8192,
     .task.priority                       = 5,
   };
 
@@ -402,7 +409,7 @@ void mqtt_init(void) {
   }
 
   // create mqtt publisher task
-  if (xTaskCreate(mqtt_task, "mqtt", 4096, NULL, 5, NULL) != pdPASS) {
+  if (xTaskCreatePinnedToCore(mqtt_task, "mqtt", 4096, NULL, 5, NULL, 1) != pdPASS) {
     ERROR_SYSLOG(&init, MQTT, "task create failure", "MQTT_TASK_FAIL");
     esp_mqtt_client_stop(mqtt);
     esp_mqtt_client_destroy(mqtt);

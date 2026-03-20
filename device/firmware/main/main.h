@@ -221,7 +221,7 @@ typedef struct {
 
 extern log_buf_t logbuf;
 
-static inline int LOG(uint8_t type, log_t *log) {
+static inline void log_prepare(uint8_t type, log_t *log) {
   uint32_t *ptr   = (uint32_t *)log;
   uint32_t chksum = 0;
 
@@ -238,8 +238,16 @@ static inline int LOG(uint8_t type, log_t *log) {
 
   // fold to 16 bit
   log->checksum = (chksum & 0xFFFF) + (chksum >> 16);
+}
 
+static inline int LOG(uint8_t type, log_t *log) {
+  log_prepare(type, log);
   return xQueueSend(logqueue, log, 0);
+}
+
+static inline int LOG_FROM_ISR(uint8_t type, log_t *log) {
+  log_prepare(type, log);
+  return xQueueSendFromISR(logqueue, log, NULL);
 }
 
 static inline void SYSLOG(const char *msg) {
@@ -305,19 +313,16 @@ enum {
   GPS_DEV_MAX,
 };
 
-/***** task time slots *****/
-#define TASK_INTERVAL pdMS_TO_TICKS(100)
-#define TASK_SLOT_SD 0
-#define TASK_SLOT_ANALOG pdMS_TO_TICKS(40)
-#define TASK_SLOT_GYRO pdMS_TO_TICKS(80)
+/***** I2C timeout *****/
+#define I2C_TIMEOUT_MS 10
 
-static inline void sync_slot(TickType_t *xLastWakeTime, TickType_t slot) {
-  TickType_t rel = (*xLastWakeTime - slot) % TASK_INTERVAL;
-  TickType_t wait = rel ? (TASK_INTERVAL - rel) : 0;
+/***** sensor task intervals *****/
+#define TASK_INTERVAL_GYRO   pdMS_TO_TICKS(10)   // 100Hz
 
-  if (wait > 0) {
-    xTaskDelayUntil(xLastWakeTime, wait);
-  }
-}
+#ifndef CONFIG_MONOLITH_MINI
+#define TASK_INTERVAL_ANALOG pdMS_TO_TICKS(10)   // 100Hz (7ch ADS1115, ~6.2ms/cycle with pipelining)
+#else
+#define TASK_INTERVAL_ANALOG pdMS_TO_TICKS(100)  // 10Hz (온도+전압만, 고속 불필요)
+#endif
 
 #endif  // MAIN_H

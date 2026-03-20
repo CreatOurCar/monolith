@@ -158,6 +158,15 @@ vi .env # set `ACME_EMAIL` and `DOMAIN_NAME` to your own
 
 sudo docker compose up -d
 ```
+
+##### 서버 공지사항
+
+`.env` 파일의 `ANNOUNCEMENT` 환경변수를 설정하면 Control Hub 접속 시 공지사항 팝업을 표시할 수 있습니다.
+
+```sh
+ANNOUNCEMENT=서버 점검 예정: 2025-01-15 02:00 ~ 04:00 (KST)
+```
+
 </details>
 
 ## 사용법
