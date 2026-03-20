@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Monolith v2 is a DIY wireless data logging platform for Student Formula / Baja racing. It consists of three independent subsystems: ESP32-S3 firmware (C), a Vue 3 web control hub, and KiCAD hardware designs. Two hardware variants exist: Original (full sensor suite) and Mini (compact, CAN + GPS + IMU only), controlled by the `CONFIG_MONOLITH_MINI` compile flag.
+Monolith v2 is a DIY wireless data logging platform for Student Formula / Baja racing. It consists of three independent subsystems: ESP32-S3 firmware (C), a Vue 3 web control hub, and KiCAD hardware designs. Two hardware variants exist: Original (full sensor suite) and Mini (compact, CAN + GPS + IMU + internal temp/voltage, no digital I/O), controlled by the `CONFIG_MONOLITH_MINI` compile flag.
 
 ## Build & Development Commands
 
@@ -32,7 +32,7 @@ Docker Compose stack. Requires `.env` file (see `.env.example`).
 
 - The web app and firmware share the same binary log protocol — `protocol.js` constants must stay in sync with `main.h` definitions
 - MQTT telemetry uses batching: CAN (up to 128 records) and syslog (up to 32 records) per single MQTT publish; web frontend parses in 24-byte (`log_t`) chunks
-- Core affinity: WiFi/LWIP pinned to Core 0, MQTT publisher and ESP-MQTT internal task pinned to Core 1, sensor tasks NO_AFFINITY
+- Core affinity: WiFi/LWIP pinned to Core 0, MQTT publisher pinned to Core 1, ESP-MQTT internal task on Core 0, sensor tasks NO_AFFINITY
 
 ## CI/CD
 
