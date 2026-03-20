@@ -16,7 +16,7 @@ export default defineConfig({
         Components({
             resolvers: [PrimeVueResolver()]
         }),
-        basicSsl(),
+        basicSsl()
     ],
     resolve: {
         alias: {
@@ -26,6 +26,6 @@ export default defineConfig({
     server: {
         host: true,
         port: 5173,
-        https: true,
-    },
+        https: true
+    }
 });
