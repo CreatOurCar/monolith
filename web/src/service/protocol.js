@@ -341,22 +341,28 @@ export function parse_logbuf(buf) {
     try {
         logbuf.gyro = parse_log(buf.slice(LOGBUF_POS.GYRO, LOGBUF_POS.GYRO + LOG_SIZE));
     } catch (e) {
-        console.error(`GYRO: ${e}`);
-        console.error(buf.slice(LOGBUF_POS.GYRO, LOGBUF_POS.GYRO + LOG_SIZE));
+        if (buf[LOGBUF_POS.GYRO] !== 0) {
+            console.error(`GYRO: ${e}`);
+            console.error(buf.slice(LOGBUF_POS.GYRO, LOGBUF_POS.GYRO + LOG_SIZE));
+        }
     }
 
     try {
         logbuf.analog = parse_log(buf.slice(LOGBUF_POS.ANALOG, LOGBUF_POS.ANALOG + LOG_SIZE));
     } catch (e) {
-        console.error(`ANALOG: ${e}`);
-        console.error(buf.slice(LOGBUF_POS.ANALOG, LOGBUF_POS.ANALOG + LOG_SIZE));
+        if (buf[LOGBUF_POS.ANALOG] !== 0) {
+            console.error(`ANALOG: ${e}`);
+            console.error(buf.slice(LOGBUF_POS.ANALOG, LOGBUF_POS.ANALOG + LOG_SIZE));
+        }
     }
 
     try {
         logbuf.digital = parse_log(buf.slice(LOGBUF_POS.DIGITAL, LOGBUF_POS.DIGITAL + LOG_SIZE));
     } catch (e) {
-        console.error(`DIGITAL: ${e}`);
-        console.error(buf.slice(LOGBUF_POS.DIGITAL, LOGBUF_POS.DIGITAL + LOG_SIZE));
+        if (buf[LOGBUF_POS.DIGITAL] !== 0) {
+            console.error(`DIGITAL: ${e}`);
+            console.error(buf.slice(LOGBUF_POS.DIGITAL, LOGBUF_POS.DIGITAL + LOG_SIZE));
+        }
     }
 
     return logbuf;

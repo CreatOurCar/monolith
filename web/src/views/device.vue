@@ -99,6 +99,7 @@ function set_cfg(event) {
 
 function load_confirm() {
     confirm.require({
+        group: 'confirm',
         header: 'Load Confirmation',
         message: 'Load configurations from the device?',
         icon: 'pi pi-info-circle',
@@ -119,6 +120,7 @@ function load_confirm() {
 
 function restart_confirm() {
     confirm.require({
+        group: 'confirm',
         header: 'Restart Confirmation',
         message: 'The device will be rebooted.',
         icon: 'pi pi-exclamation-triangle',
@@ -139,6 +141,7 @@ function restart_confirm() {
 
 function reset_confirm() {
     confirm.require({
+        group: 'confirm',
         header: 'Reset Confirmation',
         message: 'This has the same effect as pressing the RST button on the device. All configurations will be erased and it needs to be configured from the beginning.',
         icon: 'pi pi-exclamation-triangle',
@@ -217,6 +220,7 @@ function delete_file(name, index) {
     }
 
     confirm.require({
+        group: 'confirm',
         header: 'Delete Confirmation',
         message: `Are you sure you want to delete ${name}?`,
         icon: 'pi pi-exclamation-triangle',
