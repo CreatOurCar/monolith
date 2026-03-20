@@ -4,9 +4,70 @@
 #include "esp_http_server.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
+#include "lwip/sockets.h"
 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_end");
+
+static void dns_server(void *arg) {
+  int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (sock < 0) {
+    vTaskDelete(NULL);
+    return;
+  }
+
+  struct sockaddr_in addr = {
+    .sin_family      = AF_INET,
+    .sin_port        = htons(53),
+    .sin_addr.s_addr = htonl(INADDR_ANY),
+  };
+
+  if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    close(sock);
+    vTaskDelete(NULL);
+    return;
+  }
+
+  uint8_t buf[512];
+  struct sockaddr_in client;
+  socklen_t client_len;
+
+  while (1) {
+    client_len = sizeof(client);
+    int len = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&client, &client_len);
+    if (len < 12) continue;
+
+    // set response flags: QR=1, AA=1, RA=1
+    buf[2] = 0x81;
+    buf[3] = 0x80;
+    buf[6] = 0x00; // ANCOUNT = 1
+    buf[7] = 0x01;
+
+    // skip question section
+    int qend = 12;
+    while (qend < len && buf[qend] != 0) qend += buf[qend] + 1;
+    qend += 5; // null + QTYPE(2) + QCLASS(2)
+
+    if (qend > len || qend + 16 > (int)sizeof(buf)) continue;
+
+    // answer: pointer to name, type A, class IN, TTL 60, 192.168.4.1
+    uint8_t answer[] = {
+      0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01,
+      0x00, 0x00, 0x00, 0x3C, 0x00, 0x04,
+      192, 168, 4, 1,
+    };
+
+    memcpy(buf + qend, answer, sizeof(answer));
+    sendto(sock, buf, qend + sizeof(answer), 0, (struct sockaddr *)&client, client_len);
+  }
+}
+
+static esp_err_t redirect_root(httpd_req_t *req) {
+  httpd_resp_set_status(req, "302 Found");
+  httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/");
+  httpd_resp_sendstr(req, "");
+  return ESP_OK;
+}
 
 static esp_err_t html(httpd_req_t *req) {
   httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
@@ -160,9 +221,12 @@ void webserver(void) {
     return;
   }
 
+  xTaskCreate(dns_server, "dns", 2048, NULL, 5, NULL);
+
   httpd_handle_t server   = NULL;
   httpd_config_t config   = HTTPD_DEFAULT_CONFIG();
   config.server_port      = 80;
+  config.max_uri_handlers = 16;
   config.lru_purge_enable = true;
 
   httpd_uri_t root      = { .uri = "/", .method = HTTP_GET, .handler = html, .user_ctx = NULL };
@@ -179,4 +243,17 @@ void webserver(void) {
   httpd_register_uri_handler(server, &restart);
   httpd_register_uri_handler(server, &getconfig);
   httpd_register_uri_handler(server, &setconfig);
+
+  // captive portal redirect routes
+  const char *portal_uris[] = {
+    "/generate_204", "/gen_204",
+    "/ncsi.txt", "/connecttest.txt",
+    "/hotspot-detect.html", "/library/test/success.html",
+    "/success.txt", "/favicon.ico", "/redirect",
+  };
+
+  for (int i = 0; i < sizeof(portal_uris) / sizeof(portal_uris[0]); i++) {
+    httpd_uri_t portal = { .uri = portal_uris[i], .method = HTTP_GET, .handler = redirect_root, .user_ctx = NULL };
+    httpd_register_uri_handler(server, &portal);
+  }
 }
