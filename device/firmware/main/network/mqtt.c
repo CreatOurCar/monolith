@@ -388,7 +388,7 @@ void mqtt_init(void) {
     .session.last_will.msg               = "OFFLINE",
     .session.last_will.qos               = MQTT_QOS_1,
     .session.last_will.retain            = true,
-    .buffer.size                         = 4096,
+    .buffer.size                         = 8192,
     .task.priority                       = 5,
   };
 

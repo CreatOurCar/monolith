@@ -221,7 +221,7 @@ typedef struct {
 
 extern log_buf_t logbuf;
 
-static inline int LOG(uint8_t type, log_t *log) {
+static inline void log_prepare(uint8_t type, log_t *log) {
   uint32_t *ptr   = (uint32_t *)log;
   uint32_t chksum = 0;
 
@@ -238,8 +238,16 @@ static inline int LOG(uint8_t type, log_t *log) {
 
   // fold to 16 bit
   log->checksum = (chksum & 0xFFFF) + (chksum >> 16);
+}
 
+static inline int LOG(uint8_t type, log_t *log) {
+  log_prepare(type, log);
   return xQueueSend(logqueue, log, 0);
+}
+
+static inline int LOG_FROM_ISR(uint8_t type, log_t *log) {
+  log_prepare(type, log);
+  return xQueueSendFromISR(logqueue, log, NULL);
 }
 
 static inline void SYSLOG(const char *msg) {

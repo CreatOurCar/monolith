@@ -112,7 +112,7 @@ void task_analog(void *pvParameters) {
         if (cnt) i2c_master_bus_reset(i2c1);
         ret  = adc_start(adc1, ch[i]);
         ret |= adc_start(adc2, ch[i]);
-        esp_rom_delay_us(1200);
+        esp_rom_delay_us(1400);
         ret |= adc_read(adc1, dst1[i]);
         ret |= adc_read(adc2, dst2[i]);
         cnt++;
@@ -127,7 +127,7 @@ void task_analog(void *pvParameters) {
       do {
         if (cnt) i2c_master_bus_reset(i2c1);
         ret  = adc_start(adc1, MUX_AIN3);
-        esp_rom_delay_us(1200);
+        esp_rom_delay_us(1400);
         ret |= adc_read(adc1, &analog.payload.analog.ain4);
         cnt++;
       } while (ret != ESP_OK && cnt < 2);
