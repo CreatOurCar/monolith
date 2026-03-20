@@ -29,7 +29,7 @@ void task_gyroscope(void *pvParameters) {
 
   uint8_t tx[7] = { 0x1B, 1 << 3, 1 << 4 };  // GYRO_CONFIG register address, 500dps and 8g full scale
 
-  if (i2c_master_transmit(gyro, tx, 3, portTICK_PERIOD_MS) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, 3, I2C_TIMEOUT_MS) != ESP_OK) {
     ERROR_SYSLOG(&init, GYRO, "gyro init failure", "GYR_CFG_FAIL");
   }
 
@@ -41,7 +41,7 @@ void task_gyroscope(void *pvParameters) {
   tx[5] = 0;
   tx[6] = 0;
 
-  if (i2c_master_transmit(gyro, tx, 7, portTICK_PERIOD_MS) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, 7, I2C_TIMEOUT_MS) != ESP_OK) {
     ERROR_SYSLOG(&init, GYRO, "gyro offset reset failure", "GYR_OFSRST_FAIL");
   }
 
@@ -56,7 +56,7 @@ void task_gyroscope(void *pvParameters) {
   for (int i = 0; i < sample; i++) {
     uint8_t rx[6] = { 0 };
 
-    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), portTICK_PERIOD_MS) == ESP_OK) {
+    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), I2C_TIMEOUT_MS) == ESP_OK) {
       int16_t gyro_x = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
       int16_t gyro_y = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
       int16_t gyro_z = (int16_t)(((uint16_t)rx[4] << 8) | rx[5]);
@@ -79,7 +79,7 @@ void task_gyroscope(void *pvParameters) {
   tx[5] = (uint8_t)(off_z >> 8);
   tx[6] = (uint8_t)(off_z & 0xFF);
 
-  if (i2c_master_transmit(gyro, tx, 7, portTICK_PERIOD_MS) != ESP_OK) {
+  if (i2c_master_transmit(gyro, tx, 7, I2C_TIMEOUT_MS) != ESP_OK) {
     ERROR_SYSLOG(&init, GYRO, "gyro offset write failure", "GYR_OFS_FAIL");
   }
 
@@ -97,7 +97,7 @@ void task_gyroscope(void *pvParameters) {
   while (true) {
     uint8_t rx[14] = { 0 };  // 0x3B ACCEL_XOUT_H to 0x48 GYRO_ZOUT_L register
 
-    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), portTICK_PERIOD_MS) == ESP_OK) {
+    if (i2c_master_transmit_receive(gyro, tx, 1, rx, sizeof(rx), I2C_TIMEOUT_MS) == ESP_OK) {
       log_t gyro_log;
       gyro_log.payload.gyroscope.accel_x     = (int16_t)(((uint16_t)rx[0] << 8) | rx[1]);
       gyro_log.payload.gyroscope.accel_y     = (int16_t)(((uint16_t)rx[2] << 8) | rx[3]);
@@ -113,6 +113,7 @@ void task_gyroscope(void *pvParameters) {
         CLEAR_ERROR(&logbuf.run, GYRO);
       }
     } else {
+      i2c_master_bus_reset(i2c0);
       ERROR_SYSLOG(&logbuf.run, GYRO, "read transfer failure", "GYR_READ_FAIL");
     }
 

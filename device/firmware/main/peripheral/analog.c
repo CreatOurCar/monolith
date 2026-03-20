@@ -24,13 +24,13 @@ static i2c_master_bus_handle_t i2c1;
 
 esp_err_t adc_start(i2c_master_dev_handle_t adc, uint8_t ch) {
   uint8_t tx[3] = { ADS1115_CONFIG_REG_ADDR, ADS1115_CONFIG(ch), ADS1115_CONFIG_L };
-  return i2c_master_transmit(adc, tx, sizeof(tx), portTICK_PERIOD_MS);
+  return i2c_master_transmit(adc, tx, sizeof(tx), I2C_TIMEOUT_MS);
 }
 
 esp_err_t adc_read(i2c_master_dev_handle_t adc, int16_t *v) {
   uint8_t tx_conv = ADS1115_CONVERSION_REG_ADDR;
   uint8_t rx[2]   = { 0 };
-  esp_err_t ret = i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), portTICK_PERIOD_MS);
+  esp_err_t ret = i2c_master_transmit_receive(adc, &tx_conv, sizeof(tx_conv), rx, sizeof(rx), I2C_TIMEOUT_MS);
   *v = ((int16_t)rx[0] << 8) | rx[1];
   return ret;
 }

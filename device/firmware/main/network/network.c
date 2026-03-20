@@ -72,7 +72,8 @@ static void sntp_sync_callback(struct timeval *tv) {
   int cnt = 0;
 
   do {
-    ret = i2c_master_transmit(rtc, tx, sizeof(tx), portTICK_PERIOD_MS);
+    ret = i2c_master_transmit(rtc, tx, sizeof(tx), I2C_TIMEOUT_MS);
+    if (ret != ESP_OK) i2c_master_bus_reset(i2c0);
     cnt++;
   } while (ret != ESP_OK && cnt < 3);
 

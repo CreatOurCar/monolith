@@ -313,6 +313,9 @@ enum {
   GPS_DEV_MAX,
 };
 
+/***** I2C timeout *****/
+#define I2C_TIMEOUT_MS 10
+
 /***** sensor task intervals *****/
 #define TASK_INTERVAL_GYRO   pdMS_TO_TICKS(10)   // 100Hz
 

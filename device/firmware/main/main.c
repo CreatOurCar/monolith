@@ -315,7 +315,8 @@ static void rtc_init(void) {
   int cnt = 0;
 
   do {
-    ret = i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), portTICK_PERIOD_MS);
+    ret = i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), I2C_TIMEOUT_MS);
+    if (ret != ESP_OK) i2c_master_bus_reset(i2c0);
     cnt++;
   } while (ret != ESP_OK && cnt < 3);
 
