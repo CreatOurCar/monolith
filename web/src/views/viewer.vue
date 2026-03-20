@@ -73,6 +73,12 @@ function upload(f) {
         file.boot.value = 'Waking up all pit crews...';
         file.duration.value = 'Refueling beer...🍺';
     };
+    reader.onerror = () => {
+        file.device.value = 'File read failed.';
+        file.statistic.value = '';
+        file.boot.value = '';
+        file.duration.value = '';
+    };
     reader.onload = (e) => {
         let result;
 
@@ -121,7 +127,11 @@ const axis = {
     speed: { splits: [], min: 0, max: 0 }
 };
 
+let resizeObserver = null;
+
 function init_chart() {
+    resizeObserver?.disconnect();
+
     if (chart.value) {
         chart.value.destroy();
     }
@@ -210,11 +220,11 @@ function init_chart() {
         { label: views.digital.ch.din3.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[2] },
         { label: views.digital.ch.din4.name, value: fmt.digital, scale: 'digital', spanGaps: true, show: false, stroke: colors[3] },
         { label: views.analog.ch.ain1.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain1.unit || 'Volt', spanGaps: true, show: false, stroke: colors[4] },
-        { label: views.analog.ch.ain2.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain2.unit || 'Volt', spanGaps: true, show: false, stroke: colors[5] },
-        { label: views.analog.ch.ain3.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain3.unit || 'Volt', spanGaps: true, show: false, stroke: colors[6] },
-        { label: views.analog.ch.ain4.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain4.unit || 'Volt', spanGaps: true, show: false, stroke: colors[7] },
-        { label: views.analog.ch.ain5.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain5.unit || 'Volt', spanGaps: true, show: false, stroke: colors[8] },
-        { label: views.analog.ch.ain6.name, value: fmt[views.analog.ch.ain1.unit], scale: views.analog.ch.ain6.unit || 'Volt', spanGaps: true, show: false, stroke: colors[9] },
+        { label: views.analog.ch.ain2.name, value: fmt[views.analog.ch.ain2.unit], scale: views.analog.ch.ain2.unit || 'Volt', spanGaps: true, show: false, stroke: colors[5] },
+        { label: views.analog.ch.ain3.name, value: fmt[views.analog.ch.ain3.unit], scale: views.analog.ch.ain3.unit || 'Volt', spanGaps: true, show: false, stroke: colors[6] },
+        { label: views.analog.ch.ain4.name, value: fmt[views.analog.ch.ain4.unit], scale: views.analog.ch.ain4.unit || 'Volt', spanGaps: true, show: false, stroke: colors[7] },
+        { label: views.analog.ch.ain5.name, value: fmt[views.analog.ch.ain5.unit], scale: views.analog.ch.ain5.unit || 'Volt', spanGaps: true, show: false, stroke: colors[8] },
+        { label: views.analog.ch.ain6.name, value: fmt[views.analog.ch.ain6.unit], scale: views.analog.ch.ain6.unit || 'Volt', spanGaps: true, show: false, stroke: colors[9] },
         { label: views.analog.ch.volt.name, value: fmt.Volt, scale: 'Volt', spanGaps: true, show: false, stroke: colors[10] },
         { label: views.analog.ch.temp.name, value: fmt.Temperature, scale: 'Temperature', spanGaps: true, show: false, stroke: colors[11] },
         { label: 'Ax', value: fmt.Acceleration, scale: 'Acceleration', spanGaps: true, show: false, stroke: colors[12] },
@@ -241,10 +251,12 @@ function init_chart() {
         }
     }
 
+    const initWidth = container.value?.clientWidth || 600;
+
     chart.value = new uPlot(
         {
-            width: 600,
-            height: 400,
+            width: initWidth,
+            height: initWidth * 0.6,
             cursor: {
                 hover: {
                     prox: 10,
@@ -261,14 +273,15 @@ function init_chart() {
         graph.value
     );
 
-    new ResizeObserver((entries) => {
+    resizeObserver = new ResizeObserver((entries) => {
         for (let entry of entries) {
             chart.value.setSize({
                 width: entry.contentRect.width,
                 height: entry.contentRect.width * 0.6
             });
         }
-    }).observe(container.value);
+    });
+    resizeObserver.observe(container.value);
 }
 
 function set_data(raw) {
@@ -291,10 +304,10 @@ function set_data(raw) {
 
             case 'ANALOG':
                 dataset[0].push(bt + data.timestamp / 1000);
-                dataset[5].push(convert.adc_to_v(data.analog.ain1) * views.analog.ch.ain1.multiplier * (views.analog.ch.ain1.devider ? 0.5 : 1));
-                dataset[6].push(convert.adc_to_v(data.analog.ain2) * views.analog.ch.ain2.multiplier * (views.analog.ch.ain2.devider ? 0.5 : 1));
-                dataset[7].push(convert.adc_to_v(data.analog.ain3) * views.analog.ch.ain3.multiplier * (views.analog.ch.ain3.devider ? 0.5 : 1));
-                dataset[8].push(convert.adc_to_v(data.analog.ain4) * views.analog.ch.ain4.multiplier * (views.analog.ch.ain4.devider ? 0.5 : 1));
+                dataset[5].push(convert.adc_to_v(data.analog.ain1) * views.analog.ch.ain1.multiplier * (views.analog.ch.ain1.divider ? 0.5 : 1));
+                dataset[6].push(convert.adc_to_v(data.analog.ain2) * views.analog.ch.ain2.multiplier * (views.analog.ch.ain2.divider ? 0.5 : 1));
+                dataset[7].push(convert.adc_to_v(data.analog.ain3) * views.analog.ch.ain3.multiplier * (views.analog.ch.ain3.divider ? 0.5 : 1));
+                dataset[8].push(convert.adc_to_v(data.analog.ain4) * views.analog.ch.ain4.multiplier * (views.analog.ch.ain4.divider ? 0.5 : 1));
                 dataset[9].push(convert.adc_to_v(data.analog.ain5) * views.analog.ch.ain5.multiplier);
                 dataset[10].push(convert.adc_to_v(data.analog.ain6) * views.analog.ch.ain6.multiplier);
                 dataset[11].push(convert.adc_to_v(data.analog.voltage) * views.analog.ch.volt.multiplier);
@@ -469,19 +482,6 @@ function split_range(d_min, d_max) {
     return { min, max, splits };
 }
 
-Array.prototype.max = function () {
-    return Math.max.apply(
-        null,
-        this.filter((x) => x)
-    );
-};
-
-Array.prototype.min = function () {
-    return Math.min.apply(
-        null,
-        this.filter((x) => x)
-    );
-};
 
 function timelapse() {
     if (!path.value.length || !timelapse_pos.value) {

@@ -12,6 +12,17 @@ export const course = ref('0.0°');
 
 let current_pos = null;
 
+const MAX_TELEMETRY_POINTS = 36000;
+
+function trim(arr) {
+    if (arr[0].length > MAX_TELEMETRY_POINTS) {
+        const excess = arr[0].length - MAX_TELEMETRY_POINTS;
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i]) arr[i].splice(0, excess);
+        }
+    }
+}
+
 export function update_telemetry(data) {
     if (data.state) {
         Object.entries(data.state).forEach(([key, value]) => {
@@ -54,6 +65,8 @@ export function update_telemetry(data) {
         telemetry.analog[7].push(convert.adc_to_v(data.analog.analog.voltage) * views.analog.ch.volt.multiplier);
         telemetry.analog[8].push(data.analog.analog.temperature * views.analog.ch.temp.multiplier);
 
+        trim(telemetry.analog);
+
         if (telemetry.chart.analog) {
             telemetry.chart.analog.setData(telemetry.analog);
             telemetry.chart.analog.setScale('x', {
@@ -72,6 +85,8 @@ export function update_telemetry(data) {
         telemetry.gyro[4].push(convert.gyro_to_dps(data.gyro.gyro.gyro_x));
         telemetry.gyro[5].push(convert.gyro_to_dps(data.gyro.gyro.gyro_y));
         telemetry.gyro[6].push(convert.gyro_to_dps(data.gyro.gyro.gyro_z));
+
+        trim(telemetry.gyro);
 
         if (telemetry.chart.gyro) {
             telemetry.chart.gyro.setData(telemetry.gyro);
@@ -148,6 +163,8 @@ export function update_can(log) {
             });
         }
     }
+
+    trim(telemetry.can);
 
     if (telemetry.chart.can) {
         telemetry.chart.can.setData(telemetry.can);

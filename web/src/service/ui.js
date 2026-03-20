@@ -79,8 +79,15 @@ function load_decoder() {
     }
 }
 
-watch(views, save_view, { deep: true });
-watch(units, save_view, { deep: true });
+let save_timer = null;
+
+function debounced_save() {
+    clearTimeout(save_timer);
+    save_timer = setTimeout(save_view, 500);
+}
+
+watch(views, debounced_save, { deep: true });
+watch(units, debounced_save, { deep: true });
 
 load_view();
 load_decoder();

@@ -118,10 +118,12 @@ function init_chart() {
         };
     }
 
+    const initWidth = container.state.value?.clientWidth || 600;
+
     telemetry.chart.analog = new uPlot(
         {
-            width: 600,
-            height: 400,
+            width: initWidth,
+            height: initWidth * 0.6,
             pxAlign: 0,
             pxSnap: false,
             scales: scales,
@@ -144,8 +146,8 @@ function init_chart() {
 
     telemetry.chart.gyro = new uPlot(
         {
-            width: 600,
-            height: 400,
+            width: initWidth,
+            height: initWidth * 0.6,
             pxAlign: 0,
             pxSnap: false,
             scales: scales,
@@ -182,8 +184,8 @@ function init_chart() {
 
     telemetry.chart.can = new uPlot(
         {
-            width: 600,
-            height: 400,
+            width: initWidth,
+            height: initWidth * 0.6,
             pxAlign: 0,
             pxSnap: false,
             scales: scales,
@@ -201,7 +203,7 @@ function init_chart() {
                 max: new Date().getTime() / 1000
             });
         });
-    }, 100);
+    }, 1000);
 
     new ResizeObserver((entries) => {
         for (let entry of entries) {

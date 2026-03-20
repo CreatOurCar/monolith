@@ -112,6 +112,8 @@ export function init_mqtt() {
             }
 
             case 'd/sl': {
+                if (times.boot.raw === null) break;
+
                 try {
                     for (let offset = 0; offset + 24 <= message.length; offset += 24) {
                         const log = parse_log(message.subarray(offset, offset + 24));
@@ -124,6 +126,8 @@ export function init_mqtt() {
             }
 
             case 'd/can': {
+                if (times.boot.raw === null) break;
+
                 try {
                     for (let offset = 0; offset + 24 <= message.length; offset += 24) {
                         const log = parse_log(message.subarray(offset, offset + 24));
@@ -138,6 +142,8 @@ export function init_mqtt() {
             }
 
             case 'd': {
+                if (times.boot.raw === null) break;
+
                 const logbuf = parse_logbuf(message);
                 update_time(logbuf.timestamp);
                 update_telemetry(logbuf);
