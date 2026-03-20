@@ -1,7 +1,7 @@
 <script setup>
 defineOptions({ name: 'DeviceConfiguration' });
 
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { init_mqtt, publish } from '@/service/mqtt';
 import { connection, config, files, format_size } from '@/service/state';
 
@@ -16,6 +16,12 @@ onMounted(() => {
     config.server.key.value = localStorage.getItem('server/key');
 
     if (connection.device.value === 'Online') {
+        publish('cmd/cfg', '!', 1);
+    }
+});
+
+watch(() => connection.device.value, (val) => {
+    if (val === 'Online') {
         publish('cmd/cfg', '!', 1);
     }
 });
