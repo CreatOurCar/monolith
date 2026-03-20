@@ -13,6 +13,8 @@ export const course = ref('0.0°');
 
 let current_pos = null;
 
+export const dirty = { analog: false, gyro: false, can: false };
+
 const MAX_TELEMETRY_POINTS = 36000;
 
 function trim(arr) {
@@ -67,14 +69,7 @@ export function update_telemetry(data) {
         telemetry.analog[8].push(data.analog.analog.temperature * views.analog.ch.temp.multiplier);
 
         trim(telemetry.analog);
-
-        if (telemetry.chart.analog) {
-            telemetry.chart.analog.setData(telemetry.analog);
-            telemetry.chart.analog.setScale('x', {
-                min: new Date().getTime() / 1000 - 60,
-                max: new Date().getTime() / 1000
-            });
-        }
+        dirty.analog = true;
     }
 
     if (data.gyro) {
@@ -88,14 +83,7 @@ export function update_telemetry(data) {
         telemetry.gyro[6].push(convert.gyro_to_dps(data.gyro.gyro.gyro_z));
 
         trim(telemetry.gyro);
-
-        if (telemetry.chart.gyro) {
-            telemetry.chart.gyro.setData(telemetry.gyro);
-            telemetry.chart.gyro.setScale('x', {
-                min: new Date().getTime() / 1000 - 60,
-                max: new Date().getTime() / 1000
-            });
-        }
+        dirty.gyro = true;
     }
 
     if (data.gps) {
@@ -166,12 +154,5 @@ export function update_can(log) {
     }
 
     trim(telemetry.can);
-
-    if (telemetry.chart.can) {
-        telemetry.chart.can.setData(telemetry.can);
-        telemetry.chart.can.setScale('x', {
-            min: new Date().getTime() / 1000 - 60,
-            max: new Date().getTime() / 1000
-        });
-    }
+    dirty.can = true;
 }

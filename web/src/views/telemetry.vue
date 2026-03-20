@@ -7,7 +7,7 @@ import { publish } from '@/service/mqtt';
 import { term } from '@/service/terminal';
 import { state, times, cons, telemetry, fmt, digit } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
-import { map, line, path, speed, course } from '@/service/telemetry';
+import { map, line, path, speed, course, dirty } from '@/service/telemetry';
 import { init_map } from '@/service/map';
 
 import ToastEventBus from 'primevue/toasteventbus';
@@ -188,14 +188,26 @@ function init_chart() {
         container.can.value
     );
 
-    setInterval(() => {
-        Object.entries(telemetry.chart).forEach((e) => {
-            telemetry.chart[e[0]].setScale('x', {
-                min: new Date().getTime() / 1000 - 60,
-                max: new Date().getTime() / 1000
-            });
-        });
-    }, 1000);
+    function tick() {
+        const now = Date.now() / 1000;
+        const scale = { min: now - 60, max: now };
+
+        for (const [key, chart] of Object.entries(telemetry.chart)) {
+            if (dirty[key]) {
+                chart.batch(() => {
+                    chart.setData(telemetry[key]);
+                    chart.setScale('x', scale);
+                });
+                dirty[key] = false;
+            } else {
+                chart.setScale('x', scale);
+            }
+        }
+
+        requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
 
     new ResizeObserver((entries) => {
         for (let entry of entries) {
