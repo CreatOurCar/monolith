@@ -379,6 +379,8 @@ static void peripheral_task_init(void) {
     if (xTaskCreate(task_can, "can", 4096, NULL, 4, NULL) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "CAN task create failure", "CAN_TASK_FAIL");
     }
+  } else {
+    CLEAR_ALL(&logbuf.run, CAN);
   }
 
   /***** GPS *****/
@@ -386,6 +388,8 @@ static void peripheral_task_init(void) {
     if (xTaskCreate(task_gps, "gps", 4096, NULL, 5, NULL) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "GPS task create failure", "GPS_TASK_FAIL");
     }
+  } else {
+    CLEAR_ALL(&logbuf.run, GPS);
   }
 
   /***** ANALOG *****/
@@ -393,6 +397,8 @@ static void peripheral_task_init(void) {
     if (xTaskCreate(task_analog, "analog", 4096, NULL, 5, NULL) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "ANALOG task create failure", "ANL_TASK_FAIL");
     }
+  } else {
+    CLEAR_ALL(&logbuf.run, ANALOG);
   }
 
 #ifndef CONFIG_MONOLITH_MINI
@@ -401,6 +407,8 @@ static void peripheral_task_init(void) {
     if (xTaskCreate(task_digital, "digital", 4096, NULL, 5, NULL) != pdPASS) {
       ERROR_SYSLOG(&init, CORE, "DIGITAL task create failure", "DGT_TASK_FAIL");
     }
+  } else {
+    CLEAR_ALL(&logbuf.run, DIGITAL);
   }
 #else
   CLEAR_ALL(&logbuf.run, DIGITAL);
