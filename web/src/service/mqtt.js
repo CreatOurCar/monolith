@@ -34,8 +34,7 @@ export function init_mqtt() {
         port: 443,
         username: localStorage.getItem('server/name') || '',
         password: localStorage.getItem('server/key') || '',
-        keepalive: 10,
-        reschedulePings: false
+        keepalive: 30
     });
 
     mqtt_client.on('connect', () => {

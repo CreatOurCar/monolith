@@ -105,6 +105,9 @@ export function update_telemetry(data) {
             }
 
             path.value.push(latlng);
+            if (path.value.length > MAX_TELEMETRY_POINTS) {
+                path.value.splice(0, path.value.length - MAX_TELEMETRY_POINTS);
+            }
             line.value.setLatLngs(path.value);
             map.value.panTo(latlng);
         }
