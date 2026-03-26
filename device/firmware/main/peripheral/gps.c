@@ -43,26 +43,12 @@ bool parse_nmea_gprmc(nmea_gprmc_t *gprmc, uint8_t *data) {
   }
 }
 
+static const uint32_t GPS_BAUD_RATES[] = { 115200, 57600, 38400, 19200, 9600 };
+#define GPS_BAUD_RATES_N (sizeof(GPS_BAUD_RATES) / sizeof(GPS_BAUD_RATES[0]))
+
 void init_ublox(void) {
-  uart_bitrate_res_t res;
-  uart_bitrate_detect_config_t bitrate_config = {
-    .rx_io_num = GPIO_NUM_18,
-  };
-
-  esp_err_t ret = uart_detect_bitrate_start(UART_NUM_1, &bitrate_config);
-
-  vTaskDelay(pdMS_TO_TICKS(300));
-
-  ret |= uart_detect_bitrate_stop(UART_NUM_1, true, &res);
-
-  uint32_t bitrate = 9600;
-
-  if (ret == ESP_OK) {
-    bitrate = res.clk_freq_hz * 2 / (res.low_period + res.high_period);
-  }
-
   uart_config_t uart_config = {
-    .baud_rate = bitrate,
+    .baud_rate = 9600,
     .data_bits = UART_DATA_8_BITS,
     .parity    = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
@@ -75,6 +61,30 @@ void init_ublox(void) {
       uart_enable_pattern_det_baud_intr(UART_NUM_1, '\n', 1, 10, 0, 0) != ESP_OK) {
     ERROR_SYSLOG(&init, GPS, "UART driver init failure", "GPS_UART_FAIL");
   }
+
+  // auto-detect baud rate: try each rate until valid NMEA data ('$') is received
+  uint32_t bitrate = 9600;
+
+  for (int i = 0; i < GPS_BAUD_RATES_N; i++) {
+    uart_set_baudrate(UART_NUM_1, GPS_BAUD_RATES[i]);
+    uart_flush_input(UART_NUM_1);
+    uart_pattern_queue_reset(UART_NUM_1, 16);
+
+    uint8_t peek[64];
+    int len = uart_read_bytes(UART_NUM_1, peek, sizeof(peek), pdMS_TO_TICKS(1500));
+
+    for (int j = 0; j < len; j++) {
+      if (peek[j] == '$') {
+        bitrate = GPS_BAUD_RATES[i];
+        goto baud_found;
+      }
+    }
+  }
+
+baud_found:
+  uart_set_baudrate(UART_NUM_1, bitrate);
+  uart_flush_input(UART_NUM_1);
+  uart_pattern_queue_reset(UART_NUM_1, 16);
 
   const uint8_t GPS_DISABLE_NMEA_GxGGA[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x01, 0x00, 0x24 };
@@ -170,6 +180,7 @@ void task_gps(void *pvParameters) {
 
     if (pos < 0 || pos >= sizeof(data) || uart_read_bytes(UART_NUM_1, data, pos + 1, pdMS_TO_TICKS(0)) < 6) {
       uart_flush_input(UART_NUM_1);
+      uart_pattern_queue_reset(UART_NUM_1, 16);
       continue;
     }
 
