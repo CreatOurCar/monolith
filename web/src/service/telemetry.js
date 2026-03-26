@@ -104,7 +104,7 @@ export function update_telemetry(data) {
         dirty.gyro = true;
     }
 
-    fix.value = !!data.gps;
+    fix.value = !!data.gps && data.state?.gps === 'OK';
 
     if (data.gps) {
         speed.value = `${data.gps.gps.speed.toFixed(1)} km/h`;
