@@ -170,9 +170,19 @@ void task_gps(void *pvParameters) {
   uint8_t data[256];
   uart_event_t event;
   nmea_gprmc_t gprmc;
+  uint8_t gps_state = 0;  // 0: unknown, 1: nmea ok, 2: comm error, 3: fatal
 
   while (true) {
-    if (xQueueReceive(uart_queue, &event, portMAX_DELAY) != pdTRUE || event.type != UART_PATTERN_DET) {
+    if (xQueueReceive(uart_queue, &event, pdMS_TO_TICKS(5000)) != pdTRUE) {
+      if (gps_state != 3) {
+        gps_state = 3;
+        CLEAR_ERROR(&logbuf.run, GPS);
+        SET_FATAL(&logbuf.run, GPS);
+      }
+      continue;
+    }
+
+    if (event.type != UART_PATTERN_DET) {
       continue;
     }
 
@@ -184,18 +194,29 @@ void task_gps(void *pvParameters) {
       continue;
     }
 
-    if (strncmp((char *)data, "$GNRMC", 6) == 0 || strncmp((char *)data, "$GPRMC", 6) == 0) {
-      if (parse_nmea_gprmc(&gprmc, data)) {
-        gps.payload.gps.latitude  = parse_nmea_fixed((char *)gprmc.lat, 5);
-        gps.payload.gps.longitude = parse_nmea_fixed((char *)gprmc.lon, 5);
-        gps.payload.gps.lat_dir   = *gprmc.north;
-        gps.payload.gps.lon_dir   = *gprmc.east;
-        uint32_t speed_x100       = parse_nmea_fixed((char *)gprmc.speed, 2);
-        gps.payload.gps.speed     = (uint16_t)((speed_x100 * 1852 + 500) / 1000);
-        gps.payload.gps.course    = (uint16_t)parse_nmea_fixed((char *)gprmc.course, 2);
-        LOG(LOG_TYPE_GPS, &gps);
-        memcpy(&logbuf.gps, &gps, sizeof(log_t));
+    if (data[0] == '$') {
+      if (gps_state != 1) {
+        gps_state = 1;
+        CLEAR_ALL(&logbuf.run, GPS);
       }
+
+      if (strncmp((char *)data, "$GNRMC", 6) == 0 || strncmp((char *)data, "$GPRMC", 6) == 0) {
+        if (parse_nmea_gprmc(&gprmc, data)) {
+          gps.payload.gps.latitude  = parse_nmea_fixed((char *)gprmc.lat, 5);
+          gps.payload.gps.longitude = parse_nmea_fixed((char *)gprmc.lon, 5);
+          gps.payload.gps.lat_dir   = *gprmc.north;
+          gps.payload.gps.lon_dir   = *gprmc.east;
+          uint32_t speed_x100       = parse_nmea_fixed((char *)gprmc.speed, 2);
+          gps.payload.gps.speed     = (uint16_t)((speed_x100 * 1852 + 500) / 1000);
+          gps.payload.gps.course    = (uint16_t)parse_nmea_fixed((char *)gprmc.course, 2);
+          LOG(LOG_TYPE_GPS, &gps);
+          memcpy(&logbuf.gps, &gps, sizeof(log_t));
+        }
+      }
+    } else if (gps_state != 2) {
+      gps_state = 2;
+      CLEAR_FATAL(&logbuf.run, GPS);
+      SET_ERROR(&logbuf.run, GPS);
     }
 
     uart_pattern_queue_reset(UART_NUM_1, 16);
