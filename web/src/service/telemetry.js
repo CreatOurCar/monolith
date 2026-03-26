@@ -2,6 +2,7 @@ import { ref } from 'vue';
 import { convert, signed } from '@/service/protocol';
 import { times, state, telemetry } from '@/service/state';
 import { can_decoder, views } from '@/service/ui';
+import { rebuild_hotline, HOTLINE_MODE } from '@/service/map';
 import L from 'leaflet';
 
 export const map = ref(null);
@@ -11,12 +12,15 @@ export const path = ref([]);
 export const speed = ref('0.0 km/h');
 export const course = ref('0.0°');
 export const fix = ref(false);
+export const hotlineMode = ref(HOTLINE_MODE.SPEED);
 
 let current_pos = null;
+let rebuildTimer = null;
 
 export const dirty = { analog: false, gyro: false, can: false };
 
 const MAX_TELEMETRY_POINTS = 36000;
+const HOTLINE_REBUILD_INTERVAL = 1000;
 
 function trim(arr) {
     if (arr[0].length > MAX_TELEMETRY_POINTS) {
@@ -25,6 +29,19 @@ function trim(arr) {
             if (arr[i]) arr[i].splice(0, excess);
         }
     }
+}
+
+function scheduleRebuild() {
+    if (rebuildTimer) return;
+    rebuildTimer = setTimeout(() => {
+        rebuild_hotline(map, line, path, hotlineMode.value);
+        rebuildTimer = null;
+    }, HOTLINE_REBUILD_INTERVAL);
+}
+
+export function switchHotlineMode(mode) {
+    hotlineMode.value = mode;
+    rebuild_hotline(map, line, path, mode);
 }
 
 export function update_telemetry(data) {
@@ -107,11 +124,13 @@ export function update_telemetry(data) {
                 current_pos.setLatLng(latlng);
             }
 
-            path.value.push(latlng);
+            // [lat, lng, speed] — speed stored for hotline z-value
+            path.value.push([latlng[0], latlng[1], data.gps.gps.speed]);
             if (path.value.length > MAX_TELEMETRY_POINTS) {
                 path.value.splice(0, path.value.length - MAX_TELEMETRY_POINTS);
             }
-            line.value.setLatLngs(path.value);
+
+            scheduleRebuild();
             map.value.panTo(latlng);
         }
     }

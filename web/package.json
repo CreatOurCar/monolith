@@ -13,6 +13,7 @@
     "@xterm/xterm": "^6.0.0",
     "dayjs": "^1.11.20",
     "leaflet": "^1.9.4",
+    "leaflet-hotline": "^0.4.0",
     "mqtt": "^5.15.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.4",

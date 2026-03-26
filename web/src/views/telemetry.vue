@@ -7,8 +7,8 @@ import { publish } from '@/service/mqtt';
 import { term } from '@/service/terminal';
 import { state, times, cons, telemetry, fmt, digit } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
-import { map, line, path, speed, course, fix, dirty } from '@/service/telemetry';
-import { init_map } from '@/service/map';
+import { map, line, path, speed, course, fix, dirty, hotlineMode, switchHotlineMode } from '@/service/telemetry';
+import { init_map, HOTLINE_MODE } from '@/service/map';
 
 import ToastEventBus from 'primevue/toasteventbus';
 
@@ -36,7 +36,7 @@ onMounted(() => {
     fit.fit();
     window.addEventListener('resize', () => fit.fit());
 
-    init_map(map, line, path, container.gps);
+    init_map(map, line, path, container.gps, hotlineMode.value);
 
     init_chart();
 });
@@ -371,6 +371,18 @@ function hex_only(event) {
                     <div class="flex items-center">
                         <span class="w-20 font-medium">Course</span>
                         <Tag :value="course" severity="info" class="ml-2 state timetag" />
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-20 font-medium">Trail</span>
+                        <SelectButton
+                            :modelValue="hotlineMode"
+                            @update:modelValue="switchHotlineMode"
+                            :options="[{ label: 'Speed', value: HOTLINE_MODE.SPEED }, { label: 'Time', value: HOTLINE_MODE.TIME }]"
+                            optionLabel="label"
+                            optionValue="value"
+                            :allowEmpty="false"
+                            class="ml-2"
+                        />
                     </div>
                 </div>
                 <div>
