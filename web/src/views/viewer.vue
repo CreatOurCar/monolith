@@ -6,7 +6,7 @@ import { dark } from '@/layout/composables/layout';
 import { parse, convert } from '@/service/protocol';
 import { fmt, digit, format_size } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
-import { init_map } from '@/service/map';
+import { init_map, rebuild_hotline, HOTLINE_MODE } from '@/service/map';
 import { plugin_wheel_zoom, plugin_touch_zoom } from '@/service/uplot';
 
 import L from 'leaflet';
@@ -31,6 +31,7 @@ const map = ref(null);
 const line = ref(null);
 const path = ref([]);
 const path_history = [];
+const hotlineMode = ref(HOTLINE_MODE.SPEED);
 const slider = ref(0);
 const timelapse_pos = ref(null);
 const timelapse_time = ref('00:00:00.000');
@@ -53,7 +54,7 @@ const show = {
 };
 
 onMounted(() => {
-    init_map(map, line, path, gps);
+    init_map(map, line, path, gps, hotlineMode.value);
 });
 
 function upload(f) {
@@ -340,7 +341,7 @@ function set_data(raw) {
                     }
                 }
 
-                path.value.push([data.gps.latitude, data.gps.longitude]);
+                path.value.push([data.gps.latitude, data.gps.longitude, data.gps.speed]);
                 path_history.push(data);
                 break;
 
@@ -393,7 +394,7 @@ function set_data(raw) {
     chart.value.setData(dataset);
 
     if (path.value.length) {
-        line.value.setLatLngs(path.value);
+        rebuild_hotline(map, line, path, hotlineMode.value);
         map.value.setView(path.value[0], 17);
 
         L.circleMarker(path.value[0], {
@@ -468,6 +469,11 @@ function split_range(d_min, d_max) {
 }
 
 
+function switchHotlineMode(mode) {
+    hotlineMode.value = mode;
+    rebuild_hotline(map, line, path, mode);
+}
+
 function timelapse() {
     if (!path.value.length || !timelapse_pos.value) {
         return;
@@ -525,6 +531,17 @@ function timelapse() {
 
             <div v-if="views.gps.display.viewer" class="card">
                 <div class="font-semibold text-xl mb-6">GPS</div>
+                <div class="flex items-center mb-6 gap-4">
+                    <span class="font-semibold">Trail</span>
+                    <SelectButton
+                        :modelValue="hotlineMode"
+                        @update:modelValue="switchHotlineMode"
+                        :options="[{ label: 'Speed', value: HOTLINE_MODE.SPEED }, { label: 'Time', value: HOTLINE_MODE.TIME }]"
+                        optionLabel="label"
+                        optionValue="value"
+                        :allowEmpty="false"
+                    />
+                </div>
                 <div class="flex items-center mb-6">
                     <span class="font-semibold mr-6">{{ timelapse_time }}</span>
                     <Slider v-model="slider" :step="0.01" class="w-full" @change="timelapse" />
