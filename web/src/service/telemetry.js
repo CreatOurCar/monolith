@@ -10,6 +10,7 @@ export const path = ref([]);
 
 export const speed = ref('0.0 km/h');
 export const course = ref('0.0°');
+export const fix = ref(false);
 
 let current_pos = null;
 
@@ -85,6 +86,8 @@ export function update_telemetry(data) {
         trim(telemetry.gyro);
         dirty.gyro = true;
     }
+
+    fix.value = !!data.gps;
 
     if (data.gps) {
         speed.value = `${data.gps.gps.speed.toFixed(1)} km/h`;

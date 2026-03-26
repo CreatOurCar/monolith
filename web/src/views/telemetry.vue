@@ -7,7 +7,7 @@ import { publish } from '@/service/mqtt';
 import { term } from '@/service/terminal';
 import { state, times, cons, telemetry, fmt, digit } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
-import { map, line, path, speed, course, dirty } from '@/service/telemetry';
+import { map, line, path, speed, course, fix, dirty } from '@/service/telemetry';
 import { init_map } from '@/service/map';
 
 import ToastEventBus from 'primevue/toasteventbus';
@@ -360,6 +360,10 @@ function hex_only(event) {
             <div v-if="views.gps.display.telemetry" class="card" style="position: relative">
                 <div class="font-semibold text-xl mb-6">GPS</div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
+                    <div class="flex items-center">
+                        <span class="w-20 font-medium">Fix</span>
+                        <Tag :value="fix ? 'Fix' : 'No Fix'" :severity="fix ? 'success' : 'warn'" class="ml-2 state" />
+                    </div>
                     <div class="flex items-center">
                         <span class="w-20 font-medium">Speed</span>
                         <Tag :value="speed" severity="info" class="ml-2 state timetag" />
