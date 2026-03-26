@@ -188,29 +188,20 @@ function init_chart() {
         container.can.value
     );
 
-    let lastScaleUpdate = 0;
-
-    function tick(ts) {
+    function tick() {
         const now = Date.now() / 1000;
-        const hasDirty = dirty.analog || dirty.gyro || dirty.can;
-        const scaleElapsed = ts - lastScaleUpdate >= 1000;
+        const scale = { min: now - 60, max: now };
 
-        if (hasDirty || scaleElapsed) {
-            const scale = { min: now - 60, max: now };
-
-            for (const [key, chart] of Object.entries(telemetry.chart)) {
-                if (dirty[key]) {
-                    chart.batch(() => {
-                        chart.setData(telemetry[key]);
-                        chart.setScale('x', scale);
-                    });
-                    dirty[key] = false;
-                } else if (scaleElapsed) {
+        for (const [key, chart] of Object.entries(telemetry.chart)) {
+            if (dirty[key]) {
+                chart.batch(() => {
+                    chart.setData(telemetry[key]);
                     chart.setScale('x', scale);
-                }
+                });
+                dirty[key] = false;
+            } else {
+                chart.setScale('x', scale);
             }
-
-            if (scaleElapsed) lastScaleUpdate = ts;
         }
 
         requestAnimationFrame(tick);
