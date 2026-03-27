@@ -34,6 +34,7 @@ static void task_file_download(void *arg) {
     snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
     esp_mqtt_client_publish(mqtt, topic, "fail:open", __builtin_strlen("fail:open"), MQTT_QOS_2, false);
     free(params);
+    file_op_busy = false;
     vTaskDelete(NULL);
     return;
   }
@@ -45,6 +46,7 @@ static void task_file_download(void *arg) {
     snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
     esp_mqtt_client_publish(mqtt, topic, "fail:stat", __builtin_strlen("fail:stat"), MQTT_QOS_2, false);
     free(params);
+    file_op_busy = false;
     vTaskDelete(NULL);
     return;
   }
@@ -57,6 +59,7 @@ static void task_file_download(void *arg) {
     snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
     esp_mqtt_client_publish(mqtt, topic, "fail:malloc", __builtin_strlen("fail:malloc"), MQTT_QOS_2, false);
     free(params);
+    file_op_busy = false;
     vTaskDelete(NULL);
     return;
   }
@@ -97,6 +100,7 @@ static void task_file_list(void *arg) {
   if (d == NULL) {
     snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
     esp_mqtt_client_publish(mqtt, topic, "fail:opendir", __builtin_strlen("fail:opendir"), MQTT_QOS_2, false);
+    file_op_busy = false;
     vTaskDelete(NULL);
     return;
   }
@@ -291,7 +295,10 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       }
 
       file_op_busy = true;
-      xTaskCreate(task_file_list, "file_ls", 4096, NULL, 5, NULL);
+
+      if (xTaskCreate(task_file_list, "file_ls", 4096, NULL, 5, NULL) != pdPASS) {
+        file_op_busy = false;
+      }
     }
 
     else if (STREQL(dir[2], "del")) {  // delete file(s)
@@ -349,7 +356,11 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
       }
 
       snprintf(params->filename, sizeof(params->filename), "%s", dir[3]);
-      xTaskCreate(task_file_download, "file_dl", 4096, params, 5, NULL);
+
+      if (xTaskCreate(task_file_download, "file_dl", 4096, params, 5, NULL) != pdPASS) {
+        free(params);
+        file_op_busy = false;
+      }
     }
   }
 }
