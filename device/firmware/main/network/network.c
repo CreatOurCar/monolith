@@ -29,6 +29,11 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
   else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     xEventGroupSetBits(wifi_evt, WIFI_CONNECTED_BIT);
     CLEAR_ALL(&logbuf.run, WIFI);
+
+    if (mqtt != NULL && IS_ERROR(&logbuf.run, MQTT)) {
+      esp_mqtt_client_reconnect(mqtt);
+    }
+
     SYSLOG("WIFI_CONN");
     INFO(WIFI, "connected to %s(" IPSTR ")", storage.wifi.ssid, IP2STR(&((ip_event_got_ip_t *)event_data)->ip_info.ip));
   }

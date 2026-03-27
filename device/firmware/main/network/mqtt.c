@@ -62,6 +62,10 @@ static void task_file_download(void *arg) {
   }
 
   while (true) {
+    if (!IS_OK(&logbuf.run, MQTT)) {
+      break;
+    }
+
     size_t read = fread(data, 1, 4096, fp);
 
     if (read == 0) {
@@ -72,8 +76,10 @@ static void task_file_download(void *arg) {
     esp_mqtt_client_publish(mqtt, topic, data, read, MQTT_QOS_0, false);
   }
 
-  snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
-  esp_mqtt_client_publish(mqtt, topic, (char *)&cnt, sizeof(cnt), MQTT_QOS_1, false);
+  if (IS_OK(&logbuf.run, MQTT)) {
+    snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
+    esp_mqtt_client_publish(mqtt, topic, (char *)&cnt, sizeof(cnt), MQTT_QOS_1, false);
+  }
 
   free(data);
   fclose(fp);
@@ -99,6 +105,10 @@ static void task_file_list(void *arg) {
   struct dirent *entry;
 
   while ((entry = readdir(d)) != NULL) {
+    if (!IS_OK(&logbuf.run, MQTT)) {
+      break;
+    }
+
     if (entry->d_type != DT_REG || strcmp(entry->d_name, &logpath[__builtin_strlen("/sdcard/")]) == 0) {
       continue;
     }
@@ -118,8 +128,11 @@ static void task_file_list(void *arg) {
   }
 
   closedir(d);
-  snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
-  esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
+
+  if (IS_OK(&logbuf.run, MQTT)) {
+    snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
+    esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
+  }
   file_op_busy = false;
   vTaskDelete(NULL);
 }
@@ -365,6 +378,10 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
       break;
     case MQTT_EVENT_DISCONNECTED:
       ERROR_SYSLOG(&logbuf.run, MQTT, "disconnected", "MQTT_DISCONN");
+
+      if (IS_OK(&logbuf.run, WIFI)) {
+        esp_mqtt_client_reconnect(mqtt);
+      }
       break;
     case MQTT_EVENT_DATA:
       mqtt_handle_data(event);
@@ -438,6 +455,7 @@ void mqtt_init(void) {
     .session.last_will.msg               = "OFFLINE",
     .session.last_will.qos               = MQTT_QOS_1,
     .session.last_will.retain            = true,
+    .network.reconnect_timeout_ms        = 2000,
     .buffer.size                         = 8192,
     .task.priority                       = 5,
   };
