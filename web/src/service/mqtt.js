@@ -236,6 +236,22 @@ export function init_mqtt() {
                     return;
                 }
 
+                const msg = message.toString();
+
+                if (msg.startsWith('fail:')) {
+                    ToastEventBus.emit('add', {
+                        severity: 'error',
+                        summary: 'File Download Error',
+                        detail: msg,
+                        group: 'br',
+                        life: 5000
+                    });
+
+                    files.loading.download = false;
+                    files.disabled = false;
+                    return;
+                }
+
                 const cnt = to_uint(32, message, 0);
 
                 for (let i = 0; i < cnt; i++) {

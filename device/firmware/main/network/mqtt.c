@@ -291,6 +291,8 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
 
     else if (STREQL(dir[2], "ls")) {  // list files
       if (file_op_busy) {
+        snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
+        esp_mqtt_client_publish(mqtt, topic, "fail:busy", __builtin_strlen("fail:busy"), MQTT_QOS_2, false);
         return;
       }
 
@@ -340,7 +342,13 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     else if (STREQL(dir[2], "get")) {  // download file
-      if (cnt < 4 || file_op_busy) {
+      if (cnt < 4) {
+        return;
+      }
+
+      if (file_op_busy) {
+        snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
+        esp_mqtt_client_publish(mqtt, topic, "fail:busy", __builtin_strlen("fail:busy"), MQTT_QOS_2, false);
         return;
       }
 
