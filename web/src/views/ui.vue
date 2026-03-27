@@ -274,6 +274,10 @@ function export_cfg() {
                                 <label for="viewer-gps" class="font-medium pr-3">GPS</label>
                                 <ToggleSwitch inputId="viewer-gps" v-model="views.gps.display.viewer" />
                             </li>
+                            <li class="flex items-center justify-between cardview">
+                                <label for="viewer-can" class="font-medium pr-3">CAN</label>
+                                <ToggleSwitch inputId="viewer-can" v-model="views.can.display.viewer" />
+                            </li>
                         </ul>
                     </div>
                 </div>

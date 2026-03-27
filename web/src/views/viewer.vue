@@ -44,6 +44,7 @@ const graph = ref(null);
 const container = ref(null);
 
 let events = ref([]);
+const can_stats = ref([]);
 
 const show = {
     digital: { name: 'DIN', ref: ref(false) },
@@ -281,6 +282,7 @@ function init_chart() {
 
 function set_data(raw) {
     events.value = [];
+    const can_map = {};
     const dataset = Array.from({ length: chart.value.series.length }, () => []);
 
     for (const data of raw) {
@@ -346,6 +348,15 @@ function set_data(raw) {
                 break;
 
             case 'CAN':
+                if (!can_map[data.can.id]) {
+                    can_map[data.can.id] = { id: data.can.id, extended: data.can.extended, count: 0, prev_ts: data.timestamp, interval_sum: 0, len: data.can.len, latest_data: data.can.data };
+                } else {
+                    can_map[data.can.id].interval_sum += data.timestamp - can_map[data.can.id].prev_ts;
+                    can_map[data.can.id].prev_ts = data.timestamp;
+                }
+                can_map[data.can.id].count++;
+                can_map[data.can.id].latest_data = data.can.data;
+
                 const CAN_START = 19;
 
                 if (can_decoder[data.can.id]) {
@@ -390,6 +401,16 @@ function set_data(raw) {
                 break;
         }
     }
+
+    can_stats.value = Object.values(can_map)
+        .sort((a, b) => a.id - b.id)
+        .map((s) => ({
+            ...s,
+            id_hex: s.extended ? `0x${s.id.toString(16).toUpperCase().padStart(8, '0')}` : `0x${s.id.toString(16).toUpperCase().padStart(3, '0')}`,
+            freq: s.count > 1 ? (1000 / (s.interval_sum / (s.count - 1))).toFixed(1) : '-',
+            period: s.count > 1 ? (s.interval_sum / (s.count - 1)).toFixed(1) : '-',
+            data_hex: Array.from(s.latest_data).map((b) => b.toString(16).toUpperCase().padStart(2, '0')).join(' ')
+        }));
 
     chart.value.setData(dataset);
 
@@ -561,6 +582,25 @@ function timelapse() {
                     </div>
                 </div>
                 <div ref="gps" style="width: 100%; aspect-ratio: 1 / 0.7"></div>
+            </div>
+
+            <div v-if="views.can.display.viewer" class="card">
+                <div class="font-semibold text-xl mb-6">CAN</div>
+                <div v-if="can_stats.length" style="overflow-x: auto">
+                    <DataTable :value="can_stats" size="small" stripedRows sortField="count" :sortOrder="-1">
+                        <Column field="id_hex" header="ID" sortable :sortField="'id'" style="width: 10%; white-space: nowrap; font-family: monospace" />
+                        <Column field="count" header="Count" sortable style="width: 10%; white-space: nowrap">
+                            <template #body="{ data }">{{ data.count.toLocaleString() }}</template>
+                        </Column>
+                        <Column header="Interval" sortable sortField="freq" style="width: 10%; white-space: nowrap">
+                            <template #body="{ data }">{{ data.freq === '-' ? '-' : `${data.freq} Hz (${data.period} ms)` }}</template>
+                        </Column>
+                        <Column field="len" header="DLC" sortable style="width: 10%; white-space: nowrap" />
+                        <Column field="data_hex" header="Last Data" style="width: 10%; white-space: nowrap; font-family: monospace" />
+                    </DataTable>
+                </div>
+                <div v-else-if="chart" class="text-center text-gray-400">No CAN data found.</div>
+                <div v-else class="text-center text-gray-400">Please select a file to view CAN data.</div>
             </div>
 
             <div class="card">
