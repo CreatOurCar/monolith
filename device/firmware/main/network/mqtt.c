@@ -19,7 +19,10 @@ typedef struct {
   char filename[32];
 } file_download_params_t;
 
+#define FILE_DL_WINDOW 16
+
 static volatile bool file_op_busy = false;
+static SemaphoreHandle_t file_dl_sem = NULL;
 
 static void task_file_download(void *arg) {
   file_download_params_t *params = (file_download_params_t *)arg;
@@ -64,6 +67,12 @@ static void task_file_download(void *arg) {
     return;
   }
 
+  if (file_dl_sem == NULL) {
+    file_dl_sem = xSemaphoreCreateBinary();
+  }
+
+  xSemaphoreTake(file_dl_sem, 0);  // clear stale signal
+
   while (true) {
     if (!IS_OK(&logbuf.run, MQTT)) {
       break;
@@ -77,6 +86,12 @@ static void task_file_download(void *arg) {
 
     snprintf(topic, sizeof(topic), "%s/ack/get/%d", storage.device.name, cnt++);
     esp_mqtt_client_publish(mqtt, topic, data, read, MQTT_QOS_0, false);
+
+    if (cnt % FILE_DL_WINDOW == 0) {
+      if (xSemaphoreTake(file_dl_sem, pdMS_TO_TICKS(30000)) != pdTRUE) {
+        break;
+      }
+    }
   }
 
   if (IS_OK(&logbuf.run, MQTT)) {
@@ -240,6 +255,12 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     if (STREQL(dir[2], "cfg")) {  // get configuration
       snprintf(topic, sizeof(topic), "%s/d/cfg", storage.device.name);
       esp_mqtt_client_publish(mqtt, topic, (char *)&storage, sizeof(storage), MQTT_QOS_1, false);
+    }
+
+    else if (STREQL(dir[2], "dlack")) {  // download chunk ack
+      if (file_dl_sem != NULL) {
+        xSemaphoreGive(file_dl_sem);
+      }
     }
 
     else if (STREQL(dir[2], "rbt")) {  // restart
