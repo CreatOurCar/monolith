@@ -15,6 +15,115 @@ extern const uint8_t isrgrootx1_pem_start[] asm("_binary_isrgrootx1_pem_start");
 
 #define STREQL(str1, str2) (strcmp((str1), (str2)) == 0)
 
+typedef struct {
+  char filename[32];
+} file_download_params_t;
+
+static volatile bool file_op_busy = false;
+
+static void task_file_download(void *arg) {
+  file_download_params_t *params = (file_download_params_t *)arg;
+  char topic[64];
+  char pathbuf[64];
+
+  snprintf(pathbuf, sizeof(pathbuf), "/sdcard/%s", params->filename);
+
+  FILE *fp = fopen(pathbuf, "rb");
+
+  if (fp == NULL) {
+    snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
+    esp_mqtt_client_publish(mqtt, topic, "fail:open", __builtin_strlen("fail:open"), MQTT_QOS_2, false);
+    free(params);
+    vTaskDelete(NULL);
+    return;
+  }
+
+  struct stat st;
+
+  if (stat(pathbuf, &st) != 0) {
+    fclose(fp);
+    snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
+    esp_mqtt_client_publish(mqtt, topic, "fail:stat", __builtin_strlen("fail:stat"), MQTT_QOS_2, false);
+    free(params);
+    vTaskDelete(NULL);
+    return;
+  }
+
+  int cnt    = 0;
+  char *data = malloc(4096);
+
+  if (data == NULL) {
+    fclose(fp);
+    snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
+    esp_mqtt_client_publish(mqtt, topic, "fail:malloc", __builtin_strlen("fail:malloc"), MQTT_QOS_2, false);
+    free(params);
+    vTaskDelete(NULL);
+    return;
+  }
+
+  while (true) {
+    size_t read = fread(data, 1, 4096, fp);
+
+    if (read == 0) {
+      break;
+    }
+
+    snprintf(topic, sizeof(topic), "%s/ack/get/%d", storage.device.name, cnt++);
+    esp_mqtt_client_publish(mqtt, topic, data, read, MQTT_QOS_0, false);
+  }
+
+  snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
+  esp_mqtt_client_publish(mqtt, topic, (char *)&cnt, sizeof(cnt), MQTT_QOS_1, false);
+
+  free(data);
+  fclose(fp);
+  free(params);
+  file_op_busy = false;
+  vTaskDelete(NULL);
+}
+
+static void task_file_list(void *arg) {
+  char topic[64];
+  char pathbuf[64];
+
+  DIR *d = opendir("/sdcard");
+
+  if (d == NULL) {
+    snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
+    esp_mqtt_client_publish(mqtt, topic, "fail:opendir", __builtin_strlen("fail:opendir"), MQTT_QOS_2, false);
+    vTaskDelete(NULL);
+    return;
+  }
+
+  struct stat st;
+  struct dirent *entry;
+
+  while ((entry = readdir(d)) != NULL) {
+    if (entry->d_type != DT_REG || strcmp(entry->d_name, &logpath[__builtin_strlen("/sdcard/")]) == 0) {
+      continue;
+    }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+    snprintf(pathbuf, sizeof(pathbuf), "/sdcard/%s", entry->d_name);
+#pragma GCC diagnostic pop
+
+    if (stat(pathbuf, &st) == 0) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+      snprintf(topic, sizeof(topic), "%s/ack/ls/%s", storage.device.name, entry->d_name);
+#pragma GCC diagnostic pop
+      esp_mqtt_client_publish(mqtt, topic, (char *)&st.st_size, sizeof(st.st_size), MQTT_QOS_0, false);
+    }
+  }
+
+  closedir(d);
+  snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
+  esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
+  file_op_busy = false;
+  vTaskDelete(NULL);
+}
+
 static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
   char topic[64];
   char pathbuf[64];
@@ -164,39 +273,12 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     else if (STREQL(dir[2], "ls")) {  // list files
-      DIR *d = opendir("/sdcard");
-
-      if (d == NULL) {
-        snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
-        esp_mqtt_client_publish(mqtt, topic, "fail:opendir", __builtin_strlen("fail:opendir"), MQTT_QOS_2, false);
+      if (file_op_busy) {
         return;
       }
 
-      struct stat st;
-      struct dirent *entry;
-
-      while ((entry = readdir(d)) != NULL) {
-        if (entry->d_type != DT_REG || strcmp(entry->d_name, &logpath[__builtin_strlen("/sdcard/")]) == 0) {
-          continue;
-        }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-        snprintf(pathbuf, sizeof(pathbuf), "/sdcard/%s", entry->d_name);
-#pragma GCC diagnostic pop
-
-        if (stat(pathbuf, &st) == 0) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-          snprintf(topic, sizeof(topic), "%s/ack/ls/%s", storage.device.name, entry->d_name);
-#pragma GCC diagnostic pop
-          esp_mqtt_client_publish(mqtt, topic, (char *)&st.st_size, sizeof(st.st_size), MQTT_QOS_0, false);
-        }
-      }
-
-      closedir(d);
-      snprintf(topic, sizeof(topic), "%s/ack/ls", storage.device.name);
-      esp_mqtt_client_publish(mqtt, topic, "ok", __builtin_strlen("ok"), MQTT_QOS_2, false);
+      file_op_busy = true;
+      xTaskCreate(task_file_list, "file_ls", 4096, NULL, 5, NULL);
     }
 
     else if (STREQL(dir[2], "del")) {  // delete file(s)
@@ -238,55 +320,23 @@ static void mqtt_handle_data(esp_mqtt_event_handle_t evt) {
     }
 
     else if (STREQL(dir[2], "get")) {  // download file
-      if (cnt < 4) {
+      if (cnt < 4 || file_op_busy) {
         return;
       }
 
-      snprintf(pathbuf, sizeof(pathbuf), "/sdcard/%s", dir[3]);
+      file_op_busy = true;
 
-      FILE *fp = fopen(pathbuf, "rb");
+      file_download_params_t *params = malloc(sizeof(file_download_params_t));
 
-      if (fp == NULL) {
-        snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
-        esp_mqtt_client_publish(mqtt, topic, "fail:open", __builtin_strlen("fail:open"), MQTT_QOS_2, false);
-        return;
-      }
-
-      struct stat st;
-
-      if (stat(pathbuf, &st) != 0) {
-        fclose(fp);
-        snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
-        esp_mqtt_client_publish(mqtt, topic, "fail:stat", __builtin_strlen("fail:stat"), MQTT_QOS_2, false);
-        return;
-      }
-
-      int cnt    = 0;
-      char *data = malloc(4096);
-
-      if (data == NULL) {
-        fclose(fp);
+      if (params == NULL) {
         snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
         esp_mqtt_client_publish(mqtt, topic, "fail:malloc", __builtin_strlen("fail:malloc"), MQTT_QOS_2, false);
+        file_op_busy = false;
         return;
       }
 
-      while (true) {
-        size_t read = fread(data, 1, 4096, fp);
-
-        if (read == 0) {
-          break;
-        }
-
-        snprintf(topic, sizeof(topic), "%s/ack/get/%d", storage.device.name, cnt++);
-        esp_mqtt_client_publish(mqtt, topic, data, read, MQTT_QOS_0, false);
-      }
-
-      snprintf(topic, sizeof(topic), "%s/ack/get", storage.device.name);
-      esp_mqtt_client_publish(mqtt, topic, (char *)&cnt, sizeof(cnt), MQTT_QOS_1, false);
-
-      free(data);
-      fclose(fp);
+      snprintf(params->filename, sizeof(params->filename), "%s", dir[3]);
+      xTaskCreate(task_file_download, "file_dl", 4096, params, 5, NULL);
     }
   }
 }
