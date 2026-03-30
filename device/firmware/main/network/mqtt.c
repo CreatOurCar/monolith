@@ -417,18 +417,18 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
       SYSLOG("MQTT_CONN");
       break;
     case MQTT_EVENT_DISCONNECTED:
-      ERROR_SYSLOG(&logbuf.run, MQTT, "disconnected", "MQTT_DISCONN");
-
-      if (IS_OK(&logbuf.run, WIFI)) {
-        esp_mqtt_client_reconnect(mqtt);
+      if (IS_OK(&logbuf.run, MQTT)) {
+        ERROR_SYSLOG(&logbuf.run, MQTT, "disconnected", "MQTT_DISCONN");
       }
       break;
     case MQTT_EVENT_DATA:
       mqtt_handle_data(event);
       break;
     case MQTT_EVENT_ERROR:
-      snprintf(buf, sizeof(buf), "MQTT_ERR:%d", event->error_handle->error_type);
-      ERROR_SYSLOG(&logbuf.run, MQTT, buf, buf);
+      if (IS_OK(&logbuf.run, MQTT)) {
+        snprintf(buf, sizeof(buf), "MQTT_ERR:%d", event->error_handle->error_type);
+        ERROR_SYSLOG(&logbuf.run, MQTT, buf, buf);
+      }
       break;
     default:
       break;

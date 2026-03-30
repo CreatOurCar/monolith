@@ -20,9 +20,11 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
   }
 
   else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-    char buf[sizeof(system_event_t)];
-    snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t *)event_data)->reason);
-    ERROR_SYSLOG(&logbuf.run, WIFI, buf, buf);
+    if (IS_OK(&logbuf.run, WIFI)) {
+      char buf[sizeof(system_event_t)];
+      snprintf(buf, sizeof(buf), "STA_LOST:%02X", ((wifi_event_sta_disconnected_t *)event_data)->reason);
+      ERROR_SYSLOG(&logbuf.run, WIFI, buf, buf);
+    }
     esp_wifi_connect();
   }
 
