@@ -397,6 +397,18 @@ export const convert = {
     can_bit: (v, start, end) => Number((new DataView(v.buffer, v.byteOffset, 8).getBigUint64(0, true) >> BigInt(start)) & ((1n << BigInt(end - start + 1)) - 1n))
 };
 
+export function can_filter_match(data, filter, mask) {
+    for (let i = 0; i < mask.length; i++) {
+        if ((data[i] & mask[i]) !== (filter[i] & mask[i])) return false;
+    }
+    return true;
+}
+
+export function parse_hex_bytes(hex) {
+    const padded = hex.length % 2 ? '0' + hex : hex;
+    return Uint8Array.from({ length: padded.length / 2 }, (_, i) => parseInt(padded.slice(i * 2, i * 2 + 2), 16));
+}
+
 export function to_string(buffer, start, end) {
     const str = String.fromCharCode(...buffer.slice(start, end));
     const nl = str.indexOf('\u0000');

@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue';
+import { parse_hex_bytes } from './protocol.js';
 
 export const views = reactive({
     digital: {
@@ -62,10 +63,14 @@ function load_decoder() {
             can_decoder[v.id] = [];
         }
 
-        can_decoder[v.id].push({
-            name: k,
-            ...v
-        });
+        const entry = { name: k, ...v };
+
+        if (v.filter && v.mask) {
+            entry._filter = parse_hex_bytes(v.filter);
+            entry._mask = parse_hex_bytes(v.mask);
+        }
+
+        can_decoder[v.id].push(entry);
     });
 
     // Second pass: assign idx in can_decoder iteration order

@@ -3,7 +3,7 @@ defineOptions({ name: 'Viewer' });
 
 import { ref, onMounted } from 'vue';
 import { dark } from '@/layout/composables/layout';
-import { parse, convert } from '@/service/protocol';
+import { parse, convert, can_filter_match } from '@/service/protocol';
 import { fmt, digit, format_size } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
 import { init_map, rebuild_hotline, HOTLINE_MODE } from '@/service/map';
@@ -363,6 +363,10 @@ function set_data(raw) {
                     const exist = [];
 
                     for (const decoder of can_decoder[data.can.id]) {
+                        if (decoder._filter && !can_filter_match(data.can.data, decoder._filter, decoder._mask)) {
+                            continue;
+                        }
+
                         let v;
 
                         if (decoder.mode === 'byte') {

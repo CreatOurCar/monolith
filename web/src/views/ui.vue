@@ -46,7 +46,9 @@ const can_cfg = reactive({
     sign: false,
     start: 0,
     end: 0,
-    endian: 'little'
+    endian: 'little',
+    filter: '',
+    mask: ''
 });
 
 const sign_options = [
@@ -61,7 +63,7 @@ const endian_options = [
     { label: 'Little Endian', value: 'little' },
     { label: 'Big Endian', value: 'big' }
 ];
-const errors = reactive({ name: '', id: '', multiplier: '', unit: '', range: '' });
+const errors = reactive({ name: '', id: '', multiplier: '', unit: '', range: '', filter: '' });
 
 function save_cfg() {
     can_cfg.name = can_cfg.name.trim();
@@ -78,8 +80,25 @@ function save_cfg() {
 
     errors.range = can_cfg.start === '' || can_cfg.end === '' || can_cfg.start < 0 || can_cfg.end < 0 || can_cfg.start > max || can_cfg.end > max || can_cfg.start > can_cfg.end ? `Range must be within 0 ~ ${max}.` : '';
 
-    if (!errors.name && !errors.id && !errors.multiplier && !errors.unit && !errors.range) {
-        views.can.view[can_cfg.name] = {
+    const filter_str = can_cfg.filter.trim().replace(/^0x/i, '');
+    const mask_str = can_cfg.mask.trim().replace(/^0x/i, '');
+    const has_filter = filter_str || mask_str;
+    const hex_re = /^[0-9a-fA-F]{1,16}$/;
+
+    if (has_filter) {
+        if (!filter_str || !mask_str) {
+            errors.filter = 'Both filter and mask are required.';
+        } else if (!hex_re.test(filter_str) || !hex_re.test(mask_str)) {
+            errors.filter = 'Invalid hex value.';
+        } else {
+            errors.filter = '';
+        }
+    } else {
+        errors.filter = '';
+    }
+
+    if (!errors.name && !errors.id && !errors.multiplier && !errors.unit && !errors.range && !errors.filter) {
+        const cfg = {
             id: id,
             multiplier: can_cfg.multiplier,
             unit: can_cfg.unit,
@@ -89,6 +108,13 @@ function save_cfg() {
             end: can_cfg.end,
             endian: can_cfg.mode === 'byte' ? can_cfg.endian : null
         };
+
+        if (has_filter) {
+            cfg.filter = filter_str.toLowerCase();
+            cfg.mask = mask_str.toLowerCase();
+        }
+
+        views.can.view[can_cfg.name] = cfg;
 
         display_can_view.value = false;
     }
@@ -154,6 +180,8 @@ function can_add() {
     can_cfg.start = 0;
     can_cfg.end = 0;
     can_cfg.endian = 'little';
+    can_cfg.filter = '';
+    can_cfg.mask = '';
     display_can_view.value = true;
 }
 
@@ -169,6 +197,8 @@ function can_edit(name) {
     can_cfg.start = view.start;
     can_cfg.end = view.end;
     can_cfg.endian = view.endian || 'little';
+    can_cfg.filter = view.filter ? '0x' + view.filter.toUpperCase() : '';
+    can_cfg.mask = view.mask ? '0x' + view.mask.toUpperCase() : '';
     display_can_view.value = true;
 }
 
@@ -182,6 +212,7 @@ function clear_errors() {
     errors.multiplier = '';
     errors.unit = '';
     errors.range = '';
+    errors.filter = '';
 }
 
 function add_unit() {
@@ -442,6 +473,18 @@ function export_cfg() {
                         </div>
                     </template>
 
+                    <div class="grid grid-cols-12 gap-4 items-center">
+                        <div class="col-span-6">
+                            <label for="can_filter" class="text-xs opacity-70">Data Filter (HEX)</label>
+                            <InputText id="can_filter" v-model="can_cfg.filter" class="mt-1 mb-1" :invalid="!!errors.filter" />
+                        </div>
+                        <div class="col-span-6">
+                            <label for="can_mask" class="text-xs opacity-70">Data Mask (HEX)</label>
+                            <InputText id="can_mask" v-model="can_cfg.mask" class="mt-1 mb-1" :invalid="!!errors.filter" />
+                        </div>
+                        <small v-if="errors.filter" class="text-red-500 -mt-2 col-span-12">{{ errors.filter }}</small>
+                    </div>
+
                     <div class="flex justify-end gap-2 mt-2">
                         <Button label="Cancel" severity="secondary" @click="display_can_view = false" />
                         <Button label="Save" icon="pi pi-check" @click="save_cfg" />
@@ -454,14 +497,14 @@ function export_cfg() {
 
 <style>
 input[type='number'] {
-    -moz-appearance: textfield;
-    -webkit-appearance: none;
-    appearance: none;
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
 }
 
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
-    -webkit-appearance: none;
+    -webkit-appearance: none !important;
+    display: none !important;
     margin: 0;
 }
 </style>

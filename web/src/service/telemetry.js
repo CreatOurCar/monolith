@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { convert, signed } from '@/service/protocol';
+import { convert, signed, can_filter_match } from '@/service/protocol';
 import { times, state, telemetry } from '@/service/state';
 import { can_decoder, views } from '@/service/ui';
 import { rebuild_hotline, HOTLINE_MODE } from '@/service/map';
@@ -141,6 +141,10 @@ export function update_can(log) {
         const exist = [];
 
         for (const decoder of can_decoder[log.can.id]) {
+            if (decoder._filter && !can_filter_match(log.can.data, decoder._filter, decoder._mask)) {
+                continue;
+            }
+
             if (!telemetry.can[decoder.idx]) {
                 telemetry.can[decoder.idx] = [];
             }
