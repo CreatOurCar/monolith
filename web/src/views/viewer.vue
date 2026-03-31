@@ -3,7 +3,7 @@ defineOptions({ name: 'Viewer' });
 
 import { ref, onMounted } from 'vue';
 import { dark } from '@/layout/composables/layout';
-import { parse, convert, can_filter_match } from '@/service/protocol';
+import { parse, convert, signed, can_filter_match } from '@/service/protocol';
 import { fmt, digit, format_size } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
 import { init_map, rebuild_hotline, HOTLINE_MODE } from '@/service/map';
