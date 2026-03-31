@@ -15,6 +15,7 @@ import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 
 import dayjs from 'dayjs/esm';
+import { encode } from '@msgpack/msgpack';
 
 const file = {
     device: ref(''),
@@ -25,6 +26,7 @@ const file = {
 };
 
 let bt = 0;
+const parsed_data = ref([]);
 
 const gps = ref(null);
 const map = ref(null);
@@ -85,7 +87,7 @@ function upload(f) {
                 console.warn(result.error);
             }
 
-            console.log(result.data);
+            parsed_data.value = result.data;
         } catch (e) {
             file.device.value = "I'm sorry Dave,";
             file.statistic.value = "I'm afraid I can't do that.";
@@ -499,6 +501,60 @@ function switchHotlineMode(mode) {
     rebuild_hotline(map, line, path, mode);
 }
 
+function serialize_log(log) {
+    const obj = { timestamp: log.timestamp, type: log.type };
+    switch (log.type) {
+        case 'DIGITAL':
+            Object.assign(obj, log.digital);
+            break;
+        case 'ANALOG':
+            Object.assign(obj, log.analog);
+            break;
+        case 'GYROSCOPE':
+            Object.assign(obj, log.gyro);
+            break;
+        case 'GPS':
+            Object.assign(obj, log.gps);
+            break;
+        case 'CAN':
+            obj.id = log.can.id;
+            obj.extended = log.can.extended;
+            obj.remote = log.can.remote;
+            obj.len = log.can.len;
+            obj.data = Array.from(log.can.data).map(b => b.toString(16).padStart(2, '0')).join('');
+            break;
+        case 'SYSTEM':
+            obj.msg = log.sys.msg;
+            break;
+        case 'USER_EVENT':
+            obj.msg = log.user.msg;
+            break;
+    }
+    return obj;
+}
+
+function trigger_download(blob, ext) {
+    const name = file.name.value.replace(/\.[^.]+$/, '') + ext;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function download_jsonl() {
+    const chunks = [];
+    for (const log of parsed_data.value) {
+        chunks.push(JSON.stringify(serialize_log(log)));
+    }
+    trigger_download(new Blob([chunks.join('\n')], { type: 'application/x-jsonlines' }), '.jsonl');
+}
+
+function download_msgpack() {
+    const data = parsed_data.value.map(serialize_log);
+    trigger_download(new Blob([encode(data)], { type: 'application/x-msgpack' }), '.msgpack');
+}
+
 function timelapse() {
     if (!path.value.length || !timelapse_pos.value) {
         return;
@@ -538,6 +594,11 @@ function timelapse() {
                     <div class="flex">
                         <span class="font-semibold w-24">Duration:</span>
                         <span class="flex-1">{{ file.duration }}</span>
+                    </div>
+                    <div v-if="parsed_data.length" class="flex items-center gap-2">
+                        <span class="font-semibold w-24">Export:</span>
+                        <Button label="JSONL" icon="pi pi-download" @click="download_jsonl" severity="secondary" size="small" />
+                        <Button label="MessagePack" icon="pi pi-download" @click="download_msgpack" severity="secondary" size="small" />
                     </div>
                 </div>
             </div>
