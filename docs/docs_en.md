@@ -22,7 +22,7 @@ This is an open-(source & hardware) project, licensed under the 🍺[Beerware Li
 * Transmit CAN messages
 * Configure the device (e.g., CAN bit rate)
 
-📀 10 Hz data rate across various signals
+📀 Up to 100 Hz data rate across various signals
 
 * 1x CAN 2.0(A/B)
 * 1x External GPS
@@ -210,7 +210,7 @@ TMA-1 automatically sets its internal clock via SNTP, so you must connect it to 
 
 1. Power up the device.
 1. On first boot, it creates its own Wi-Fi access point (AP) named `Monolith v2 XXXXXX`. Password is `monolith`.
-1. Connect to that AP and open [http://192.168.4.1](http://192.168.4.1) in your browser.\
+1. Connect to that AP. The setup page will automatically open in your browser. If it doesn't, navigate to [http://192.168.4.1](http://192.168.4.1) manually.\
     ![](images/ap.png)
 1. Set `Wi-Fi SSID` and `Wi-Fi Password` to the phone's Wi-Fi Hotspot that TMA-1 will connect to while driving (the phone that the driver will bring onboard).
 1. Set `Server Address` to your server.
@@ -290,6 +290,8 @@ Also, to view the incoming CAN data, you need to set the CAN Decoders in the `UI
 
 Once the server is configured correctly and the TMA-1 is online, there is nothing else to do here. Everything will work like magic.
 
+The GPS card shows live position data with a `Fix` / `No Fix` tag indicating satellite lock status. You can switch the trail visualization between `Speed` mode (green=slow, red=fast) and `Time` mode (indigo=old, green=recent).
+
 ##### Console
 
 You can send a user event or a CAN message to the device.
@@ -313,7 +315,8 @@ Refer to the `Data Downloader` section in the `Device Configuration` tab to down
 
 * Click `Select` and open a `*.log` file that you've downloaded.
 * In the `Graph` card, toggle the input category button or the signal name of the legend to see the graph.
-* Adjust the slider in the `GPS` card to see the footage of your vehicle.
+* The `GPS` card displays the vehicle's trajectory with a color gradient trail. Switch between `Speed` (green=slow, red=fast) and `Time` (indigo=old, green=recent) modes. Use the slider to scrub through the data and view position, speed, and heading at any point.
+* The `CAN` card displays statistics for all recorded CAN messages: message ID, total count, average interval (Hz / ms), DLC, and last data bytes.
 
 To view the recorded CAN data, set the CAN Decoders in the `UI Configuration` tab first.
 
@@ -372,6 +375,7 @@ Manage CAN message decoders. A decoder extracts useful data from the CAN message
 * `Data Endianness`
     * Only available in `Byte` mode.
     * Defines the endianness of multi-byte data.
+* `Data Filter` / `Data Mask` (optional): Hex values to filter CAN messages by payload content. Only messages where `(data & mask) == filter` are decoded. Both must be specified together or left empty.
 
 #### Device Configuration
 
