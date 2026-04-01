@@ -261,11 +261,12 @@ function download_file(name, size, index) {
 
     files.loading.download = index;
     files.download.name = name;
+    files.download.nonce = crypto.randomUUID();
     files.download.size = size;
     files.download.progress = 0;
     files.download.time = new Date().getTime();
     files.disabled = true;
-    publish(`cmd/get/${name}`, '!', 1);
+    publish(`cmd/get/${name}`, files.download.nonce, 1);
 }
 </script>
 

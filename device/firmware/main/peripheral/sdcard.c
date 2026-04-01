@@ -25,6 +25,16 @@ static void task_sdcard(void *pvParameters) {
   int cycle_count = 0;
 
   while (true) {
+    if (file_op_busy) {
+      if (write_count > 0) {
+        fsync(fd);
+        write_count = 0;
+        cycle_count = 0;
+      }
+      xTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));
+      continue;
+    }
+
     do {
       if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
         write(fd, &log, sizeof(log));

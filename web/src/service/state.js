@@ -52,7 +52,7 @@ export const files = reactive({
     disabled: false,
     download: {
         name: '',
-        buf: [],
+        nonce: '',
         progress: 0,
         size: 0,
         time: null,

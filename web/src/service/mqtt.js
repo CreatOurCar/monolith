@@ -252,54 +252,45 @@ export function init_mqtt() {
                     return;
                 }
 
-                const cnt = to_uint(32, message, 0);
+                const device = localStorage.getItem('server/name');
+                const fileUrl = `/api/files/${device}/${files.download.nonce}/${files.download.name}`;
+                const elapsed = (new Date().getTime() - files.download.time) / 1000;
 
-                for (let i = 0; i < cnt; i++) {
-                    if (!files.download.buf[i]) {
-                        ToastEventBus.emit('add', {
-                            severity: 'error',
-                            summary: 'File Download Error',
-                            detail: `Missing file chunk ${i}`,
-                            group: 'br',
-                            life: 5000
-                        });
+                fetch(fileUrl).then(res => {
+                    if (!res.ok) throw new Error(res.statusText);
+                    return res.blob();
+                }).then(blob => {
+                    files.download.speed = `${format_size(blob.size / elapsed)}/s`;
 
-                        files.loading.download = false;
-                        files.disabled = false;
-                        return;
-                    }
-                }
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = files.download.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(a.href);
 
-                const size = files.download.buf.reduce((acc, chunk) => acc + chunk.byteLength, 0);
-                const file = new Uint8Array(size);
+                    fetch(fileUrl, { method: 'DELETE' }).catch(e => console.warn('File cleanup failed:', e));
 
-                let offset = 0;
-
-                for (let i = 0; i < cnt; i++) {
-                    file.set(files.download.buf[i], offset);
-                    offset += files.download.buf[i].byteLength;
-                }
-
-                files.loading.download = false;
-                files.disabled = false;
-
-                ToastEventBus.emit('add', {
-                    severity: 'success',
-                    summary: 'File Downloaded',
-                    detail: `${files.download.name}\n(${format_size(size)}, ${files.download.speed})`,
-                    group: 'br',
-                    life: 3000
+                    ToastEventBus.emit('add', {
+                        severity: 'success',
+                        summary: 'File Downloaded',
+                        detail: `${files.download.name}\n(${format_size(blob.size)}, ${files.download.speed})`,
+                        group: 'br',
+                        life: 3000
+                    });
+                }).catch(() => {
+                    ToastEventBus.emit('add', {
+                        severity: 'error',
+                        summary: 'File Download Error',
+                        detail: 'Server download failed',
+                        group: 'br',
+                        life: 5000
+                    });
+                }).finally(() => {
+                    files.loading.download = false;
+                    files.disabled = false;
                 });
-
-                const blob = new Blob([file], { type: 'application/octet-stream' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = files.download.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
                 break;
             }
 
@@ -314,14 +305,9 @@ export function init_mqtt() {
                         });
                     }
                 } else if (topic.startsWith('ack/get/')) {
-                    const index = Number(topic.replace('ack/get/', ''));
-                    files.download.buf[index] = message;
-                    files.download.speed = `${format_size((index * 4096) / ((new Date().getTime() - files.download.time) / 1000))}/s`;
-                    files.download.progress = (((index * 4096) / files.download.size) * 100).toFixed(1);
-
-                    if ((index + 1) % 16 === 0) {
-                        publish('cmd/dlack', '!', 1);
-                    }
+                    const uploaded = Number(topic.replace('ack/get/', ''));
+                    files.download.speed = `${format_size(uploaded / ((new Date().getTime() - files.download.time) / 1000))}/s`;
+                    files.download.progress = ((uploaded / files.download.size) * 100).toFixed(1);
                     break;
                 }
             }
