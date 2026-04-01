@@ -254,13 +254,44 @@ export function init_mqtt() {
 
                 const device = localStorage.getItem('server/name');
                 const fileUrl = `/api/files/${device}/${files.download.nonce}/${files.download.name}`;
-                const elapsed = (new Date().getTime() - files.download.time) / 1000;
+
+                files.download.phase = 'download';
+                files.download.progress = 0;
+                files.download.transferred = 0;
+                files.download.speed = '';
+                files.download.downloadTime = new Date().getTime();
 
                 fetch(fileUrl).then(res => {
                     if (!res.ok) throw new Error(res.statusText);
-                    return res.blob();
+
+                    const contentLength = res.headers.get('Content-Length');
+                    const total = contentLength ? parseInt(contentLength) : files.download.size;
+                    const reader = res.body.getReader();
+                    const chunks = [];
+                    let received = 0;
+
+                    function pump() {
+                        return reader.read().then(({ done, value }) => {
+                            if (done) return new Blob(chunks);
+
+                            chunks.push(value);
+                            received += value.length;
+
+                            const elapsed = (new Date().getTime() - files.download.downloadTime) / 1000;
+                            if (elapsed > 0) {
+                                files.download.speed = `${format_size(received / elapsed)}/s`;
+                            }
+
+                            files.download.transferred = received;
+                            files.download.progress = ((received / total) * 100).toFixed(1);
+
+                            return pump();
+                        });
+                    }
+
+                    return pump();
                 }).then(blob => {
-                    files.download.speed = `${format_size(blob.size / elapsed)}/s`;
+                    const totalElapsed = (new Date().getTime() - files.download.time) / 1000;
 
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
@@ -275,7 +306,7 @@ export function init_mqtt() {
                     ToastEventBus.emit('add', {
                         severity: 'success',
                         summary: 'File Downloaded',
-                        detail: `${files.download.name}\n(${format_size(blob.size)}, ${files.download.speed})`,
+                        detail: `${files.download.name}\n(${format_size(blob.size)}, ${totalElapsed.toFixed(1)}s)`,
                         group: 'br',
                         life: 3000
                     });
@@ -306,7 +337,13 @@ export function init_mqtt() {
                     }
                 } else if (topic.startsWith('ack/get/')) {
                     const uploaded = Number(topic.replace('ack/get/', ''));
-                    files.download.speed = `${format_size(uploaded / ((new Date().getTime() - files.download.time) / 1000))}/s`;
+                    const elapsed = (new Date().getTime() - files.download.time) / 1000;
+
+                    if (elapsed > 0) {
+                        files.download.speed = `${format_size(uploaded / elapsed)}/s`;
+                    }
+
+                    files.download.transferred = uploaded;
                     files.download.progress = ((uploaded / files.download.size) * 100).toFixed(1);
                     break;
                 }

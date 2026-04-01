@@ -264,7 +264,10 @@ function download_file(name, size, index) {
     files.download.nonce = crypto.randomUUID();
     files.download.size = size;
     files.download.progress = 0;
+    files.download.transferred = 0;
     files.download.time = new Date().getTime();
+    files.download.speed = '';
+    files.download.phase = 'upload';
     files.disabled = true;
     publish(`cmd/get/${name}`, files.download.nonce, 1);
 }
@@ -457,10 +460,14 @@ function download_file(name, size, index) {
                 </DataView>
             </div>
 
-            <Dialog v-model:visible="files.loading.download" modal header="Downloading..." :closable="false" :style="{ width: '25rem' }">
+            <Dialog v-model:visible="files.loading.download" modal :closable="false" :style="{ width: '25rem' }"
+                :header="files.download.phase === 'upload' ? 'Uploading (1/2) — Board → Server' : 'Downloading (2/2) — Server → Browser'">
                 <div class="flex flex-col items-center">
-                    <div class="mb-4">{{ files.download.name }}</div>
-                    <div class="mb-4">{{ files.download.speed }}</div>
+                    <div class="mb-2 font-medium">{{ files.download.name }}</div>
+                    <div class="mb-3 text-sm text-surface-500">
+                        {{ format_size(files.download.transferred) }} / {{ format_size(files.download.size) }}
+                        <span v-if="files.download.speed"> · {{ files.download.speed }}</span>
+                    </div>
                     <ProgressBar :value="files.download.progress" style="width: 100%" />
                 </div>
             </Dialog>

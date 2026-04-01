@@ -55,8 +55,12 @@ export const files = reactive({
         nonce: '',
         progress: 0,
         size: 0,
+        transferred: 0,
         time: null,
-        speed: ''
+        speed: '',
+        phase: '',
+        lastTime: null,
+        lastBytes: 0
     }
 });
 
