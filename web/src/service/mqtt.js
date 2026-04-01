@@ -17,6 +17,7 @@ import { update_connection_server, update_connection_device } from '@/service/to
 
 let mqtt_client = null;
 let first_auth_fail = true;
+let pending_ver = null;
 
 export function init_mqtt() {
     if (mqtt_client) {
@@ -74,21 +75,27 @@ export function init_mqtt() {
 
         switch (topic) {
             case 'd/ver': {
-                times.firmware.value = message.toString();
-                times.firmware.severity = 'info';
+                pending_ver = message.toString();
+                if (times.boot.raw !== null) {
+                    times.firmware.value = pending_ver;
+                    times.firmware.severity = 'info';
+                }
                 break;
             }
 
             case 'd/boot': {
                 if (message.toString() === 'OFFLINE') {
                     times.boot.raw = null;
-                    times.firmware.value = 'UNKNOWN';
-                    times.firmware.severity = 'secondary';
+                    pending_ver = null;
                     update_connection_device(false);
                     ToastEventBus.emit('add', { severity: 'error', summary: 'Device Offline', group: 'br', life: 5000 });
                 } else {
                     times.boot.raw = to_uint(32, message, 0);
                     times.boot.value = dayjs(times.boot.raw * 1000).format('YYYY-MM-DD HH:mm:ss');
+                    if (pending_ver) {
+                        times.firmware.value = pending_ver;
+                        times.firmware.severity = 'info';
+                    }
                     update_connection_device(true);
                 }
                 break;
