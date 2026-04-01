@@ -309,7 +309,7 @@ function hex_only(event) {
                 <div class="font-semibold text-xl mb-6">System State</div>
                 <div v-for="(tag, key) in times" :key="key" class="flex items-center mb-6">
                     <span class="w-24 font-medium">{{ tag.label }}</span>
-                    <Tag :value="tag.value" severity="info" class="timetag" />
+                    <Tag :value="tag.value" :severity="tag.severity || 'info'" class="timetag" />
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 text-sm">
                     <template v-for="item in state" :key="item.name">

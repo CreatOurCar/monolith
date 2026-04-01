@@ -500,6 +500,15 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
       snprintf(topic, sizeof(topic), "%s/d/boot", storage.device.name);
       esp_mqtt_client_publish(mqtt, topic, (char *)&boot.tv_sec, sizeof(boot.tv_sec), MQTT_QOS_1, true);
 
+      char ver[64];
+      #ifdef CONFIG_MONOLITH_MINI
+      snprintf(ver, sizeof(ver), "mini %s (%s)", FW_GIT_TAG, FW_GIT_HASH);
+      #else
+      snprintf(ver, sizeof(ver), "%s (%s)", FW_GIT_TAG, FW_GIT_HASH);
+      #endif
+      snprintf(topic, sizeof(topic), "%s/d/ver", storage.device.name);
+      esp_mqtt_client_publish(mqtt, topic, ver, strlen(ver), MQTT_QOS_1, true);
+
       CLEAR_ALL(&logbuf.run, MQTT);
       SYSLOG("MQTT_CONN");
       break;

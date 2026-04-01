@@ -81,7 +81,8 @@ export const state = reactive([
 export const times = reactive({
     boot: { label: 'Boot', value: '-', raw: null },
     current: { label: 'Current', value: '-' },
-    uptime: { label: 'Uptime', value: '-' }
+    uptime: { label: 'Uptime', value: '-' },
+    firmware: { label: 'Firmware', value: 'UNKNOWN', severity: 'secondary' }
 });
 
 export const cons = reactive({

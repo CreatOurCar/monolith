@@ -73,9 +73,17 @@ export function init_mqtt() {
         topic = topic.slice(1).join('/');
 
         switch (topic) {
+            case 'd/ver': {
+                times.firmware.value = message.toString();
+                times.firmware.severity = 'info';
+                break;
+            }
+
             case 'd/boot': {
                 if (message.toString() === 'OFFLINE') {
                     times.boot.raw = null;
+                    times.firmware.value = 'UNKNOWN';
+                    times.firmware.severity = 'secondary';
                     update_connection_device(false);
                     ToastEventBus.emit('add', { severity: 'error', summary: 'Device Offline', group: 'br', life: 5000 });
                 } else {
