@@ -9,13 +9,13 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80/tcp
+      - "--entrypoints.web.transport.respondingTimeouts.readTimeout=30m"
+      - "--entrypoints.web.transport.respondingTimeouts.writeTimeout=30m"
       - --entrypoints.websecure.address=:443/tcp
       - --entrypoints.websecure.http.tls.certresolver=le
       - --certificatesresolvers.le.acme.tlschallenge=true
       - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
-      - "--entrypoints.websecure.transport.respondingTimeouts.readTimeout=30m"
-      - "--entrypoints.websecure.transport.respondingTimeouts.writeTimeout=30m"
       - "--accessLog.format=json"
     ports:
       - "80:80"
