@@ -363,6 +363,7 @@ Manage CAN message decoders. A decoder extracts useful data from the CAN message
 * `Name`: The name shown on the graphs.
 * `CAN Message ID`: The message ID that desired data is included.
 * `Multiplier`: The number multiplied to the original value.
+* `Offset`: The number added after multiplication. Final value is `multiplier × original + offset`. Default is `0`.
 * `Unit`: The data unit that added on the `Units` card.
 * `Data Range`: The part of the CAN payload that contains the data.
     * The CAN payload has a maximum length of 8 bytes.

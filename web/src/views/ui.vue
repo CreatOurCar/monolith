@@ -41,6 +41,7 @@ const can_cfg = reactive({
     name: '',
     id: '',
     multiplier: 1,
+    offset: 0,
     unit: null,
     mode: 'byte',
     sign: false,
@@ -63,7 +64,29 @@ const endian_options = [
     { label: 'Little Endian', value: 'little' },
     { label: 'Big Endian', value: 'big' }
 ];
-const errors = reactive({ name: '', id: '', multiplier: '', unit: '', range: '', filter: '' });
+const errors = reactive({ name: '', id: '', multiplier: '', offset: '', unit: '', range: '', filter: '' });
+
+const can_formula = computed(() => {
+    const a = can_cfg.multiplier;
+    const b = can_cfg.offset;
+    let s = 'y = ';
+
+    if (!Number.isFinite(a)) {
+        s += '?x';
+    } else if (a === 1) {
+        s += 'x';
+    } else {
+        s += a + 'x';
+    }
+
+    if (!Number.isFinite(b)) {
+        s += ' + ?';
+    } else if (b !== 0) {
+        s += b > 0 ? ` + ${b}` : ` − ${Math.abs(b)}`;
+    }
+
+    return s;
+});
 
 function save_cfg() {
     can_cfg.name = can_cfg.name.trim();
@@ -74,6 +97,7 @@ function save_cfg() {
     errors.id = id ? '' : 'Please fill in the ID (HEX).';
     errors.id = !(id < 0 || id > (1 << 29) - 1) ? errors.id : 'ID must be within 29 bits.';
     errors.multiplier = can_cfg.multiplier ? '' : 'Invalid multiplier.';
+    errors.offset = Number.isFinite(can_cfg.offset) ? '' : 'Invalid offset.';
     errors.unit = can_cfg.unit ? '' : 'Please select a unit.';
 
     const max = can_cfg.mode === 'byte' ? 7 : 63;
@@ -97,10 +121,11 @@ function save_cfg() {
         errors.filter = '';
     }
 
-    if (!errors.name && !errors.id && !errors.multiplier && !errors.unit && !errors.range && !errors.filter) {
+    if (!errors.name && !errors.id && !errors.multiplier && !errors.offset && !errors.unit && !errors.range && !errors.filter) {
         const cfg = {
             id: id,
             multiplier: can_cfg.multiplier,
+            offset: can_cfg.offset,
             unit: can_cfg.unit,
             mode: can_cfg.mode,
             sign: can_cfg.sign,
@@ -174,6 +199,7 @@ function can_add() {
     can_cfg.name = '';
     can_cfg.id = '';
     can_cfg.multiplier = 1;
+    can_cfg.offset = 0;
     can_cfg.unit = null;
     can_cfg.mode = 'byte';
     can_cfg.sign = false;
@@ -191,6 +217,7 @@ function can_edit(name) {
     can_cfg.name = name;
     can_cfg.id = '0x' + view.id.toString(16).toUpperCase();
     can_cfg.multiplier = view.multiplier;
+    can_cfg.offset = view.offset ?? 0;
     can_cfg.unit = view.unit;
     can_cfg.mode = view.mode;
     can_cfg.sign = view.sign;
@@ -210,6 +237,7 @@ function clear_errors() {
     errors.name = '';
     errors.id = '';
     errors.multiplier = '';
+    errors.offset = '';
     errors.unit = '';
     errors.range = '';
     errors.filter = '';
@@ -428,20 +456,31 @@ function export_cfg() {
                             <small v-if="errors.id" class="text-red-500">{{ errors.id }}</small>
                         </div>
                     </div>
-                    <div class="grid grid-cols-12 gap-2 items-center">
-                        <div class="col-span-4">
+                    <div class="grid grid-cols-12 gap-4 items-center">
+                        <div class="col-span-12">
+                            <label class="text-xs opacity-70">Unit</label>
+                            <Select v-model="can_cfg.unit" :options="unit_options" optionLabel="display" optionValue="name" :invalid="!!errors.unit" placeholder="Select unit" class="w-full mt-1" />
+                            <small v-if="errors.unit" class="text-red-500">{{ errors.unit }}</small>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-12 gap-4 items-end">
+                        <div class="col-span-3">
                             <label for="can_multiplier" class="text-xs opacity-70">Multiplier</label>
-                            <div class="flex items-end mt-1">
-                                <input id="can_multiplier" v-model.number="can_cfg.multiplier" type="number" step="0.001" class="w-20 p-inputtext p-component" />
+                            <div class="flex items-end mt-1 mb-1">
+                                <input id="can_multiplier" v-model.number="can_cfg.multiplier" type="number" step="0.001" class="flex-1 min-w-0 p-inputtext p-component" />
                                 <span class="ml-1 mb-1 text-sm opacity-70">x</span>
                             </div>
                         </div>
-                        <div class="col-span-8">
-                            <label class="text-xs opacity-70">Unit</label>
-                            <Select v-model="can_cfg.unit" :options="unit_options" optionLabel="display" optionValue="name" :invalid="!!errors.unit" placeholder="Select unit" class="w-full mt-1" />
+                        <div class="col-span-3">
+                            <label for="can_offset" class="text-xs opacity-70">Offset</label>
+                            <div class="flex items-end mt-1 mb-1">
+                                <input id="can_offset" v-model.number="can_cfg.offset" type="number" step="0.001" class="flex-1 min-w-0 p-inputtext p-component" />
+                                <span class="ml-1 mb-1 text-sm opacity-70">+</span>
+                            </div>
                         </div>
-                        <small v-if="errors.multiplier" class="text-red-500 col-span-4">{{ errors.multiplier }}</small>
-                        <small v-if="errors.unit" class="text-red-500 col-start-5 col-span-8">{{ errors.unit }}</small>
+                        <div class="col-span-6 text-right truncate font-serif italic text-lg opacity-80 mb-2">{{ can_formula }}</div>
+                        <small v-if="errors.multiplier" class="text-red-500 col-span-3">{{ errors.multiplier }}</small>
+                        <small v-if="errors.offset" class="text-red-500 col-span-3 col-start-4">{{ errors.offset }}</small>
                     </div>
 
                     <div class="grid grid-cols-12 gap-4 items-end">

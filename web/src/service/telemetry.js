@@ -161,7 +161,7 @@ export function update_can(log) {
                 v = signed(v, (decoder.end - decoder.start + 1) * (decoder.mode === 'byte' ? 8 : 1));
             }
 
-            telemetry.can[decoder.idx].push(v * decoder.multiplier);
+            telemetry.can[decoder.idx].push(v * decoder.multiplier + decoder.offset);
             exist.push(decoder.idx);
         }
 

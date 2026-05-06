@@ -64,6 +64,7 @@ function load_decoder() {
         }
 
         const entry = { name: k, ...v };
+        entry.offset = v.offset ?? 0;
 
         if (v.filter && v.mask) {
             entry._filter = parse_hex_bytes(v.filter);

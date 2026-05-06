@@ -381,7 +381,7 @@ function set_data(raw) {
                             v = signed(v, (decoder.end - decoder.start + 1) * (decoder.mode === 'byte' ? 8 : 1));
                         }
 
-                        dataset[CAN_START + decoder.idx].push(v * decoder.multiplier);
+                        dataset[CAN_START + decoder.idx].push(v * decoder.multiplier + decoder.offset);
                         exist.push(decoder.idx);
                     }
 

@@ -354,6 +354,7 @@ CAN 메시지 디코더를 관리합니다. 디코더는 CAN 페이로드에서 
 * `Name`: 그래프에 표시할 이름
 * `CAN Message ID`: 원하는 데이터가 포함된 CAN 메시지 ID
 * `Multiplier`: 원본 값에 곱할 배율
+* `Offset`: 곱셈 후 더할 값. 최종 값은 `multiplier × 원본 + offset`이며, 기본값은 `0`입니다.
 * `Unit`: 해당 데이터의 단위. 적절한 단위가 없다면 `Units` 카드에서 추가합니다.
 * `Data Range`: CAN 페이로드에서 데이터가 포함된 범위
     * CAN 페이로드는 최대 8바이트입니다.
