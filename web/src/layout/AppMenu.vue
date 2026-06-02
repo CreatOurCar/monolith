@@ -14,35 +14,6 @@ const model = computed(() => [
             { label: 'Device Configuration', icon: 'pi pi-fw pi-cog', to: '/device' }
         ]
     },
-    {
-        label: 'Get Started',
-        items: [
-            {
-                label: 'Announcement',
-                icon: 'pi pi-fw pi-megaphone',
-                command: () => showAnnouncement(),
-                visible: !!announcement.message
-            },
-            {
-                label: 'Documentation',
-                icon: 'pi pi-fw pi-book',
-                url: '/docs',
-                target: '_blank'
-            },
-            {
-                label: 'GitHub',
-                icon: 'pi pi-fw pi-github',
-                url: 'https://github.com/luftaquila/monolith',
-                target: '_blank'
-            },
-            {
-                label: 'DNF Forum',
-                icon: 'pi pi-fw pi-link',
-                url: 'https://dnf.luftaquila.io',
-                target: '_blank'
-            }
-        ]
-    }
 ]);
 </script>
 

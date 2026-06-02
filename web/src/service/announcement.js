@@ -7,21 +7,8 @@ export const announcement = reactive({
 });
 
 export async function fetchAnnouncement() {
-    try {
-        const res = await fetch('/api/announcement');
-        if (!res.ok) return;
-        const text = (await res.text()).trim();
-        if (!text) return;
-
-        announcement.message = text;
-
-        const dismissed = localStorage.getItem('announcement/dismissed');
-        if (dismissed !== text) {
-            announcement.visible = true;
-        }
-    } catch (e) {
-        // silently ignore
-    }
+    //자동 팝업 비활성화(COC전용)
+    return;
 }
 
 export function dismissAnnouncement() {

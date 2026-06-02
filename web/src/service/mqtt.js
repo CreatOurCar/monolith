@@ -26,13 +26,13 @@ export function init_mqtt() {
     }
 
     if (!localStorage.getItem('server/addr')) {
-        localStorage.setItem('server/addr', 'v2.monolith.luftaquila.io');
+        localStorage.setItem('server/addr', 'localhost');
     }
 
     mqtt_client = mqtt.connect({
-        protocol: 'wss',
+        protocol: 'ws',
         host: localStorage.getItem('server/addr'),
-        port: 443,
+        port: 9001,
         username: localStorage.getItem('server/name') || '',
         password: localStorage.getItem('server/key') || '',
         keepalive: 30

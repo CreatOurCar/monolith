@@ -20,8 +20,8 @@ const toggle_connections = (event) => {
                 <i class="pi pi-bars"></i>
             </button>
             <router-link to="/" class="layout-topbar-logo">
-                <img src="/icon_small.png" alt="logo" class="layout-topbar-logo-image" />
-                <span>monolith</span>
+                <img src="/coc-logo.png" alt="COC logo" class="layout-topbar-logo-image" />
+                <span>COCTelemetry</span>
             </router-link>
         </div>
 
