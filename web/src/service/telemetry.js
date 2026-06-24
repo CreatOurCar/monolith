@@ -2,8 +2,7 @@ import { ref } from 'vue';
 import { convert, signed, can_filter_match } from '@/service/protocol';
 import { times, state, telemetry } from '@/service/state';
 import { can_decoder, views } from '@/service/ui';
-import { rebuild_hotline, HOTLINE_MODE } from '@/service/map';
-import L from 'leaflet';
+import { add_marker, rebuild_hotline, makeHotlineSwitcher, HOTLINE_MODE } from '@/service/map';
 
 export const map = ref(null);
 export const line = ref(null);
@@ -39,10 +38,7 @@ function scheduleRebuild() {
     }, HOTLINE_REBUILD_INTERVAL);
 }
 
-export function switchHotlineMode(mode) {
-    hotlineMode.value = mode;
-    rebuild_hotline(map, line, path, mode);
-}
+export const switchHotlineMode = makeHotlineSwitcher(map, line, path, hotlineMode);
 
 export function update_telemetry(data) {
     if (data.state) {
@@ -114,12 +110,7 @@ export function update_telemetry(data) {
             const latlng = [data.gps.gps.latitude, data.gps.gps.longitude];
 
             if (!current_pos) {
-                current_pos = L.circleMarker(latlng, {
-                    color: '#00FF00',
-                    fillColor: '#00FF00',
-                    fillOpacity: 1,
-                    radius: 5
-                }).addTo(map.value);
+                current_pos = add_marker(map, latlng, '#00FF00');
             } else {
                 current_pos.setLatLng(latlng);
             }

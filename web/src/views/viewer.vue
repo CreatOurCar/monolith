@@ -6,10 +6,9 @@ import { dark } from '@/layout/composables/layout';
 import { parse, convert, signed, can_filter_match } from '@/service/protocol';
 import { fmt, digit, format_size } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
-import { init_map, rebuild_hotline, HOTLINE_MODE } from '@/service/map';
+import { init_map, rebuild_hotline, add_marker, makeHotlineSwitcher, HOTLINE_MODE } from '@/service/map';
 import { plugin_wheel_zoom, plugin_touch_zoom } from '@/service/uplot';
-
-import L from 'leaflet';
+import { build_unit_axes, time_axis } from '@/service/chart';
 
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
@@ -118,12 +117,7 @@ function upload(f) {
     };
 }
 
-const axis = {
-    temp: { splits: [], min: 0, max: 0 },
-    accel: { splits: [], min: 0, max: 0 },
-    gyro: { splits: [], min: 0, max: 0 },
-    speed: { splits: [], min: 0, max: 0 }
-};
+const axis = {};
 
 let resizeObserver = null;
 
@@ -134,6 +128,18 @@ function init_chart() {
         chart.value.destroy();
     }
 
+    const digitalAxis = {
+        scale: 'digital',
+        size: 20,
+        values: (u, v) => v.map((x) => (x ? 'HI' : 'LO')),
+        splits: () => [0, 1],
+        stroke: () => (dark.value ? '#fff' : '#000'),
+        ticks: { show: false },
+        grid: { stroke: () => (dark.value ? '#24282b' : '#ededed') }
+    };
+
+    const { scales: unitScales, axes: unitAxes } = build_unit_axes(units, axis, 6);
+
     const scales = {
         digital: {
             range: (u, d_min, d_max) => {
@@ -143,73 +149,11 @@ function init_chart() {
                     return [0, 1];
                 }
             }
-        }
+        },
+        ...unitScales
     };
 
-    const axes = [
-        {
-            size: 35,
-            values: (u, v) => v.map((x) => dayjs(x * 1000).format('HH:mm:ss')),
-            stroke: () => (dark.value ? '#fff' : '#000'),
-            ticks: { stroke: () => (dark.value ? '#24282b' : '#ededed') },
-            grid: { stroke: () => (dark.value ? '#24282b' : '#ededed') }
-        },
-        {
-            scale: 'digital',
-            size: 20,
-            values: (u, v) => v.map((x) => (x ? 'HI' : 'LO')),
-            splits: () => [0, 1],
-            stroke: () => (dark.value ? '#fff' : '#000'),
-            ticks: { show: false },
-            grid: { stroke: () => (dark.value ? '#24282b' : '#ededed') }
-        }
-    ];
-
-    for (const [i, [k, o]] of Object.entries(units).entries()) {
-        axis[k] = { splits: [], min: 0, max: 0 };
-
-        scales[k] = {
-            range: (u, d_min, d_max) => {
-                if (d_min === null && d_max === null) {
-                    return [null, null];
-                } else {
-                    axis[k] = split_range(d_min, d_max);
-                    return [axis[k].min, axis[k].max];
-                }
-            }
-        };
-
-        axes.push({
-            scale: k,
-            side: i % 2 ? 1 : 3,
-            size: 50 + (o.unit.length - 1) * 6,
-            values: (u, v) => v.map((x) => `${digit(x)}${o.unit}`),
-            splits: () => axis[k].splits,
-            stroke: () => (dark.value ? '#fff' : '#000'),
-            ticks: { stroke: () => (dark.value ? '#24282b' : '#ededed') },
-            grid: { stroke: () => (dark.value ? '#24282b' : '#ededed') }
-        });
-
-        fmt[k] = (u, v, sidx, didx) => {
-            const d = u.data[sidx];
-
-            if (didx == null && d) {
-                const i = d.findLastIndex((x) => x !== null);
-
-                if (i !== -1) {
-                    v = d[i];
-                } else {
-                    v = d[d.length - 1];
-                }
-            }
-
-            if (isNaN(v) || v === null || v === undefined) {
-                return '-';
-            } else {
-                return `${digit(v)} ${o.unit}`;
-            }
-        };
-    }
+    const axes = [time_axis(), digitalAxis, ...unitAxes];
 
     const series = [
         { value: fmt.time },
@@ -424,27 +368,9 @@ function set_data(raw) {
         rebuild_hotline(map, line, path, hotlineMode.value);
         map.value.setView(path.value[0], 17);
 
-        L.circleMarker(path.value[0], {
-            color: '#00FF00',
-            fillColor: '#00FF00',
-            fillOpacity: 1,
-            radius: 5
-        }).addTo(map.value);
-
-        L.circleMarker(path.value[path.value.length - 1], {
-            color: '#FF0000',
-            fillColor: '#FF0000',
-            fillOpacity: 1,
-            radius: 5
-        }).addTo(map.value);
-
-        timelapse_pos.value = L.circleMarker(path.value[0], {
-            color: '#FF00FF',
-            fillColor: '#FF00FF',
-            fillOpacity: 1,
-            radius: 5,
-            pane: 'markerPane'
-        }).addTo(map.value);
+        add_marker(map, path.value[0], '#00FF00');
+        add_marker(map, path.value[path.value.length - 1], '#FF0000');
+        timelapse_pos.value = add_marker(map, path.value[0], '#FF00FF', { pane: 'markerPane' });
 
         timelapse_time.value = dayjs(bt * 1000 + path_history[0].timestamp).format('HH:mm:ss.SSS');
         timelapse_coord.value = `${path_history[0].gps.latitude.toFixed(7)}, ${path_history[0].gps.longitude.toFixed(7)}`;
@@ -481,25 +407,7 @@ function toggle_axis(key) {
     }
 }
 
-function split_range(d_min, d_max) {
-    if (d_min === d_max) {
-        d_min *= 0.85;
-        d_max *= 1.15;
-    }
-
-    const tick = 5;
-    const step = (d_max - d_min) / (tick - 1);
-    const min = Math.floor(d_min / step) * step;
-    const max = min + step * tick;
-    const splits = Array.from({ length: tick + 1 }, (_, i) => min + i * step);
-    return { min, max, splits };
-}
-
-
-function switchHotlineMode(mode) {
-    hotlineMode.value = mode;
-    rebuild_hotline(map, line, path, mode);
-}
+const switchHotlineMode = makeHotlineSwitcher(map, line, path, hotlineMode);
 
 function serialize_log(log) {
     const obj = { timestamp: log.timestamp, type: log.type };

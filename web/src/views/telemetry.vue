@@ -2,13 +2,13 @@
 defineOptions({ name: 'Telemetry' });
 
 import { ref, onMounted } from 'vue';
-import { dark } from '@/layout/composables/layout';
 import { publish } from '@/service/mqtt';
 import { term } from '@/service/terminal';
-import { state, times, cons, telemetry, fmt, digit } from '@/service/state';
+import { state, times, cons, telemetry, fmt } from '@/service/state';
 import { views, units, can_decoder, colors } from '@/service/ui';
 import { map, line, path, speed, course, fix, dirty, hotlineMode, switchHotlineMode } from '@/service/telemetry';
 import { init_map, HOTLINE_MODE } from '@/service/map';
+import { build_unit_axes, time_axis } from '@/service/chart';
 
 import ToastEventBus from 'primevue/toasteventbus';
 
@@ -17,8 +17,6 @@ import 'uplot/dist/uPlot.min.css';
 
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-
-import dayjs from 'dayjs/esm';
 
 const terminal = ref(null);
 const container = {
@@ -41,11 +39,7 @@ onMounted(() => {
     init_chart();
 });
 
-const axis = {
-    temp: { splits: [], min: 0, max: 0 },
-    accel: { splits: [], min: 0, max: 0 },
-    gyro: { splits: [], min: 0, max: 0 }
-};
+const axis = {};
 
 function init_chart() {
     if (telemetry.chart.analog || telemetry.chart.gyro) {
@@ -53,62 +47,8 @@ function init_chart() {
         telemetry.chart.gyro?.destroy();
     }
 
-    const scales = {};
-    const axes = [
-        {
-            size: 35,
-            values: (u, v) => v.map((x) => dayjs(x * 1000).format('HH:mm:ss')),
-            stroke: () => (dark.value ? '#fff' : '#000'),
-            ticks: { stroke: () => (dark.value ? '#24282b' : '#ededed') },
-            grid: { stroke: () => (dark.value ? '#24282b' : '#ededed') }
-        }
-    ];
-
-    for (const [i, [k, o]] of Object.entries(units).entries()) {
-        axis[k] = { splits: [], min: 0, max: 0 };
-
-        scales[k] = {
-            range: (u, d_min, d_max) => {
-                if (d_min === null && d_max === null) {
-                    return [null, null];
-                } else {
-                    axis[k] = split_range(d_min, d_max);
-                    return [axis[k].min, axis[k].max];
-                }
-            }
-        };
-
-        axes.push({
-            scale: k,
-            side: i % 2 ? 1 : 3,
-            size: 50 + (o.unit.length - 1) * 5,
-            values: (u, v) => v.map((x) => `${digit(x)}${o.unit}`),
-            splits: () => axis[k].splits,
-            stroke: () => (dark.value ? '#fff' : '#000'),
-            ticks: { stroke: () => (dark.value ? '#24282b' : '#ededed') },
-            grid: { stroke: () => (dark.value ? '#24282b' : '#ededed') }
-        });
-
-        fmt[k] = (u, v, sidx, didx) => {
-            const d = u.data[sidx];
-
-            if (didx == null && d) {
-                const i = d.findLastIndex((x) => x !== null);
-
-                if (i !== -1) {
-                    v = d[i];
-                } else {
-                    v = d[d.length - 1];
-                }
-            }
-
-            if (isNaN(v) || v === null || v === undefined) {
-                return '-';
-            } else {
-                return `${digit(v)} ${o.unit}`;
-            }
-        };
-    }
+    const { scales, axes: unitAxes } = build_unit_axes(units, axis);
+    const axes = [time_axis(), ...unitAxes];
 
     const initWidth = container.state.value?.clientWidth || 600;
 
@@ -219,20 +159,6 @@ function init_chart() {
             });
         }
     }).observe(container.state.value);
-}
-
-function split_range(d_min, d_max) {
-    if (d_min === d_max) {
-        d_min *= 0.85;
-        d_max *= 1.15;
-    }
-
-    const tick = 5;
-    const step = (d_max - d_min) / (tick - 1);
-    const min = Math.floor(d_min / step) * step;
-    const max = min + step * tick;
-    const splits = Array.from({ length: tick + 1 }, (_, i) => min + i * step);
-    return { min, max, splits };
 }
 
 function send_usrevt() {

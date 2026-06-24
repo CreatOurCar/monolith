@@ -37,6 +37,23 @@ export function init_map(map, line, path, ref, mode) {
     path.value = [];
 }
 
+export function add_marker(map, latlng, color, extra = {}) {
+    return L.circleMarker(latlng, {
+        color,
+        fillColor: color,
+        fillOpacity: 1,
+        radius: 5,
+        ...extra
+    }).addTo(map.value);
+}
+
+export function makeHotlineSwitcher(map, line, path, hotlineMode) {
+    return (mode) => {
+        hotlineMode.value = mode;
+        rebuild_hotline(map, line, path, mode);
+    };
+}
+
 export function rebuild_hotline(map, line, path, mode) {
     if (!map.value || !line.value) return;
 
