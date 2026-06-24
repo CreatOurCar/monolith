@@ -518,3 +518,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/c,vim,node,rust,kicad,python,rust-analyzer,windows,linux,macos
+
+# --- COC fork: ESP-IDF managed components & local artifacts ---
+managed_components/
+sdkconfig.old
+.tmp.driveupload/
