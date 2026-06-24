@@ -39,6 +39,7 @@ void task_gps(void *pvParameters);
 void task_analog(void *pvParameters);
 void task_digital(void *pvParameters);
 void task_gyroscope(void *pvParameters);
+void task_display(void *pvParameters);
 static void task_led(void *pvParameters);
 
 static void reset_isr(void *arg);
@@ -185,8 +186,8 @@ static void nvs_init(void) {
 
   // set device configuration default values
   if (nvs_get_str(nvs, "server", storage.device.server, &len) != ESP_OK) {
-    snprintf(storage.device.server, sizeof(storage.device.server), "v2.monolith.luftaquila.io");
-    nvs_set_str(nvs, "server", storage.device.server);
+    storage.device.server[0] = '\0';
+    nvs_set_str(nvs, "server", "");
   }
 
   len = sizeof(storage.device.name);
@@ -200,8 +201,8 @@ static void nvs_init(void) {
   len = sizeof(storage.device.key);
 
   if (nvs_get_str(nvs, "key", storage.device.key, &len) != ESP_OK) {
-    snprintf(storage.device.key, sizeof(storage.device.key), "monolith");
-    nvs_set_str(nvs, "key", storage.device.key);
+    storage.device.key[0] = '\0';
+    nvs_set_str(nvs, "key", "");
   }
 
   len = sizeof(storage.device.key);
@@ -240,17 +241,17 @@ static void nvs_init(void) {
 
   // set CAN default values
   if (nvs_get_u8(nvs, "can_bps", &storage.can.bps) != ESP_OK) {
-    nvs_set_u8(nvs, "can_en", CAN_BPS_500K);
-    storage.can.bps = CAN_BPS_500K;
+    nvs_set_u8(nvs, "can_bps", CAN_BPS_250K);
+    storage.can.bps = CAN_BPS_250K;
   }
 
   if (nvs_get_u32(nvs, "can_filter", &storage.can.filter) != ESP_OK) {
-    nvs_set_u32(nvs, "can_en", 0x00000000);
+    nvs_set_u32(nvs, "can_filter", 0x00000000);
     storage.can.filter = 0x00000000;  // accept all
   }
 
   if (nvs_get_u32(nvs, "can_mask", &storage.can.mask) != ESP_OK) {
-    nvs_set_u32(nvs, "can_en", 0xFFFFFFFF);
+    nvs_set_u32(nvs, "can_mask", 0xFFFFFFFF);
     storage.can.mask = 0xFFFFFFFF;  // accept all
   }
 
@@ -417,5 +418,10 @@ static void peripheral_task_init(void) {
   /***** GYROSCOPE (always enabled) *****/
   if (xTaskCreate(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL) != pdPASS) {
     ERROR_SYSLOG(&init, CORE, "GYROSCOPE task create failure", "GYR_TASK_FAIL");
+  }
+
+  /***** DISPLAY (always enabled, self-deactivates if PCF8574 absent) *****/
+  if (xTaskCreate(task_display, "display", 4096, NULL, 2, NULL) != pdPASS) {
+    ESP_LOGW("CORE", "DISPLAY task create failure");
   }
 }

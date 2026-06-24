@@ -86,7 +86,7 @@ static inline TickType_t *hash_table_lookup(uint32_t id) {
  * CAN traffic monitor / transmitter task
  ******************************************************************************/
 void task_can(void *pvParameters) {
-  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_7, GPIO_NUM_6, TWAI_MODE_NORMAL);
+  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_15, GPIO_NUM_16, TWAI_MODE_NORMAL);
   g_config.rx_queue_len          = 1024;
   g_config.alerts_enabled        = CAN_ALERT_ENABLED;
   twai_timing_config_t t_config  = select_baud(storage.can.bps);
@@ -164,6 +164,17 @@ void task_can(void *pvParameters) {
       log.payload.can.len      = msg.data_length_code;
       memcpy(log.payload.can.data, msg.data, msg.data_length_code);
       LOG(LOG_TYPE_CAN, &log);
+
+      // update display snapshot
+      if (msg.identifier == CAN_EZ_ID1 && msg.data_length_code >= 8) {
+        display_can.ez_rpm_raw = (uint16_t)msg.data[6] | ((uint16_t)msg.data[7] << 8);
+        display_can.valid      = 1;
+        display_can.last_tick  = xTaskGetTickCount();
+      } else if (msg.identifier == CAN_DALY_ID90 && msg.data_length_code >= 8) {
+        display_can.bms_soc_raw = ((uint16_t)msg.data[6] << 8) | (uint16_t)msg.data[7];
+        display_can.valid       = 1;
+        display_can.last_tick   = xTaskGetTickCount();
+      }
 
       // check hash table to send telemetry or not
       TickType_t now   = xTaskGetTickCount();

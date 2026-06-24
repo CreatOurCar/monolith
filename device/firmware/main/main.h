@@ -287,6 +287,28 @@ static inline void FATAL_SYSLOG(state_t *state, state_component_t component, con
 static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
 static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
 
+/***** CAN device IDs — 확인 필요: CAN_SIGNALS_SELECTED.md 참조 *****/
+#define CAN_EZ_SA      0xEFU
+#define CAN_EZ_MODE    0x17U   // METER=0x17, VCU=0xD0
+#define CAN_EZ_ID1     (0x18010000U | ((uint32_t)CAN_EZ_MODE << 8) | CAN_EZ_SA)   // 0x180117EF
+#define CAN_EZ_ID2     (0x18020000U | ((uint32_t)CAN_EZ_MODE << 8) | CAN_EZ_SA)   // 0x180217EF
+#define CAN_DALY_PC    0x40U
+#define CAN_DALY_ADDR  0x01U
+#define CAN_DALY_ID(d) (0x18000000U | ((uint32_t)(d) << 16) | ((uint32_t)CAN_DALY_PC << 8) | CAN_DALY_ADDR)
+#define CAN_DALY_ID90  CAN_DALY_ID(0x90U)   // 0x18904001
+#define CAN_DALY_ID93  CAN_DALY_ID(0x93U)
+#define CAN_DALY_ID98  CAN_DALY_ID(0x98U)
+
+/***** display CAN data snapshot (written by task_can, read by task_display) *****/
+typedef struct {
+  uint16_t   ez_rpm_raw;   // EZ 0x180117EF B6-B7 LE; rpm = raw * 0.1 - 2000
+  uint16_t   bms_soc_raw;  // Daly 0x18904001 B6-B7 BE; SOC % = raw * 0.1
+  uint8_t    valid;
+  TickType_t last_tick;
+} display_can_t;
+
+extern volatile display_can_t display_can;
+
 /***** peripheral configs *****/
 enum {
   MQTT_QOS_0,
