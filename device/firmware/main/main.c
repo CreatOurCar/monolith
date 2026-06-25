@@ -8,6 +8,7 @@
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include "esp_mac.h"
+#include "led_strip.h"
 #include "nvs_flash.h"
 
 /***** global variables *****/
@@ -116,6 +117,21 @@ static void task_led(void *pvParameters) {
  ******************************************************************************/
 static void core_init(void) {
   gpio_config_t gpio;
+
+  /*** WS2812B (DevKitC-1 v1.1 onboard RGB, GPIO38) — turn off at boot ***/
+  {
+    led_strip_config_t strip_cfg = {
+      .strip_gpio_num = 38,
+      .max_leds       = 1,
+    };
+    led_strip_rmt_config_t rmt_cfg = {
+      .resolution_hz = 10 * 1000 * 1000,
+    };
+    led_strip_handle_t strip;
+    if (led_strip_new_rmt_device(&strip_cfg, &rmt_cfg, &strip) == ESP_OK) {
+      led_strip_clear(strip);
+    }
+  }
 
   /*** LED ***/
   gpio.pin_bit_mask = (1ULL << GPIO_NUM_5);
