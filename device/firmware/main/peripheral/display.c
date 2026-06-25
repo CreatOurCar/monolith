@@ -8,9 +8,20 @@
 #include "esp_log.h"
 #include "esp_rom_sys.h"
 
-/***** 확인 필요: 기어비 및 타이어 둘레 확정 후 수정 *****/
-#define DISPLAY_GEAR_RATIO   4.5f
-#define DISPLAY_TIRE_CIRC_M  1.256f   // π × 타이어 외경(약 400mm)
+/***** 기어비 및 타이어 설정 *****/
+#define DISPLAY_GEAR_RATIO  4.02f
+
+// 노면 조건 전환: 0 = 건조, 1 = 우천
+#define DISPLAY_WET_TRACK  0
+
+#define DISPLAY_TIRE_DIAM_DRY_M  0.40f   // 건조: 지름 40cm → 둘레 1.2566m
+#define DISPLAY_TIRE_DIAM_WET_M  0.50f   // 우천: 지름 50cm → 둘레 1.5708m
+
+#if DISPLAY_WET_TRACK
+#  define DISPLAY_TIRE_CIRC_M  (3.14159265f * DISPLAY_TIRE_DIAM_WET_M)
+#else
+#  define DISPLAY_TIRE_CIRC_M  (3.14159265f * DISPLAY_TIRE_DIAM_DRY_M)
+#endif
 
 #define DISPLAY_STALE_MS     2000     // 이 시간 동안 CAN 없으면 "--" 표시
 
