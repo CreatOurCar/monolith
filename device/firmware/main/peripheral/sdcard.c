@@ -4,9 +4,16 @@
 
 #include "main.h"
 
-#include "driver/sdmmc_host.h"
+#include "driver/sdspi_host.h"
+#include "driver/spi_master.h"
 #include "driver/twai.h"
 #include "esp_vfs_fat.h"
+
+#define SD_SPI_HOST  SPI2_HOST
+#define SD_PIN_SCK   GPIO_NUM_39
+#define SD_PIN_MOSI  GPIO_NUM_40
+#define SD_PIN_MISO  GPIO_NUM_48
+#define SD_PIN_CS    GPIO_NUM_41
 
 extern struct timeval boot;
 
@@ -58,7 +65,7 @@ static void task_sdcard(void *pvParameters) {
 }
 
 /*******************************************************************************
- * init SDIO, mount filesystem and create task
+ * init SDSPI, mount filesystem and create task
  ******************************************************************************/
 void sdcard_init(void) {
   esp_vfs_fat_sdmmc_mount_config_t mount_config = {
@@ -70,22 +77,29 @@ void sdcard_init(void) {
   };
 
   sdmmc_card_t *card;
-  sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+  sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+  host.slot         = SD_SPI_HOST;
+  host.max_freq_khz = SDMMC_FREQ_PROBING;  // 400 kHz — 점퍼선 SPI 모듈은 20MHz 기본값에서 읽기 손상
 
-  sdmmc_slot_config_t slot_config = {
-    .clk   = GPIO_NUM_39,
-    .cmd   = GPIO_NUM_40,
-    .d0    = GPIO_NUM_38,
-    .d1    = GPIO_NUM_37,
-    .d2    = GPIO_NUM_42,
-    .d3    = GPIO_NUM_41,
-    .cd    = SDMMC_SLOT_NO_CD,
-    .wp    = SDMMC_SLOT_NO_WP,
-    .width = 4,
-    .flags = 0,
+  spi_bus_config_t bus_cfg = {
+    .mosi_io_num     = SD_PIN_MOSI,
+    .miso_io_num     = SD_PIN_MISO,
+    .sclk_io_num     = SD_PIN_SCK,
+    .quadwp_io_num   = -1,
+    .quadhd_io_num   = -1,
+    .max_transfer_sz = 4000,
   };
 
-  if (esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
+  if (spi_bus_initialize(SD_SPI_HOST, &bus_cfg, SPI_DMA_CH_AUTO) != ESP_OK) {
+    FATAL_LOG(&init, SD, "SPI bus init failure");
+    goto finish;
+  }
+
+  sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+  slot_config.gpio_cs = SD_PIN_CS;
+  slot_config.host_id = SD_SPI_HOST;
+
+  if (esp_vfs_fat_sdspi_mount("/sdcard", &host, &slot_config, &mount_config, &card) != ESP_OK) {
     FATAL_LOG(&init, SD, "mount failure");
     goto finish;
   }
