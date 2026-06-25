@@ -523,3 +523,4 @@ $RECYCLE.BIN/
 managed_components/
 sdkconfig.old
 .tmp.driveupload/
+.vscode/
