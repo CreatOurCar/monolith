@@ -5,13 +5,28 @@
 #ifndef CONFIG_MONOLITH_MINI
 #include "driver/i2c_master.h"
 
+/*******************************************************************************
+ * ADS1115 외장 ADC — 파란색 모듈보드 2개 (I2C1 버스: GPIO47=SDA / GPIO42=SCL 공유)
+ *
+ * 모듈도 동일한 ADS1115 칩이라 레지스터/MUX/변환 시퀀스는 베어 IC와 동일하다.
+ * 모듈 헤더 배선 (★ 전원은 반드시 3.3V — 5V 금지: 모듈 온보드 풀업이 SDA/SCL을
+ * 5V로 끌어올려 ESP32-S3 입력을 손상시킨다):
+ *   VDD→3.3V   GND→GND   SCL→GPIO42   SDA→GPIO47   ALRT→미연결(ALERT/RDY 미사용)
+ *   모듈1: ADDR→GND ⇒ I2C 0x48 (adc1)
+ *   모듈2: ADDR→VDD ⇒ I2C 0x49 (adc2)
+ *
+ * 입력 채널(모듈 헤더 A0~A3) → 로그 필드:
+ *   모듈1(0x48): A0→ain1  A1→ain2  A2→ain3  A3→ain4
+ *   모듈2(0x49): A0→ain5  A1→ain6  A2→voltage  A3→미사용
+ ******************************************************************************/
+
 #define ADS1115_CONVERSION_REG_ADDR 0x00
 #define ADS1115_CONFIG_REG_ADDR 0x01
 
-#define MUX_AIN0 (0b100 << 4)
-#define MUX_AIN1 (0b101 << 4)
-#define MUX_AIN2 (0b110 << 4)
-#define MUX_AIN3 (0b111 << 4)
+#define MUX_AIN0 (0b100 << 4)  // 모듈 헤더 A0
+#define MUX_AIN1 (0b101 << 4)  // 모듈 헤더 A1
+#define MUX_AIN2 (0b110 << 4)  // 모듈 헤더 A2
+#define MUX_AIN3 (0b111 << 4)  // 모듈 헤더 A3
 #define ADS1115_OS (1 << 7)
 
 #define ADS1115_CONFIG_H 0x03  // +-4.096V FSR, single-shot mode
@@ -65,14 +80,14 @@ void task_analog(void *pvParameters) {
   i2c_master_dev_handle_t adc1;
   i2c_device_config_t adc1_cfg = {
     .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-    .device_address  = 0x48,
+    .device_address  = 0x48,  // 모듈1: ADDR→GND
     .scl_speed_hz    = 400000,
   };
 
   i2c_master_dev_handle_t adc2;
   i2c_device_config_t adc2_cfg = {
     .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-    .device_address  = 0x49,
+    .device_address  = 0x49,  // 모듈2: ADDR→VDD
     .scl_speed_hz    = 400000,
   };
 
@@ -120,7 +135,7 @@ void task_analog(void *pvParameters) {
       err |= ret;
     }
 
-    // single cycle: adc1 AIN3
+    // single cycle: 모듈1(adc1) A3 → ain4
     {
       int cnt = 0;
       esp_err_t ret;

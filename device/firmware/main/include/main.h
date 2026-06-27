@@ -6,6 +6,8 @@
 #include "mqtt_client.h"
 #include "nvs.h"
 
+#include "config.h"
+
 enum { CORE0, CORE1 };
 
 /***** shared global variables *****/
@@ -117,99 +119,8 @@ static inline void COPY_STATE(state_t *dest, state_t *src, state_component_t com
 #define IS_FATAL(state, component) (*state & (1 << (component + COMPONENT_MAX)))
 #define IS_OK(state, component) (!IS_ERROR(state, component) && !IS_FATAL(state, component))
 
-/***** log protocol *****/
-#define PROTOCOL_VERSION 1
-#define LOG_MAGIC 0xAE
-
-typedef enum {
-  LOG_TYPE_INVALID,
-  LOG_TYPE_BOOT,
-  LOG_TYPE_CAN,
-  LOG_TYPE_GPS,
-  LOG_TYPE_ANALOG,
-  LOG_TYPE_DIGITAL,
-  LOG_TYPE_GYROSCOPE,
-  LOG_TYPE_SYSTEM,
-  LOG_TYPE_USER_EVENT,
-} log_type_t;
-
-typedef struct {
-  uint8_t protocol_version;
-  uint8_t _reserved[1];
-  uint8_t mac[6];
-  uint64_t boot_time;  // second since epoch
-} boot_record_t;
-
-typedef struct {
-  uint32_t id;
-  uint8_t extended;
-  uint8_t remote;
-  uint8_t len;
-  uint8_t _reserved[1];
-  uint8_t data[8];
-} can_record_t;
-
-typedef struct {
-  uint32_t latitude;
-  uint32_t longitude;
-  uint8_t lat_dir;
-  uint8_t lon_dir;
-  uint8_t _reserved[2];
-  uint16_t speed;
-  uint16_t course;
-} gps_record_t;
-
-typedef struct {
-  int16_t ain1;
-  int16_t ain2;
-  int16_t ain3;
-  int16_t ain4;
-  int16_t ain5;
-  int16_t ain6;
-  int16_t voltage;
-  int16_t temperature;
-} analog_record_t;
-
-typedef struct {
-  uint32_t din1;
-  uint32_t din2;
-  uint32_t din3;
-  uint32_t din4;
-} digital_record_t;
-
-typedef struct {
-  int16_t accel_x;
-  int16_t accel_y;
-  int16_t accel_z;
-  int16_t temperature;
-  int16_t gyro_x;
-  int16_t gyro_y;
-  int16_t gyro_z;
-  uint8_t _reserved[2];
-} gyroscope_record_t;
-
-typedef struct {
-  char msg[16];
-} system_event_t;
-
-typedef system_event_t user_event_t;
-
-typedef struct {
-  uint8_t magic;
-  uint8_t type;
-  uint16_t checksum;
-  uint32_t timestamp;
-  union {
-    boot_record_t boot;
-    can_record_t can;
-    gps_record_t gps;
-    analog_record_t analog;
-    digital_record_t digital;
-    gyroscope_record_t gyroscope;
-    system_event_t system_event;
-    user_event_t user_event;
-  } payload;  // 16 bytes
-} log_t;
+/***** log protocol (wire/storage data layout — see protocol.h) *****/
+#include "protocol.h"
 
 typedef struct {
   uint32_t timestamp;
@@ -284,21 +195,6 @@ static inline void FATAL_SYSLOG(state_t *state, state_component_t component, con
 /***** utility functions *****/
 #define INFO(component, fmt, ...) ESP_LOGI(components[component], fmt, ##__VA_ARGS__)
 
-static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
-static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
-
-/***** CAN device IDs — 확인 필요: CAN_SIGNALS_SELECTED.md 참조 *****/
-#define CAN_EZ_SA      0xEFU
-#define CAN_EZ_MODE    0x17U   // METER=0x17, VCU=0xD0
-#define CAN_EZ_ID1     (0x18010000U | ((uint32_t)CAN_EZ_MODE << 8) | CAN_EZ_SA)   // 0x180117EF
-#define CAN_EZ_ID2     (0x18020000U | ((uint32_t)CAN_EZ_MODE << 8) | CAN_EZ_SA)   // 0x180217EF
-#define CAN_DALY_PC    0x40U
-#define CAN_DALY_ADDR  0x01U
-#define CAN_DALY_ID(d) (0x18000000U | ((uint32_t)(d) << 16) | ((uint32_t)CAN_DALY_PC << 8) | CAN_DALY_ADDR)
-#define CAN_DALY_ID90  CAN_DALY_ID(0x90U)   // 0x18904001
-#define CAN_DALY_ID93  CAN_DALY_ID(0x93U)
-#define CAN_DALY_ID98  CAN_DALY_ID(0x98U)
-
 /***** display CAN data snapshot (written by task_can, read by task_display) *****/
 typedef struct {
   uint16_t   ez_rpm_raw;   // EZ 0x180117EF B6-B7 LE; rpm = raw * 0.1 - 2000
@@ -308,47 +204,5 @@ typedef struct {
 } display_can_t;
 
 extern volatile display_can_t display_can;
-
-/***** peripheral configs *****/
-enum {
-  MQTT_QOS_0,
-  MQTT_QOS_1,
-  MQTT_QOS_2,
-};
-
-enum {
-  CAN_BPS_1K,
-  CAN_BPS_5K,
-  CAN_BPS_10K,
-  CAN_BPS_12_5K,
-  CAN_BPS_16K,
-  CAN_BPS_20K,
-  CAN_BPS_25K,
-  CAN_BPS_50K,
-  CAN_BPS_100K,
-  CAN_BPS_125K,
-  CAN_BPS_250K,
-  CAN_BPS_500K,
-  CAN_BPS_800K,
-  CAN_BPS_1M,
-  CAN_BPS_MAX
-};
-
-enum {
-  GPS_DEV_UBLOX,
-  GPS_DEV_MAX,
-};
-
-/***** I2C timeout *****/
-#define I2C_TIMEOUT_MS 10
-
-/***** sensor task intervals *****/
-#define TASK_INTERVAL_GYRO   pdMS_TO_TICKS(10)   // 100Hz
-
-#ifndef CONFIG_MONOLITH_MINI
-#define TASK_INTERVAL_ANALOG pdMS_TO_TICKS(10)   // 100Hz (7ch ADS1115, ~6.2ms/cycle with pipelining)
-#else
-#define TASK_INTERVAL_ANALOG pdMS_TO_TICKS(100)  // 10Hz (온도+전압만, 고속 불필요)
-#endif
 
 #endif  // MAIN_H
