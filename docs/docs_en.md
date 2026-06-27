@@ -413,7 +413,7 @@ Controls whether the digital/analog input channels are logged or not.
     * `0`: The corresponding filter bit must match to pass.
     * `1`: The corresponding filter bit is ignored (don't care).
 
-Refer to the *Acceptance Filter* section of the [ESP32-S3 API Reference](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32s3/api-reference/peripherals/twai.html#acceptance-filter) for the detailed explanation of the `Filter` and `Mask`. All CAN messages will be accepted by default.
+Refer to the *Acceptance Filter* section of the [ESP32-S3 API Reference](https://docs.espressif.com/projects/esp-idf/en/v6.0.1/esp32s3/api-reference/peripherals/twai.html#acceptance-filter) for the detailed explanation of the `Filter` and `Mask`. All CAN messages will be accepted by default.
 
 ##### GPS
 

@@ -4,6 +4,12 @@
 
 DIY wireless data logging platform for Student Formula and Baja.
 
+## Development Environment
+
+- **Required ESP-IDF version: v6.0.1**
+- Verify with `idf.py --version` before building.
+- **Building with a different version may break the firmware — always use v6.0.1.**
+
 ## Features
 
 * 📡 Full wireless support

@@ -16,7 +16,10 @@ npm run lint         # ESLint with auto-fix
 ```
 
 ### Firmware (`device/firmware/`)
-Requires ESP-IDF v5.5.1 installed at `~/esp/esp-idf`.
+Requires **ESP-IDF v6.0.1** (`idf.py --version` to verify — mismatched versions will break the build).
+- Linux/macOS: install at `~/esp/esp-idf`
+- Windows: install at `C:\esp\v6.0.1\esp-idf`, build via PowerShell (`export.ps1` + `idf.py`) — `make` and Git Bash are not supported on Windows
+
 ```bash
 make build           # compile firmware (Original)
 make build mini      # compile firmware (Mini variant)
@@ -30,7 +33,7 @@ Docker Compose stack. Requires `.env` file (see `.env.example`).
 
 ## Key Patterns
 
-- The web app and firmware share the same binary log protocol — `protocol.js` constants must stay in sync with `main.h` definitions
+- The web app and firmware share the same binary log protocol — `protocol.js` constants must stay in sync with `main/include/protocol.h` definitions
 - MQTT telemetry uses batching: CAN (up to 128 records) and syslog (up to 32 records) per single MQTT publish; web frontend parses in 24-byte (`log_t`) chunks
 - Core affinity: WiFi/LWIP pinned to Core 0, MQTT publisher pinned to Core 1, ESP-MQTT internal task on Core 0, sensor tasks NO_AFFINITY
 

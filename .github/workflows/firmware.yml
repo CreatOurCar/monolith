@@ -28,7 +28,7 @@ jobs:
 
       - uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5
+          esp_idf_version: v6.0.1
           target: esp32s3
           path: 'device/firmware'
           command: idf.py build -DFW_GIT_TAG="${{ steps.ver.outputs.TAG }}" -DFW_GIT_HASH="${{ steps.ver.outputs.HASH }}"
@@ -65,7 +65,7 @@ jobs:
 
       - uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5
+          esp_idf_version: v6.0.1
           target: esp32s3
           path: 'device/firmware'
           command: idf.py build -DCMAKE_C_FLAGS="-DCONFIG_MONOLITH_MINI" -DFW_GIT_TAG="${{ steps.ver.outputs.TAG }}" -DFW_GIT_HASH="${{ steps.ver.outputs.HASH }}"

@@ -404,7 +404,7 @@ Control Hub가 연결할 서버와 장치 설정을 변경합니다.
     * `0`: 해당하는 필터 비트가 일치해야 통과
     * `1`: 해당하는 필터 비트 값을 무시 (don’t care)
 
-`Filter`와 `Mask`에 대한 자세한 내용은 [ESP32-S3 API Reference](https://docs.espressif.com/projects/esp-idf/en/v5.4.2/esp32s3/api-reference/peripherals/twai.html#acceptance-filter)의 *Acceptance Filter* 항목을 참고하세요. 기본 설정은 모든 CAN 메시지를 허용합니다.
+`Filter`와 `Mask`에 대한 자세한 내용은 [ESP32-S3 API Reference](https://docs.espressif.com/projects/esp-idf/en/v6.0.1/esp32s3/api-reference/peripherals/twai.html#acceptance-filter)의 *Acceptance Filter* 항목을 참고하세요. 기본 설정은 모든 CAN 메시지를 허용합니다.
 
 ##### GPS
 
