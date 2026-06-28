@@ -37,8 +37,8 @@ export const views = reactive({
             ain4: { name: 'AIN4', divider: false, multiplier: 1, unit: 'Volt' },
             ain5: { name: 'AIN5', multiplier: 1, unit: 'Volt' },
             ain6: { name: 'AIN6', multiplier: 1, unit: 'Volt' },
-            volt: { name: 'PWR', multiplier: 15430 / 430 },
-            temp: { name: 'TEMP', multiplier: 0.01 }
+            ain7: { name: 'AIN7', multiplier: 1, unit: 'Volt' },
+            ain8: { name: 'AIN8', multiplier: 1, unit: 'Volt' }
         }
     },
     gyro: {

@@ -39,8 +39,8 @@ const LOG_POS = {
         AIN4: 14,
         AIN5: 16,
         AIN6: 18,
-        VOLTAGE: 20,
-        TEMPERATURE: 22
+        AIN7: 20,
+        AIN8: 22
     },
     DIGITAL: {
         DIN1: 8,
@@ -255,8 +255,8 @@ export function parse_log(buf) {
                 ain4: to_int(16, buf, LOG_POS.ANALOG.AIN4),
                 ain5: to_int(16, buf, LOG_POS.ANALOG.AIN5),
                 ain6: to_int(16, buf, LOG_POS.ANALOG.AIN6),
-                voltage: to_int(16, buf, LOG_POS.ANALOG.VOLTAGE),
-                temperature: to_int(16, buf, LOG_POS.ANALOG.TEMPERATURE)
+                ain7: to_int(16, buf, LOG_POS.ANALOG.AIN7),
+                ain8: to_int(16, buf, LOG_POS.ANALOG.AIN8)
             };
             break;
 

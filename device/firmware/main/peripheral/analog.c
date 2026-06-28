@@ -17,7 +17,7 @@
  *
  * 입력 채널(모듈 헤더 A0~A3) → 로그 필드:
  *   모듈1(0x48): A0→ain1  A1→ain2  A2→ain3  A3→ain4
- *   모듈2(0x49): A0→ain5  A1→ain6  A2→voltage  A3→미사용
+ *   모듈2(0x49): A0→ain5  A1→ain6  A2→ain7  A3→ain8
  ******************************************************************************/
 
 #define ADS1115_CONVERSION_REG_ADDR 0x00
@@ -54,14 +54,6 @@ esp_err_t adc_read(i2c_master_dev_handle_t adc, int16_t *v) {
  * Analog channel and temperature sensor monitor task
  ******************************************************************************/
 void task_analog(void *pvParameters) {
-  // initialize temperature sensor
-  temperature_sensor_handle_t sensor     = NULL;
-  temperature_sensor_config_t sensor_cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 80);
-
-  if (temperature_sensor_install(&sensor_cfg, &sensor) != ESP_OK || temperature_sensor_enable(sensor) != ESP_OK) {
-    ERROR_SYSLOG(&init, ANALOG, "temperature sensor init failure", "TMP_INIT_FAIL");
-  }
-
   // initialize i2c bus and adc
   i2c_master_bus_config_t i2c_config = {
     .clk_source                   = I2C_CLK_SRC_DEFAULT,
@@ -109,18 +101,19 @@ void task_analog(void *pvParameters) {
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  float temperature;
   log_t analog;
 
   while (true) {
     esp_err_t err = ESP_OK;
 
-    // 3 paired cycles: adc1 + adc2 simultaneous conversion
-    uint8_t  ch[]   = { MUX_AIN0, MUX_AIN1, MUX_AIN2 };
-    int16_t *dst1[] = { &analog.payload.analog.ain1, &analog.payload.analog.ain2, &analog.payload.analog.ain3 };
-    int16_t *dst2[] = { &analog.payload.analog.ain5, &analog.payload.analog.ain6, &analog.payload.analog.voltage };
+    // 4 paired cycles: adc1 + adc2 simultaneous conversion
+    uint8_t  ch[]   = { MUX_AIN0, MUX_AIN1, MUX_AIN2, MUX_AIN3 };
+    int16_t *dst1[] = { &analog.payload.analog.ain1, &analog.payload.analog.ain2,
+                        &analog.payload.analog.ain3, &analog.payload.analog.ain4 };
+    int16_t *dst2[] = { &analog.payload.analog.ain5, &analog.payload.analog.ain6,
+                        &analog.payload.analog.ain7, &analog.payload.analog.ain8 };
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
       int cnt = 0;
       esp_err_t ret;
       do {
@@ -135,24 +128,7 @@ void task_analog(void *pvParameters) {
       err |= ret;
     }
 
-    // single cycle: 모듈1(adc1) A3 → ain4
-    {
-      int cnt = 0;
-      esp_err_t ret;
-      do {
-        if (cnt) i2c_master_bus_reset(i2c1);
-        ret  = adc_start(adc1, MUX_AIN3);
-        esp_rom_delay_us(1400);
-        ret |= adc_read(adc1, &analog.payload.analog.ain4);
-        cnt++;
-      } while (ret != ESP_OK && cnt < 2);
-      err |= ret;
-    }
-
-    err |= temperature_sensor_get_celsius(sensor, &temperature);
-
     if (err == ESP_OK) {
-      analog.payload.analog.temperature = (int16_t)(temperature * 100);
       LOG(LOG_TYPE_ANALOG, &analog);
       memcpy(&logbuf.analog, &analog, sizeof(log_t));
 
@@ -229,8 +205,8 @@ void task_analog(void *pvParameters) {
     err |= adc_cali_raw_to_voltage(cal_handle, raw, &mv);
 
     if (err == ESP_OK) {
-      analog.payload.analog.voltage = (int16_t)(mv * 8); // to match ADS1115 range (mV / 1000 * 32768 / 4.096)
-      analog.payload.analog.temperature = (int16_t)(temperature * 100);
+      analog.payload.analog.ain7 = (int16_t)(mv * 8); // to match ADS1115 range (mV / 1000 * 32768 / 4.096)
+      analog.payload.analog.ain8 = (int16_t)(temperature * 100);
       LOG(LOG_TYPE_ANALOG, &analog);
       memcpy(&logbuf.analog, &analog, sizeof(log_t));
 

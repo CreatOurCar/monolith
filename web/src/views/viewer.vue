@@ -167,8 +167,8 @@ function init_chart() {
         { label: views.analog.ch.ain4.name, value: fmt[views.analog.ch.ain4.unit], scale: views.analog.ch.ain4.unit || 'Volt', spanGaps: true, show: false, stroke: colors[7] },
         { label: views.analog.ch.ain5.name, value: fmt[views.analog.ch.ain5.unit], scale: views.analog.ch.ain5.unit || 'Volt', spanGaps: true, show: false, stroke: colors[8] },
         { label: views.analog.ch.ain6.name, value: fmt[views.analog.ch.ain6.unit], scale: views.analog.ch.ain6.unit || 'Volt', spanGaps: true, show: false, stroke: colors[9] },
-        { label: views.analog.ch.volt.name, value: fmt.Volt, scale: 'Volt', spanGaps: true, show: false, stroke: colors[10] },
-        { label: views.analog.ch.temp.name, value: fmt.Temperature, scale: 'Temperature', spanGaps: true, show: false, stroke: colors[11] },
+        { label: views.analog.ch.ain7.name, value: fmt[views.analog.ch.ain7.unit], scale: views.analog.ch.ain7.unit || 'Volt', spanGaps: true, show: false, stroke: colors[10] },
+        { label: views.analog.ch.ain8.name, value: fmt[views.analog.ch.ain8.unit], scale: views.analog.ch.ain8.unit || 'Volt', spanGaps: true, show: false, stroke: colors[11] },
         { label: 'Ax', value: fmt.Acceleration, scale: 'Acceleration', spanGaps: true, show: false, stroke: colors[12] },
         { label: 'Ay', value: fmt.Acceleration, scale: 'Acceleration', spanGaps: true, show: false, stroke: colors[13] },
         { label: 'Az', value: fmt.Acceleration, scale: 'Acceleration', spanGaps: true, show: false, stroke: colors[14] },
@@ -253,8 +253,8 @@ function set_data(raw) {
                 dataset[8].push(convert.adc_to_v(data.analog.ain4) * views.analog.ch.ain4.multiplier * (views.analog.ch.ain4.divider ? 0.5 : 1));
                 dataset[9].push(convert.adc_to_v(data.analog.ain5) * views.analog.ch.ain5.multiplier);
                 dataset[10].push(convert.adc_to_v(data.analog.ain6) * views.analog.ch.ain6.multiplier);
-                dataset[11].push(convert.adc_to_v(data.analog.voltage) * views.analog.ch.volt.multiplier);
-                dataset[12].push(data.analog.temperature * views.analog.ch.temp.multiplier);
+                dataset[11].push(convert.adc_to_v(data.analog.ain7) * views.analog.ch.ain7.multiplier);
+                dataset[12].push(convert.adc_to_v(data.analog.ain8) * views.analog.ch.ain8.multiplier);
 
                 for (let i = 1; i < dataset.length; i++) {
                     if (i < 5 || i > 12) {

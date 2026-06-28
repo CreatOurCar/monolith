@@ -67,8 +67,8 @@ function init_chart() {
                 { label: views.analog.ch.ain4.name, stroke: colors[3], value: fmt[views.analog.ch.ain4.unit], points: { show: false }, pxAlign: 0, scale: views.analog.ch.ain4.unit || 'Volt' },
                 { label: views.analog.ch.ain5.name, stroke: colors[4], value: fmt[views.analog.ch.ain5.unit], points: { show: false }, pxAlign: 0, scale: views.analog.ch.ain5.unit || 'Volt' },
                 { label: views.analog.ch.ain6.name, stroke: colors[5], value: fmt[views.analog.ch.ain6.unit], points: { show: false }, pxAlign: 0, scale: views.analog.ch.ain6.unit || 'Volt' },
-                { label: views.analog.ch.volt.name, stroke: colors[6], value: fmt.Volt, points: { show: false }, pxAlign: 0, scale: 'Volt' },
-                { label: views.analog.ch.temp.name, stroke: colors[7], value: fmt.Temperature, points: { show: false }, pxAlign: 0, scale: 'Temperature', show: false }
+                { label: views.analog.ch.ain7.name, stroke: colors[6], value: fmt[views.analog.ch.ain7.unit], points: { show: false }, pxAlign: 0, scale: views.analog.ch.ain7.unit || 'Volt' },
+                { label: views.analog.ch.ain8.name, stroke: colors[7], value: fmt[views.analog.ch.ain8.unit], points: { show: false }, pxAlign: 0, scale: views.analog.ch.ain8.unit || 'Volt', show: false }
             ],
             axes: axes
         },

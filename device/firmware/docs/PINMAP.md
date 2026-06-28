@@ -57,7 +57,7 @@ I2C는 버스라 두 모듈이 SDA/SCL을 공유하고, **ADDR 핀 결선으로 
 | 모듈 | I2C 주소 | ADDR | A0 | A1 | A2 | A3 |
 |------|:--------:|------|----|----|----|----|
 | 모듈1 (adc1) | `0x48` | →GND | ain1 | ain2 | ain3 | ain4 |
-| 모듈2 (adc2) | `0x49` | →VDD | ain5 | ain6 | voltage | **미사용** |
+| 모듈2 (adc2) | `0x49` | →VDD | ain5 | ain6 | ain7 | ain8 |
 
 - 모듈도 동일 ADS1115 칩이라 펌웨어 로직(레지스터·MUX·±4.096V FSR·860SPS 변환)은 베어 IC와 동일하며 코드 변경 없음. 정의: `main/peripheral/analog.c:23-34,83,89`.
 - 선형 포텐쇼미터 등 아날로그 센서는 모듈 헤더 A0~A3에 물립니다.
@@ -107,7 +107,7 @@ I2C는 버스라 두 모듈이 SDA/SCL을 공유하고, **ADDR 핀 결선으로 
 | 21 | 설정 리셋 버튼  | 온보드        | 보드 버튼 사용, 외부 배선 불필요 (3초 길게 눌러 NVS 초기화) | `main/main.c:83,148-155` |
 | 38 | 온보드 RGB LED  | 온보드        | DevKitC-1 v1.1 보드 내장, 배선 대상 아님 (부팅 시 끄기만 함) | `main/main.c:121-134` |
 | 8  | 배터리전압 ADC  | Mini 전용     | Original 빌드에는 컴파일되지 않음 (Mini에서만 ADC1_CH7로 내부 전압 측정) | `main/peripheral/analog.c:181-213` |
-| —  | 내부 온도센서   | 칩 내장       | ESP32 다이 내장 센서, 전용 GPIO 없음 | `main/peripheral/analog.c:58-63` |
+| —  | 내부 온도센서   | Mini 전용     | Original에서는 측정 코드 제거됨 — ain8 슬롯을 ADS1115 A3로 대체. Mini에서만 ain8에 기록 | `main/peripheral/analog.c` |
 | 43/44 | UART0 콘솔   | ESP-IDF 기본  | 콘솔/모니터용. USB로 접근, 따로 배선 안 함 | ESP-IDF 기본 |
 | 19/20 | USB         | ESP-IDF 기본  | USB 케이블로만 사용 | ESP-IDF 기본 |
 

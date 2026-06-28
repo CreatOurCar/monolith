@@ -56,8 +56,8 @@ typedef struct {
   int16_t ain4;
   int16_t ain5;
   int16_t ain6;
-  int16_t voltage;
-  int16_t temperature;
+  int16_t ain7;
+  int16_t ain8;
 } analog_record_t;
 
 typedef struct {
