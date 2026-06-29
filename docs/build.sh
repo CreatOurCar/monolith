@@ -1,7 +1,7 @@
 #! /bin/bash
 
 echo "$(cat package.json | jq '."single-page-markdown-website".links[1] = {"text":"Control Hub", "url": "/"}')" > package.json
-echo "$(cat package.json | jq '."single-page-markdown-website".links[2] = {"text":"GitHub", "url": "https://github.com/luftaquila/monolith"}')" > package.json
+echo "$(cat package.json | jq '."single-page-markdown-website".links[2] = {"text":"GitHub", "url": "https://github.com/CreatOurCar/monolith"}')" > package.json
 
 echo "$(cat package.json | jq '."single-page-markdown-website".links[0] = {"text":"English", "url": "index.html"}')" > package.json
 npx --yes -- single-page-markdown-website docs_ko.md style.md --output .
