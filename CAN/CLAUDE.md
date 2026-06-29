@@ -1,4 +1,4 @@
-이 저장소는 luftaquila/monolith(Monolith v2)를 포크한 것이다. ESP32-S3 단일 칩으로 자작 포뮬러 차량의 텔레메트리를 수집하는 로거다.
+이 저장소는 CreatOurCar/monolith — luftaquila/monolith(Monolith v2) 기반(포크) 저장소다. ESP32-S3 단일 칩으로 자작 포뮬러 차량의 텔레메트리를 수집하는 로거다.
 
 [구조]
 - 펌웨어: device/firmware/, ESP-IDF v6.0.1, C. ESP32가 CAN + 센서를 수집해 SD카드(.log)에 기록하고 WiFi로 MQTT 발행한다.
