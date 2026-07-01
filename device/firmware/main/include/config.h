@@ -12,13 +12,10 @@
 #define CAN_EZ_SA      0xEFU
 #define CAN_EZ_MODE    0x17U   // METER=0x17, VCU=0xD0
 #define CAN_EZ_ID1     (0x18010000U | ((uint32_t)CAN_EZ_MODE << 8) | CAN_EZ_SA)   // 0x180117EF
-#define CAN_EZ_ID2     (0x18020000U | ((uint32_t)CAN_EZ_MODE << 8) | CAN_EZ_SA)   // 0x180217EF
 #define CAN_DALY_PC    0x40U
 #define CAN_DALY_ADDR  0x01U
 #define CAN_DALY_ID(d) (0x18000000U | ((uint32_t)(d) << 16) | ((uint32_t)CAN_DALY_PC << 8) | CAN_DALY_ADDR)
 #define CAN_DALY_ID90  CAN_DALY_ID(0x90U)   // 0x18904001
-#define CAN_DALY_ID93  CAN_DALY_ID(0x93U)
-#define CAN_DALY_ID98  CAN_DALY_ID(0x98U)
 
 /***** peripheral configs *****/
 enum {
