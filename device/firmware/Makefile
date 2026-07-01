@@ -1,18 +1,12 @@
 IDF_PATH := $(HOME)/esp/esp-idf
 
-ifneq (,$(filter mini,$(MAKECMDGOALS)))
-	IDF_FLAGS := -DCMAKE_C_FLAGS="-DCONFIG_MONOLITH_MINI"
-else
-	IDF_FLAGS := -DCMAKE_C_FLAGS=""
-endif
-
-.PHONY: build run sim clean config dump mini
+.PHONY: build run sim clean config dump
 
 build:
 	export IDF_PATH=$(IDF_PATH) && \
 	export IDF_PATH_FORCE=1 && \
 	. $(IDF_PATH)/export.sh && \
-	idf.py build $(IDF_FLAGS)
+	idf.py build
 
 run: build
 	export IDF_PATH=$(IDF_PATH) && \

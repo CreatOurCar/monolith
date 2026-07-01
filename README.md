@@ -21,9 +21,7 @@ DIY data logging platform for Student Formula and Baja: ESP32-S3 firmware record
    * 1x External GPS
    * 1x Internal 6-axis Accelerometer & Gyroscope
    * 4x Digital input channels
-   * 6x Analog input channels
-   * 1x Power supply voltage sensor
-   * 1x Chip temperature sensor
+   * 8x Analog input channels
 
 * 🍺 Fully Open-source & Open-hardware under the Beerware license
 

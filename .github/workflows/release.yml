@@ -18,7 +18,6 @@ jobs:
       - run: |
           mkdir -p firmware
           mv firmware-monolith firmware/monolith
-          mv firmware-monolith-mini firmware/monolith-mini
           mv .github/scripts/flash.* .
           zip -r monolith-${{ github.ref_name }}.zip firmware flash.*
       - uses: ncipollo/release-action@v1

@@ -278,7 +278,6 @@ static void peripheral_task_init(void) {
     CLEAR_ALL(&logbuf.run, ANALOG);
   }
 
-#ifndef CONFIG_MONOLITH_MINI
   /***** DIGITAL *****/
   if (storage.enabled.digital) {
     if (xTaskCreate(task_digital, "digital", 4096, NULL, 5, NULL) != pdPASS) {
@@ -287,9 +286,6 @@ static void peripheral_task_init(void) {
   } else {
     CLEAR_ALL(&logbuf.run, DIGITAL);
   }
-#else
-  CLEAR_ALL(&logbuf.run, DIGITAL);
-#endif
 
   /***** GYROSCOPE (always enabled) *****/
   if (xTaskCreate(task_gyroscope, "gyroscope", 4096, NULL, 5, NULL) != pdPASS) {

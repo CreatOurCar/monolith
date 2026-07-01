@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Monolith v2 is a DIY wireless data logging platform for Student Formula / Baja racing, now a single ESP32-S3 firmware system (C): it acquires sensor data and writes it straight to an SD card as a `.log` file. There is no companion web app, server, WiFi, or MQTT — recorded logs are analyzed offline on the external upstream site (https://v2.monolith.luftaquila.io/). Two hardware variants exist: Original (full sensor suite) and Mini (compact, CAN + GPS + IMU + internal temp/voltage, no digital I/O), controlled by the `CONFIG_MONOLITH_MINI` compile flag.
+Monolith v2 is a DIY wireless data logging platform for Student Formula / Baja racing, now a single ESP32-S3 firmware system (C): it acquires sensor data and writes it straight to an SD card as a `.log` file. There is no companion web app, server, WiFi, or MQTT — recorded logs are analyzed offline on the external upstream site (https://v2.monolith.luftaquila.io/).
 
 ## Build & Development Commands
 
@@ -14,8 +14,7 @@ Requires **ESP-IDF v6.0.1** (`idf.py --version` to verify — mismatched version
 - Windows: install at `C:\esp\v6.0.1\esp-idf`, build via PowerShell (`export.ps1` + `idf.py`) — `make` and Git Bash are not supported on Windows
 
 ```bash
-make build           # compile firmware (Original)
-make build mini      # compile firmware (Mini variant)
+make build           # compile firmware
 make run             # build, flash (921600 baud), and monitor
 make config          # open ESP-IDF menuconfig
 make clean           # remove build directory
@@ -35,7 +34,7 @@ make clean           # remove build directory
 
 ## CI/CD
 
-- **firmware.yml** — Builds both Original and Mini on pushes to `device/firmware/**`
+- **firmware.yml** — Builds firmware on pushes to `device/firmware/**`
 - **release.yml** — Triggered on `v*` tags; packages firmware binaries into GitHub releases
 
 ## Commit Messages
