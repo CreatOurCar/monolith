@@ -11,8 +11,6 @@
 
 #include "config.h"
 
-enum { CORE0, CORE1 };
-
 /***** shared global variables *****/
 extern nvs_handle_t nvs;
 extern TaskHandle_t led;
@@ -23,7 +21,6 @@ extern volatile uint64_t boot_time_fixup_epoch;  // GPS→SD: corrected boot epo
 typedef struct {
   struct {
     uint8_t mac[6];      // filled by esp_read_mac(); written into the BOOT record
-    char macaddr[18];
   } wifi;
   struct {
     char tz[40];         // local timezone, used for the SD log filename
@@ -114,12 +111,8 @@ static inline void COPY_STATE(state_t *dest, state_t *src, state_component_t com
 #include "protocol.h"
 
 typedef struct {
-  uint32_t timestamp;
-  state_t run;
-  log_t gps;
-  log_t gyro;
-  log_t analog;
-  log_t digital;
+  state_t run;      // component OK/ERROR/FATAL bitmap (see state_component_t)
+  log_t digital;    // working buffer shared by task_digital and its ISR (digital.c)
 } log_buf_t;
 
 extern log_buf_t logbuf;

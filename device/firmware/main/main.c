@@ -144,10 +144,8 @@ static void nvs_init(void) {
     goto finish;
   }
 
-  // read MAC (needed for the BOOT record) and format the display string
+  // read MAC (unique device ID written into the BOOT record)
   esp_read_mac(storage.wifi.mac, ESP_MAC_WIFI_STA);
-  snprintf(storage.wifi.macaddr, sizeof(storage.wifi.macaddr), "%02X:%02X:%02X:%02X:%02X:%02X", storage.wifi.mac[0],
-    storage.wifi.mac[1], storage.wifi.mac[2], storage.wifi.mac[3], storage.wifi.mac[4], storage.wifi.mac[5]);
 
   // set device timezone default value (used for the SD log filename)
   size_t len = sizeof(storage.device.tz);

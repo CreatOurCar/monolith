@@ -8,10 +8,6 @@
 
 #include <stdint.h>
 
-/***** BCD helpers *****/
-static inline int BCD_TO_DEC(uint8_t bcd) { return ((bcd >> 4) * 10) + (bcd & 0x0F); }
-static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10); }
-
 /***** CAN device IDs — 확인 필요: CAN_SIGNALS_SELECTED.md 참조 *****/
 #define CAN_EZ_SA      0xEFU
 #define CAN_EZ_MODE    0x17U   // METER=0x17, VCU=0xD0
@@ -25,12 +21,6 @@ static inline uint8_t DEC_TO_BCD(int dec) { return ((dec / 10) << 4) | (dec % 10
 #define CAN_DALY_ID98  CAN_DALY_ID(0x98U)
 
 /***** peripheral configs *****/
-enum {
-  MQTT_QOS_0,
-  MQTT_QOS_1,
-  MQTT_QOS_2,
-};
-
 enum {
   CAN_BPS_1K,
   CAN_BPS_5K,

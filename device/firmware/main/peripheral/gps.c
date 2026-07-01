@@ -215,7 +215,6 @@ void task_gps(void *pvParameters) {
           gps.payload.gps.speed     = (uint16_t)((speed_x100 * 1852 + 500) / 1000);
           gps.payload.gps.course    = (uint16_t)parse_nmea_fixed((char *)gprmc.course, 2);
           LOG(LOG_TYPE_GPS, &gps);
-          memcpy(&logbuf.gps, &gps, sizeof(log_t));
 
           // set the system wall clock once from the first valid GPS UTC fix.
           // utc_time = "hhmmss.ss", utc_date = "ddmmyy" (both are numeric with a

@@ -127,7 +127,6 @@ void task_analog(void *pvParameters) {
 
     if (err == ESP_OK) {
       LOG(LOG_TYPE_ANALOG, &analog);
-      memcpy(&logbuf.analog, &analog, sizeof(log_t));
 
       if (IS_ERROR(&logbuf.run, ANALOG)) {
         CLEAR_ERROR(&logbuf.run, ANALOG);

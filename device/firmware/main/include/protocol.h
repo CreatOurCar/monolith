@@ -2,8 +2,10 @@
 #define PROTOCOL_H
 
 // Binary log protocol — wire/storage data layout.
-// Keep in sync with the web frontend (web/.../protocol.js): the frontend parses
-// log_t in 24-byte chunks, so these struct definitions are a shared contract.
+// This is the SD .log file format. The external upstream viewer
+// (https://v2.monolith.luftaquila.io/) parses log_t in 24-byte chunks, so these
+// struct definitions are a fixed compatibility contract: field renames are fine,
+// but layout / PROTOCOL_VERSION / LOG_MAGIC / checksum must not change.
 
 #include <stdint.h>
 

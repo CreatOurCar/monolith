@@ -107,7 +107,6 @@ void task_gyroscope(void *pvParameters) {
       gyro_log.payload.gyroscope.gyro_y      = (int16_t)(((uint16_t)rx[10] << 8) | rx[11]);
       gyro_log.payload.gyroscope.gyro_z      = (int16_t)(((uint16_t)rx[12] << 8) | rx[13]);
       LOG(LOG_TYPE_GYROSCOPE, &gyro_log);
-      memcpy(&logbuf.gyro, &gyro_log, sizeof(log_t));
 
       if (IS_ERROR(&logbuf.run, GYRO)) {
         CLEAR_ERROR(&logbuf.run, GYRO);
