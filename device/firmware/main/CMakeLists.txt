@@ -1,5 +1,5 @@
 file(GLOB_RECURSE SRC_FILES "*.c" "*.h")
-idf_component_register(SRCS ${SRC_FILES} INCLUDE_DIRS "." "include" EMBED_TXTFILES "misc/index.html" "misc/isrgrootx1.pem")
+idf_component_register(SRCS ${SRC_FILES} INCLUDE_DIRS "." "include")
 
 # git version info: use -D overrides (CI) or query git (local)
 if(NOT DEFINED FW_GIT_TAG)

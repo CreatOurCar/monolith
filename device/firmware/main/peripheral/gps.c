@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
+
 #include "main.h"
 
 #include "driver/gpio.h"
@@ -171,6 +175,7 @@ void task_gps(void *pvParameters) {
   uart_event_t event;
   nmea_gprmc_t gprmc;
   uint8_t gps_state = 0;  // 0: unknown, 1: nmea ok, 2: comm error, 3: fatal
+  bool clock_set   = false;  // system wall clock set once from the first valid GPS UTC fix
 
   while (true) {
     if (xQueueReceive(uart_queue, &event, pdMS_TO_TICKS(5000)) != pdTRUE) {
@@ -211,6 +216,43 @@ void task_gps(void *pvParameters) {
           gps.payload.gps.course    = (uint16_t)parse_nmea_fixed((char *)gprmc.course, 2);
           LOG(LOG_TYPE_GPS, &gps);
           memcpy(&logbuf.gps, &gps, sizeof(log_t));
+
+          // set the system wall clock once from the first valid GPS UTC fix.
+          // utc_time = "hhmmss.ss", utc_date = "ddmmyy" (both are numeric with a
+          // fix present, since status == 'A').
+          if (!clock_set && strlen((char *)gprmc.utc_time) >= 6 && strlen((char *)gprmc.utc_date) >= 6) {
+            const uint8_t *t = gprmc.utc_time;
+            const uint8_t *d = gprmc.utc_date;
+#define D2(p, i) (((p)[i] - '0') * 10 + ((p)[(i) + 1] - '0'))
+            struct tm tm = {
+              .tm_hour = D2(t, 0),
+              .tm_min  = D2(t, 2),
+              .tm_sec  = D2(t, 4),
+              .tm_mday = D2(d, 0),
+              .tm_mon  = D2(d, 2) - 1,    // tm_mon is 0-based
+              .tm_year = D2(d, 4) + 100,  // ddmmYY → 20YY; tm_year is years since 1900
+            };
+#undef D2
+
+            // ensure mktime interprets tm as UTC so the result is a UTC epoch
+            setenv("TZ", "UTC", 1);
+            tzset();
+
+            time_t seconds = mktime(&tm);
+
+            if (seconds != (time_t)-1) {
+              struct timeval tv = { .tv_sec = seconds, .tv_usec = 0 };
+              settimeofday(&tv, NULL);
+              clock_set = true;
+
+              // STEP 7: signal task_sdcard to correct the BOOT record's boot_time in place.
+              // boot happened uptime seconds ago, so the boot epoch = now - uptime. Publishing
+              // a non-zero epoch here is the one-shot trigger; task_sdcard rewrites record 0.
+              boot_time_fixup_epoch = (uint64_t)tv.tv_sec - (uint64_t)(esp_timer_get_time() / 1000000);
+
+              INFO(GPS, "system clock set from GPS: %s", ctime(&tv.tv_sec));
+            }
+          }
         }
       }
     } else if (gps_state != 2) {

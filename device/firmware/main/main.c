@@ -16,23 +16,20 @@ struct timeval boot;
 nvs_handle_t nvs;
 TaskHandle_t led;
 QueueHandle_t logqueue;
-QueueHandle_t syslogqueue;
-QueueHandle_t canlogqueue;
-QueueHandle_t cantxqueue;
+volatile uint64_t boot_time_fixup_epoch = 0;
 
+log_buf_t logbuf;
 nvs_storage_t storage;
 
 state_t init = 0;
 
-const char components[][8] = { "CORE", "NVS", "RTC", "SD", "WIFI", "MQTT", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO" };
+const char components[][8] = { "CORE", "NVS", "I2C0", "SD", "CAN", "GPS", "ANALOG", "DIGITAL", "GYRO" };
 
 /***** function prototypes *****/
 void sdcard_init(void);
-void mqtt_init(void);
-bool network_init(void);
 static void core_init(void);
 static void nvs_init(void);
-static void rtc_init(void);
+static void i2c0_init(void);
 static void peripheral_task_init(void);
 
 void task_can(void *pvParameters);
@@ -42,8 +39,6 @@ void task_digital(void *pvParameters);
 void task_gyroscope(void *pvParameters);
 void task_display(void *pvParameters);
 static void task_led(void *pvParameters);
-
-static void reset_isr(void *arg);
 
 /*******************************************************************************
  * main application entry point
@@ -56,8 +51,8 @@ void app_main(void) {
   /*** NVS ***/
   nvs_init();
 
-  /*** RTC ***/
-  rtc_init();
+  /*** shared I2C0 bus (gyroscope + display) ***/
+  i2c0_init();
 
   /*** SDIO ***/
   sdcard_init();
@@ -65,28 +60,7 @@ void app_main(void) {
   /*** peripherals ***/
   peripheral_task_init();
 
-  /*** Wi-Fi ***/
-  if (network_init()) {
-    /*** MQTT ***/
-    mqtt_init();
-  }
-
   SYSLOG("INIT_DONE");
-}
-
-/*******************************************************************************
- * configuration reset button handler
- ******************************************************************************/
-static void reset_isr(void *arg) {
-  static int64_t press = 0;
-
-  if (gpio_get_level(GPIO_NUM_21) == true) {
-    press = esp_timer_get_time();
-  } else if (esp_timer_get_time() - press > 3000000) {
-    nvs_erase_all(nvs);
-    nvs_commit(nvs);
-    esp_restart();
-  }
 }
 
 /*******************************************************************************
@@ -144,18 +118,9 @@ static void core_init(void) {
     ERROR_LOG(&init, CORE, "LED config failure");
   }
 
-  /*** RST ***/
-  gpio.pin_bit_mask = (1ULL << GPIO_NUM_21);
-  gpio.mode         = GPIO_MODE_INPUT;
-  gpio.intr_type    = GPIO_INTR_ANYEDGE;
-  gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
-
-  esp_err_t ret = gpio_config(&gpio);
-  ret |= gpio_install_isr_service(0);
-  ret |= gpio_isr_handler_add(GPIO_NUM_21, reset_isr, NULL);
-
-  if (ret != ESP_OK) {
-    ERROR_LOG(&init, CORE, "RST config failure");
+  /*** GPIO ISR service (required by digital input ISRs in digital.c) ***/
+  if (gpio_install_isr_service(0) != ESP_OK) {
+    ERROR_LOG(&init, CORE, "ISR service install failure");
   }
 
   if (IS_OK(&init, CORE)) {
@@ -179,59 +144,17 @@ static void nvs_init(void) {
     goto finish;
   }
 
-  // set wifi default values
+  // read MAC (needed for the BOOT record) and format the display string
   esp_read_mac(storage.wifi.mac, ESP_MAC_WIFI_STA);
   snprintf(storage.wifi.macaddr, sizeof(storage.wifi.macaddr), "%02X:%02X:%02X:%02X:%02X:%02X", storage.wifi.mac[0],
     storage.wifi.mac[1], storage.wifi.mac[2], storage.wifi.mac[3], storage.wifi.mac[4], storage.wifi.mac[5]);
 
-  size_t len = sizeof(storage.wifi.ssid);
+  // set device timezone default value (used for the SD log filename)
+  size_t len = sizeof(storage.device.tz);
 
-  if (nvs_get_str(nvs, "ssid", storage.wifi.ssid, &len) != ESP_OK) {
-    storage.wifi.ssid[0] = '\0';
-    nvs_set_str(nvs, "ssid", "");
-  }
-
-  len = sizeof(storage.wifi.passwd);
-
-  if (nvs_get_str(nvs, "passwd", storage.wifi.passwd, &len) != ESP_OK) {
-    storage.wifi.passwd[0] = '\0';
-    nvs_set_str(nvs, "passwd", "");
-  }
-
-  len = sizeof(storage.device.server);
-
-  // set device configuration default values
-  if (nvs_get_str(nvs, "server", storage.device.server, &len) != ESP_OK) {
-    storage.device.server[0] = '\0';
-    nvs_set_str(nvs, "server", "");
-  }
-
-  len = sizeof(storage.device.name);
-
-  if (nvs_get_str(nvs, "name", storage.device.name, &len) != ESP_OK) {
-    snprintf(storage.device.name, sizeof(storage.device.name), "%02X%02X%02X%02X%02X%02X", storage.wifi.mac[0],
-      storage.wifi.mac[1], storage.wifi.mac[2], storage.wifi.mac[3], storage.wifi.mac[4], storage.wifi.mac[5]);
-    nvs_set_str(nvs, "name", storage.device.name);
-  }
-
-  len = sizeof(storage.device.key);
-
-  if (nvs_get_str(nvs, "key", storage.device.key, &len) != ESP_OK) {
-    storage.device.key[0] = '\0';
-    nvs_set_str(nvs, "key", "");
-  }
-
-  len = sizeof(storage.device.key);
-
-  // set device timezone default value
   if (nvs_get_str(nvs, "tz", storage.device.tz, &len) != ESP_OK) {
     snprintf(storage.device.tz, sizeof(storage.device.tz), "KST-9");
     nvs_set_str(nvs, "tz", storage.device.tz);
-  }
-
-  if (nvs_get_u32(nvs, "intv", &storage.device.intv) != ESP_OK) {
-    nvs_set_u32(nvs, "intv", 500);
-    storage.device.intv = 500;
   }
 
   // set peripheral enabled default values
@@ -291,13 +214,15 @@ finish:
 }
 
 /*******************************************************************************
- * init RTC and set system time
+ * init shared I2C0 bus (gyroscope + display) and timezone
  ******************************************************************************/
-static void rtc_init(void) {
+static void i2c0_init(void) {
   // set timezone
   setenv("TZ", "UTC", 1);
   tzset();
 
+  // create the I2C0 master bus; gyroscope.c and display.c retrieve this handle
+  // via i2c_master_get_bus_handle(I2C_NUM_0), so this bus must always be created
   i2c_master_bus_handle_t i2c0;
   i2c_master_bus_config_t i2c_config = {
     .clk_source                   = I2C_CLK_SRC_DEFAULT,
@@ -309,81 +234,16 @@ static void rtc_init(void) {
   };
 
   if (i2c_new_master_bus(&i2c_config, &i2c0) != ESP_OK) {
-    ERROR_LOG(&init, RTC, "I2C init failure");
-    goto finish;
+    ERROR_LOG(&init, I2C0, "I2C init failure");
   }
 
-  i2c_master_dev_handle_t rtc;
-  i2c_device_config_t rtc_cfg = {
-    .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-    .device_address  = 0x51,
-    .scl_speed_hz    = 100000,
-  };
-
-  if (i2c_master_bus_add_device(i2c0, &rtc_cfg, &rtc) != ESP_OK) {
-    ERROR_LOG(&init, RTC, "device init failure");
-    goto finish;
-  }
-
-  uint8_t tx[1] = { 0x02 };  // VL_seconds register address
-  uint8_t rx[7] = { 0 };     // 0x02 VL_seconds to 0x08 Years register
-
-  esp_err_t ret;
-  int cnt = 0;
-
-  do {
-    ret = i2c_master_transmit_receive(rtc, tx, sizeof(tx), rx, sizeof(rx), I2C_TIMEOUT_MS);
-    if (ret != ESP_OK) i2c_master_bus_reset(i2c0);
-    cnt++;
-  } while (ret != ESP_OK && cnt < 3);
-
-  if (ret != ESP_OK) {
-    i2c_master_bus_rm_device(rtc);
-    FATAL_LOG(&init, RTC, "read time transfer failure");
-    goto finish;
-  }
-
-  i2c_master_bus_rm_device(rtc);
-
-  // rtc has valid time set
-  if (rx[6] != 0x00) {
-    struct tm tm = {
-      .tm_sec  = BCD_TO_DEC(rx[0] & 0x7F),
-      .tm_min  = BCD_TO_DEC(rx[1] & 0x7F),
-      .tm_hour = BCD_TO_DEC(rx[2] & 0x3F),
-      .tm_mday = BCD_TO_DEC(rx[3] & 0x3F),
-      .tm_wday = BCD_TO_DEC(rx[4] & 0x07),
-      .tm_mon  = BCD_TO_DEC(rx[5] & 0x1F) - 1,
-      .tm_year = BCD_TO_DEC(rx[6]) + 100  // from 2000
-    };
-
-    time_t seconds = mktime(&tm);
-
-    if (seconds == (time_t)-1) {
-      ERROR_LOG(&init, RTC, "mktime failure");
-      goto finish;
-    }
-
-    struct timeval tv = {
-      .tv_sec  = seconds,
-      .tv_usec = esp_timer_get_time() % 1000000,
-    };
-
-    settimeofday(&tv, NULL);
-    INFO(RTC, "time set to %s", ctime(&tv.tv_sec));
+  if (IS_OK(&init, I2C0)) {
+    CLEAR_ALL(&logbuf.run, I2C0);
   } else {
-    ERROR_LOG(&init, RTC, "no valid time set");
-    goto finish;
+    COPY_STATE(&logbuf.run, &init, I2C0);
   }
 
-finish:
-  if (IS_OK(&init, RTC)) {
-    CLEAR_ALL(&logbuf.run, RTC);
-  } else {
-    COPY_STATE(&logbuf.run, &init, RTC);
-  }
-
-  // read boot time
+  // read boot time (may be 0 until GPS sets the clock in a later step)
   gettimeofday(&boot, NULL);
 }
 

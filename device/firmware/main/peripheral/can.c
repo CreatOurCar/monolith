@@ -44,46 +44,8 @@ static inline twai_timing_config_t select_baud(uint8_t can_bps) {
   }
 }
 
-/***** CAN telemetry hash table *****/
-#define HASH_SIZE 1024
-
-typedef struct {
-  uint32_t id;
-  TickType_t last;
-} id_entry_t;
-
-static id_entry_t id_table[HASH_SIZE];
-
-static inline uint32_t hash(uint32_t x) {
-  x ^= x >> 16;
-  x *= 0x7feb352d;
-  x ^= x >> 15;
-  x *= 0x846ca68b;
-  x ^= x >> 16;
-  return x;
-}
-
-static inline TickType_t *hash_table_lookup(uint32_t id) {
-  uint32_t idx = hash(id) & (HASH_SIZE - 1);
-
-  for (uint32_t i = 0; i < HASH_SIZE; i++) {
-    id_entry_t *entry = &id_table[idx];
-
-    if (entry->id == id) {
-      return &entry->last;
-    } else if (entry->id == 0) {
-      entry->id   = id;
-      return &entry->last;
-    }
-
-    idx = (idx + 1) & (HASH_SIZE - 1);
-  }
-
-  return NULL;
-}
-
 /*******************************************************************************
- * CAN traffic monitor / transmitter task
+ * CAN traffic monitor task
  ******************************************************************************/
 void task_can(void *pvParameters) {
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_15, GPIO_NUM_16, TWAI_MODE_NORMAL);
@@ -107,8 +69,7 @@ void task_can(void *pvParameters) {
     COPY_STATE(&logbuf.run, &init, CAN);
   }
 
-  const TickType_t interval = pdMS_TO_TICKS(storage.device.intv);
-  uint32_t prev_alerts      = 0;
+  uint32_t prev_alerts = 0;
 
   while (true) {
     // check CAN alerts
@@ -134,24 +95,9 @@ void task_can(void *pvParameters) {
       prev_alerts = 0;
     }
 
-    // transmit CAN messages
+    // receive CAN messages
     twai_message_t msg;
 
-    while (cantxqueue) {
-      if (xQueueReceive(cantxqueue, &msg, pdMS_TO_TICKS(0)) != pdTRUE) {
-        break;
-      }
-
-      if (twai_transmit(&msg, pdMS_TO_TICKS(0)) == ESP_OK) {
-        char buf[sizeof(system_event_t)];
-        snprintf(buf, sizeof(buf), "CANTX:%lX", msg.identifier);
-        SYSLOG(buf);
-      } else {
-        ERROR_SYSLOG(&logbuf.run, CAN, "transmit failure", "CAN_TX_FAIL");
-      }
-    }
-
-    // receive CAN messages
     while (true) {
       if (twai_receive(&msg, pdMS_TO_TICKS(0)) != ESP_OK) {
         break;
@@ -174,15 +120,6 @@ void task_can(void *pvParameters) {
         display_can.bms_soc_raw = ((uint16_t)msg.data[6] << 8) | (uint16_t)msg.data[7];
         display_can.valid       = 1;
         display_can.last_tick   = xTaskGetTickCount();
-      }
-
-      // check hash table to send telemetry or not
-      TickType_t now   = xTaskGetTickCount();
-      TickType_t *last = hash_table_lookup(msg.identifier | (msg.extd << 31));
-
-      if (last && now - *last >= interval && canlogqueue) {
-        *last = now;
-        xQueueSend(canlogqueue, &log, 0);
       }
     }
 

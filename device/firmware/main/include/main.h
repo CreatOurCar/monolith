@@ -1,9 +1,12 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+
 #include "esp_log.h"
 #include "esp_timer.h"
-#include "mqtt_client.h"
 #include "nvs.h"
 
 #include "config.h"
@@ -14,26 +17,16 @@ enum { CORE0, CORE1 };
 extern nvs_handle_t nvs;
 extern TaskHandle_t led;
 extern QueueHandle_t logqueue;
-extern QueueHandle_t syslogqueue;
-extern QueueHandle_t canlogqueue;
-extern QueueHandle_t cantxqueue;
-extern esp_mqtt_client_handle_t mqtt;
-extern volatile bool file_op_busy;
+extern volatile uint64_t boot_time_fixup_epoch;  // GPS→SD: corrected boot epoch (seconds); 0 = none yet
 
 /***** nvs storage *****/
 typedef struct {
   struct {
-    uint8_t mac[6];
+    uint8_t mac[6];      // filled by esp_read_mac(); written into the BOOT record
     char macaddr[18];
-    char ssid[32];
-    char passwd[32];
   } wifi;
   struct {
-    char server[64];
-    char name[32];
-    char key[32];
-    char tz[40];
-    uint32_t intv;
+    char tz[40];         // local timezone, used for the SD log filename
   } device;
   struct {
     uint8_t can;
@@ -63,17 +56,15 @@ extern const char components[][8];
 typedef enum {
   CORE,
   NVS,
-  RTC,
+  I2C0,  // shared I2C0 bus (gyroscope + display) init state; formerly the RTC slot
   SD,
-  WIFI,
-  MQTT,
   CAN,
   GPS,
   ANALOG,
   DIGITAL,
   GYRO,
-  COMPONENT_MAX = 12,
-  COMPONENT_ALL = 0x07FF,
+  COMPONENT_MAX = 12,     // FATAL bits live at (component + COMPONENT_MAX); must exceed the max index (8)
+  COMPONENT_ALL = 0x01FF,  // 9 components → error bits 0-8
 } state_component_t;
 
 #define ALL_ERROR_FATAL (COMPONENT_ALL | (COMPONENT_ALL << COMPONENT_MAX))
@@ -165,11 +156,10 @@ static inline int LOG_FROM_ISR(uint8_t type, log_t *log) {
 }
 
 static inline void SYSLOG(const char *msg) {
-  if (logqueue == NULL || syslogqueue == NULL) return;
+  if (logqueue == NULL) return;
   log_t log;
   strncpy(log.payload.system_event.msg, msg, sizeof(log.payload.system_event.msg));  // no need to null-terminate
   LOG(LOG_TYPE_SYSTEM, &log);
-  xQueueSend(syslogqueue, &log, 0);
 }
 
 static inline void ERROR_LOG(state_t *state, state_component_t component, const char *msg) {

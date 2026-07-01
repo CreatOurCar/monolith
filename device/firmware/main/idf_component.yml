@@ -1,4 +1,2 @@
 dependencies:
-  espressif/mqtt: "*"
-  espressif/cjson: "*"
   espressif/led_strip: "*"

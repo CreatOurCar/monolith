@@ -20,6 +20,53 @@ extern struct timeval boot;
 char logpath[64];
 
 /*******************************************************************************
+ * correct the BOOT record's boot_time in place (STEP 7).
+ * The absolute time the upstream viewer reconstructs is boot_time + timestamp/1000,
+ * so once GPS gives us a real clock we rewrite only the boot_time value of record 0.
+ * The 24-byte log_t layout, magic, version, "first record = BOOT" invariant and the
+ * checksum algorithm are all preserved — only the boot_time bytes change.
+ ******************************************************************************/
+static void correct_boot_record(int fd, uint64_t boot_time) {
+  log_t rec;
+
+  // read back the existing first record
+  if (lseek(fd, 0, SEEK_SET) != 0 || read(fd, &rec, sizeof(rec)) != (ssize_t)sizeof(rec)) {
+    ESP_LOGW("SD", "boot_time fixup: could not read record 0");
+    goto restore;
+  }
+
+  // invariant guard: record 0 must still be a valid BOOT record before we touch it
+  if (rec.magic != LOG_MAGIC || rec.type != LOG_TYPE_BOOT) {
+    ESP_LOGW("SD", "boot_time fixup: record 0 is not a BOOT record, skipping");
+    goto restore;
+  }
+
+  // patch only boot_time; magic/type/timestamp/mac/reserved bytes are left untouched
+  rec.payload.boot.boot_time = boot_time;
+
+  // recompute the folded-XOR checksum exactly as log_prepare() does (checksum field = 0 first)
+  rec.checksum    = 0;
+  uint32_t *ptr   = (uint32_t *)&rec;
+  uint32_t chksum = 0;
+  for (size_t i = 0; i < sizeof(log_t) / sizeof(uint32_t); i++) chksum ^= ptr[i];
+  rec.checksum = (chksum & 0xFFFF) + (chksum >> 16);
+
+  // write the corrected record back over record 0
+  if (lseek(fd, 0, SEEK_SET) != 0 || write(fd, &rec, sizeof(rec)) != (ssize_t)sizeof(rec)) {
+    ESP_LOGW("SD", "boot_time fixup: could not rewrite record 0");
+    goto restore;
+  }
+
+  fsync(fd);
+  INFO(SD, "boot_time corrected to %llu (epoch); BOOT record 0 rewritten, checksum valid",
+    (unsigned long long)boot_time);
+
+restore:
+  // always leave the offset at EOF so the append stream below is never corrupted
+  lseek(fd, 0, SEEK_END);
+}
+
+/*******************************************************************************
  * save log queue to SD card every 1000 ms
  ******************************************************************************/
 static void task_sdcard(void *pvParameters) {
@@ -30,16 +77,14 @@ static void task_sdcard(void *pvParameters) {
   log_t log;
   int write_count = 0;
   int cycle_count = 0;
+  bool boot_fixed = false;  // BOOT record boot_time corrected once from GPS
 
   while (true) {
-    if (file_op_busy) {
-      if (write_count > 0) {
-        fsync(fd);
-        write_count = 0;
-        cycle_count = 0;
-      }
-      xTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(200));
-      continue;
+    // one-time boot_time correction once GPS has set the clock (STEP 7 trigger)
+    uint64_t fixup = boot_time_fixup_epoch;
+    if (!boot_fixed && fixup != 0) {
+      correct_boot_record(fd, fixup);
+      boot_fixed = true;
     }
 
     do {
@@ -104,17 +149,29 @@ void sdcard_init(void) {
     goto finish;
   }
 
-  // set log file
+  // monotonic boot counter in NVS: guarantees a unique filename even when the clock is
+  // unset (boot.tv_sec == 0 → every boot would otherwise render the same "1970-..." name
+  // and O_TRUNC would clobber the previous log).
+  uint32_t bootcnt = 0;
+  nvs_get_u32(nvs, "bootcnt", &bootcnt);
+  bootcnt++;
+  nvs_set_u32(nvs, "bootcnt", bootcnt);
+  nvs_commit(nvs);
+
+  // set log file (datetime is 1970 until GPS sets the clock; the counter keeps it unique)
   setenv("TZ", storage.device.tz, 1);
   tzset();
 
   struct tm tp;
   struct tm *tm = localtime_r(&boot.tv_sec, &tp);
 
-  strftime(logpath, sizeof(logpath), "/sdcard/%Y-%m-%d-%H-%M-%S.log", tm);
+  char datetime[24];
+  strftime(datetime, sizeof(datetime), "%Y-%m-%d-%H-%M-%S", tm);
 
   setenv("TZ", "UTC", 1);
   tzset();
+
+  snprintf(logpath, sizeof(logpath), "/sdcard/%08lu-%s.log", (unsigned long)bootcnt, datetime);
 
   int fd = open(logpath, O_RDWR | O_CREAT | O_TRUNC, 0);
 
@@ -123,10 +180,7 @@ void sdcard_init(void) {
   }
 
   // create log queue and sdcard task
-  logqueue    = xQueueCreate(2560, sizeof(log_t));
-  syslogqueue = xQueueCreate(32, sizeof(log_t));
-  canlogqueue = xQueueCreate(1024, sizeof(log_t));
-  cantxqueue  = xQueueCreate(4, sizeof(twai_message_t));
+  logqueue = xQueueCreate(2560, sizeof(log_t));
 
   if (xTaskCreate(task_sdcard, "sdcard", 4096, (void *)fd, 7, NULL) != pdPASS) {
     FATAL_LOG(&init, SD, "task create failure");
