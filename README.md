@@ -2,7 +2,7 @@
 
 ![](.github/assets/wide.jpg)
 
-DIY wireless data logging platform for Student Formula and Baja.
+DIY data logging platform for Student Formula and Baja: ESP32-S3 firmware records sensors straight to an SD card, and recorded logs are analyzed on the external upstream site (https://v2.monolith.luftaquila.io/).
 
 ## Development Environment
 
@@ -12,12 +12,9 @@ DIY wireless data logging platform for Student Formula and Baja.
 
 ## Features
 
-* 📡 Full wireless support
-   * Real-time telemetry
-   * Download recorded data 
-   * Transmit User Events
-   * Transmit CAN messages
-   * Configure device (e.g. CAN bit rate)
+* 💾 Firmware logs straight to SD — no WiFi, no server, no live telemetry link
+   * GPS (NMEA GPRMC) sets the wall clock so recorded logs carry correct absolute time
+   * Recorded `.log` files are analyzed on the external upstream site: https://v2.monolith.luftaquila.io/
 
 * 📀 Up to 100 Hz data rate with various signals
    * 1x CAN 2.0(A/B)
@@ -28,12 +25,7 @@ DIY wireless data logging platform for Student Formula and Baja.
    * 1x Power supply voltage sensor
    * 1x Chip temperature sensor
 
-* 💡 Customizable web-based data analysis tool
 * 🍺 Fully Open-source & Open-hardware under the Beerware license
-
-## Preview
-
-Web Control Hub for live telemetry, data viewer and device/ui configurations.
 
 ## Documentation
 

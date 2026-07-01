@@ -4,16 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Monolith v2 is a DIY wireless data logging platform for Student Formula / Baja racing. It consists of two independent subsystems: ESP32-S3 firmware (C) and a Vue 3 web control hub. Two hardware variants exist: Original (full sensor suite) and Mini (compact, CAN + GPS + IMU + internal temp/voltage, no digital I/O), controlled by the `CONFIG_MONOLITH_MINI` compile flag.
+Monolith v2 is a DIY wireless data logging platform for Student Formula / Baja racing, now a single ESP32-S3 firmware system (C): it acquires sensor data and writes it straight to an SD card as a `.log` file. There is no companion web app, server, WiFi, or MQTT — recorded logs are analyzed offline on the external upstream site (https://v2.monolith.luftaquila.io/). Two hardware variants exist: Original (full sensor suite) and Mini (compact, CAN + GPS + IMU + internal temp/voltage, no digital I/O), controlled by the `CONFIG_MONOLITH_MINI` compile flag.
 
 ## Build & Development Commands
-
-### Web Frontend (`web/`)
-```bash
-npm run dev          # dev server (HTTPS, port 5173)
-npm run build        # production build (also builds docs into dist/docs)
-npm run lint         # ESLint with auto-fix
-```
 
 ### Firmware (`device/firmware/`)
 Requires **ESP-IDF v6.0.1** (`idf.py --version` to verify — mismatched versions will break the build).
@@ -28,14 +21,10 @@ make config          # open ESP-IDF menuconfig
 make clean           # remove build directory
 ```
 
-### Server (`server/`)
-Docker Compose stack. Requires `.env` file (see `.env.example`).
-
 ## Key Patterns
 
-- The web app and firmware share the same binary log protocol — `protocol.js` constants must stay in sync with `main/include/protocol.h` definitions
-- MQTT telemetry uses batching: CAN (up to 128 records) and syslog (up to 32 records) per single MQTT publish; web frontend parses in 24-byte (`log_t`) chunks
-- Core affinity: WiFi/LWIP pinned to Core 0, MQTT publisher pinned to Core 1, ESP-MQTT internal task on Core 0, sensor tasks NO_AFFINITY
+- **SD log compatibility is a hard requirement.** SD `.log` files must remain loadable in the *external, upstream* monolith site (https://v2.monolith.luftaquila.io/) — that site, not any code in this repo, is how recorded data gets viewed/analyzed. Therefore the binary wire/storage format must NOT change structurally: keep the 24-byte `log_t` layout/field offsets, `LOG_MAGIC` (0xAE), `PROTOCOL_VERSION` (1), the checksum algorithm (`log_prepare` in `main.h`), and BOOT-record-first recording order. Field *renames* are fine (bytes unchanged, e.g. `voltage`/`temperature` → `ain7`/`ain8`); layout/version/magic/checksum changes are not — confirm before making any.
+- Wall-clock time source: GPS (`$GNRMC`/`$GPRMC`). The RTC has no battery backup, so the firmware sets the system clock once from the first valid GPS fix (`task_gps` in `gps.c`) and retroactively corrects the SD log's BOOT record `boot_time` in place once that happens.
 
 ## Hardware Notes
 
