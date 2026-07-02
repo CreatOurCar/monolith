@@ -138,48 +138,53 @@ static const uint8_t BIG[10][2][3] = {
 };
 
 /*******************************************************************************
- * render speed as 3 big digits on rows 1-2
+ * framebuffer diff rendering
+ * lcd_want = 이번 사이클에 그리고 싶은 화면, lcd_frame = 실제 LCD에 있는 내용.
+ * 달라진 글자만 I2C로 전송한다 — 매초 60자 전체 전송 대신 보통 몇 글자로 끝나
+ * 같은 I2C0 버스를 쓰는 자이로(100Hz)의 대기 시간이 줄어든다.
+ ******************************************************************************/
+static uint8_t lcd_want[4][20];
+static uint8_t lcd_frame[4][20];
+
+static void lcd_flush(void) {
+  for (int r = 0; r < 4; r++) {
+    int c = 0;
+    while (c < 20) {
+      if (lcd_want[r][c] == lcd_frame[r][c]) {
+        c++;
+        continue;
+      }
+      // 바뀐 글자 구간: 커서를 한 번만 옮기고 연속으로 쓴다
+      lcd_set_cursor(r, c);
+      while (c < 20 && lcd_want[r][c] != lcd_frame[r][c]) {
+        lcd_put(lcd_want[r][c]);
+        lcd_frame[r][c] = lcd_want[r][c];
+        c++;
+      }
+    }
+  }
+}
+
+/*******************************************************************************
+ * render speed as 3 big digits into lcd_want rows 1-2
  *   hundreds → col 4-6
  *   tens     → col 8-10
  *   units    → col 12-14
  *   gaps at col 7, 11 (always space)
  ******************************************************************************/
-static void lcd_draw_speed(int spd) {
-  uint8_t top[20], bot[20];
-  memset(top, ' ', 20);
-  memset(bot, ' ', 20);
+static void draw_big_digit(int d, int col) {
+  memcpy(&lcd_want[1][col], BIG[d][0], 3);
+  memcpy(&lcd_want[2][col], BIG[d][1], 3);
+}
 
+static void draw_speed(int spd) {
   int h = spd / 100;
   int t = (spd / 10) % 10;
   int u = spd % 10;
 
-  if (h) {
-    top[4] = BIG[h][0][0]; top[5] = BIG[h][0][1]; top[6] = BIG[h][0][2];
-    bot[4] = BIG[h][1][0]; bot[5] = BIG[h][1][1]; bot[6] = BIG[h][1][2];
-  }
-  if (h || t) {
-    top[8]  = BIG[t][0][0]; top[9]  = BIG[t][0][1]; top[10] = BIG[t][0][2];
-    bot[8]  = BIG[t][1][0]; bot[9]  = BIG[t][1][1]; bot[10] = BIG[t][1][2];
-  }
-  top[12] = BIG[u][0][0]; top[13] = BIG[u][0][1]; top[14] = BIG[u][0][2];
-  bot[12] = BIG[u][1][0]; bot[13] = BIG[u][1][1]; bot[14] = BIG[u][1][2];
-
-  lcd_set_cursor(1, 0);
-  for (int i = 0; i < 20; i++) lcd_put(top[i]);
-  lcd_set_cursor(2, 0);
-  for (int i = 0; i < 20; i++) lcd_put(bot[i]);
-}
-
-static void lcd_draw_no_signal(void) {
-  uint8_t row[20];
-  memset(row, ' ', 20);
-  const char *msg = "NO SIGNAL";
-  for (int i = 0; i < 9; i++) row[6 + i] = (uint8_t)msg[i];
-  lcd_set_cursor(1, 0);
-  for (int i = 0; i < 20; i++) lcd_put(row[i]);
-  memset(row, ' ', 20);
-  lcd_set_cursor(2, 0);
-  for (int i = 0; i < 20; i++) lcd_put(row[i]);
+  if (h) draw_big_digit(h, 4);
+  if (h || t) draw_big_digit(t, 8);
+  draw_big_digit(u, 12);
 }
 
 /*******************************************************************************
@@ -214,10 +219,13 @@ void task_display(void *pvParameters) {
   lcd_init();
   lcd_load_custom_chars();
 
-  // row 3: static "km/h" label, centered at col 8
-  lcd_set_cursor(3, 8);
-  const char *kmh = "km/h";
-  for (int i = 0; i < 4; i++) lcd_put((uint8_t)kmh[i]);
+  // lcd_init()의 clear로 화면은 전부 공백 — 캐시도 공백으로 맞춰서 시작
+  memset(lcd_frame, ' ', sizeof(lcd_frame));
+  memset(lcd_want, ' ', sizeof(lcd_want));
+
+  // row 3: static "km/h" label, centered at col 8 (want에만 넣으면 flush가 알아서 쓴다)
+  memcpy(&lcd_want[3][8], "km/h", 4);
+  lcd_flush();
 
   TickType_t tick = xTaskGetTickCount();
 
@@ -227,6 +235,9 @@ void task_display(void *pvParameters) {
     bool stale = !display_can.valid ||
                  (xTaskGetTickCount() - display_can.last_tick) > pdMS_TO_TICKS(DISPLAY_STALE_MS);
 
+    memset(lcd_want, ' ', sizeof(lcd_want));
+    memcpy(&lcd_want[3][8], "km/h", 4);
+
     // Row 0: SOC%, right-aligned (e.g. "          SOC:64.3%")
     {
       char soc_str[12];
@@ -234,26 +245,25 @@ void task_display(void *pvParameters) {
       if (stale) {
         n = 10;
         memcpy(soc_str, "SOC: --.-%", 10);
-        soc_str[10] = '\0';
       } else {
         float soc = display_can.bms_soc_raw * 0.1f;
         n = snprintf(soc_str, sizeof(soc_str), "SOC:%.1f%%", soc);
       }
-      lcd_set_cursor(0, 0);
-      for (int i = 0; i < 20 - n; i++) lcd_put(' ');
-      for (int i = 0; i < n; i++) lcd_put((uint8_t)soc_str[i]);
+      memcpy(&lcd_want[0][20 - n], soc_str, n);
     }
 
     // Rows 1-2: vehicle speed as large digits
     if (stale) {
-      lcd_draw_no_signal();
+      memcpy(&lcd_want[1][6], "NO SIGNAL", 9);
     } else {
       float rpm = (float)display_can.ez_rpm_raw * 0.1f - 2000.0f;
       if (rpm < 0.0f) rpm = -rpm;
       float spd_kmh = rpm / DISPLAY_GEAR_RATIO * DISPLAY_TIRE_CIRC_M * 60.0f / 1000.0f;
       int spd = (int)(spd_kmh + 0.5f);
       if (spd > 999) spd = 999;
-      lcd_draw_speed(spd);
+      draw_speed(spd);
     }
+
+    lcd_flush();
   }
 }

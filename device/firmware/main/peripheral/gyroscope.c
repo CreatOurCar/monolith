@@ -65,6 +65,9 @@ void task_gyroscope(void *pvParameters) {
       sum_y += gyro_y;
       sum_z += gyro_z;
     }
+
+    // 샘플을 1ms 간격으로 분산 — 몰아 읽은 순간 노이즈 대신 32ms 구간 평균으로 오프셋 정확도 향상
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 
   int32_t off_x = -sum_x / sample / 2;

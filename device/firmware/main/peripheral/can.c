@@ -79,11 +79,17 @@ void task_can(void *pvParameters) {
 
     if (twai_receive(&msg, pdMS_TO_TICKS(100)) == ESP_OK) {
       log_t log;
-      log.payload.can.id       = msg.identifier;
-      log.payload.can.extended = msg.extd;
-      log.payload.can.remote   = msg.rtr;
-      log.payload.can.len      = msg.data_length_code;
-      memcpy(log.payload.can.data, msg.data, msg.data_length_code);
+      log.payload.can.id           = msg.identifier;
+      log.payload.can.extended     = msg.extd;
+      log.payload.can.remote       = msg.rtr;
+      log.payload.can.len          = msg.data_length_code;
+      log.payload.can._reserved[0] = 0;
+
+      // 비표준 노드는 DLC > 8을 보낼 수 있으므로 복사는 8바이트로 제한하고,
+      // 짧은 프레임의 나머지 바이트는 0으로 채워 스택 쓰레기가 기록되지 않게 한다
+      memset(log.payload.can.data, 0, sizeof(log.payload.can.data));
+      memcpy(log.payload.can.data, msg.data,
+        msg.data_length_code > sizeof(log.payload.can.data) ? sizeof(log.payload.can.data) : msg.data_length_code);
       LOG(LOG_TYPE_CAN, &log);
 
       // update display snapshot

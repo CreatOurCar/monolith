@@ -72,35 +72,41 @@ typedef enum {
   STATE_FATAL = pdMS_TO_TICKS(100),
 } state_led_interval_t;
 
+// LED 태스크 생성 자체가 실패한 경우 led == NULL — 그 상태로 xTaskAbortDelay(NULL)를
+// 부르면 assert로 리셋되므로, 상태 변경은 그대로 두고 LED 갱신만 건너뛴다
+static inline void led_refresh(void) {
+  if (led != NULL) xTaskAbortDelay(led);
+}
+
 static inline void SET_ERROR(state_t *state, state_component_t component) {
   *state |= (1 << component);
-  xTaskAbortDelay(led);
+  led_refresh();
 }
 
 static inline void SET_FATAL(state_t *state, state_component_t component) {
   *state |= (1 << (component + COMPONENT_MAX));
-  xTaskAbortDelay(led);
+  led_refresh();
 }
 
 static inline void CLEAR_ERROR(state_t *state, state_component_t component) {
   *state &= ~(1 << component);
-  xTaskAbortDelay(led);
+  led_refresh();
 }
 
 static inline void CLEAR_FATAL(state_t *state, state_component_t component) {
   *state &= ~(1 << (component + COMPONENT_MAX));
-  xTaskAbortDelay(led);
+  led_refresh();
 }
 
 static inline void CLEAR_ALL(state_t *state, state_component_t component) {
   *state &= ~((1 << component) | (1 << (component + COMPONENT_MAX)));
-  xTaskAbortDelay(led);
+  led_refresh();
 }
 
 static inline void COPY_STATE(state_t *dest, state_t *src, state_component_t component) {
   *dest = (*dest & ~(1 << component)) | (*src & (1 << component));
   *dest = (*dest & ~(1 << (component + COMPONENT_MAX))) | (*src & (1 << (component + COMPONENT_MAX)));
-  xTaskAbortDelay(led);
+  led_refresh();
 }
 
 #define IS_ERROR(state, component) (*state & (1 << component))
@@ -112,7 +118,7 @@ static inline void COPY_STATE(state_t *dest, state_t *src, state_component_t com
 
 typedef struct {
   state_t run;      // component OK/ERROR/FATAL bitmap (see state_component_t)
-  log_t digital;    // working buffer shared by task_digital and its ISR (digital.c)
+  log_t digital;    // last logged digital input state, owned by task_digital (digital.c)
 } log_buf_t;
 
 extern log_buf_t logbuf;
@@ -140,12 +146,6 @@ static inline int LOG(uint8_t type, log_t *log) {
   if (logqueue == NULL) return 0;
   log_prepare(type, log);
   return xQueueSend(logqueue, log, 0);
-}
-
-static inline int LOG_FROM_ISR(uint8_t type, log_t *log) {
-  if (logqueue == NULL) return 0;
-  log_prepare(type, log);
-  return xQueueSendFromISR(logqueue, log, NULL);
 }
 
 static inline void SYSLOG(const char *msg) {

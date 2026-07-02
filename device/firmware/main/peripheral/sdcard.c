@@ -6,7 +6,6 @@
 
 #include "driver/sdspi_host.h"
 #include "driver/spi_master.h"
-#include "driver/twai.h"
 #include "esp_vfs_fat.h"
 
 #define SD_SPI_HOST  SPI2_HOST
@@ -208,7 +207,7 @@ void sdcard_init(void) {
 
   INFO(SD, "log file: %s", logpath);
 
-  log_t boot_record;
+  log_t boot_record = { 0 };  // _reserved 등 미사용 바이트가 스택 쓰레기로 기록되지 않도록 전체 0 초기화
   boot_record.payload.boot.protocol_version = PROTOCOL_VERSION;
   boot_record.payload.boot.boot_time        = (uint64_t)boot.tv_sec;
   memcpy(boot_record.payload.boot.mac, storage.wifi.mac, sizeof(storage.wifi.mac));
