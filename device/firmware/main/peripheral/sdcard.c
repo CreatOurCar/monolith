@@ -177,7 +177,7 @@ void sdcard_init(void) {
   nvs_commit(nvs);
 
   // set log file (datetime is 1970 until GPS sets the clock; the counter keeps it unique)
-  setenv("TZ", storage.device.tz, 1);
+  setenv("TZ", storage.tz, 1);
   tzset();
 
   struct tm tp;
@@ -210,7 +210,7 @@ void sdcard_init(void) {
   log_t boot_record = { 0 };  // _reserved 등 미사용 바이트가 스택 쓰레기로 기록되지 않도록 전체 0 초기화
   boot_record.payload.boot.protocol_version = PROTOCOL_VERSION;
   boot_record.payload.boot.boot_time        = (uint64_t)boot.tv_sec;
-  memcpy(boot_record.payload.boot.mac, storage.wifi.mac, sizeof(storage.wifi.mac));
+  memcpy(boot_record.payload.boot.mac, storage.mac, sizeof(storage.mac));
 
   if (LOG(LOG_TYPE_BOOT, &boot_record) != true) {
     FATAL_LOG(&init, SD, "boot record failure");

@@ -42,7 +42,7 @@
 ## 3-1. 부팅 순서 — [main.c](device/firmware/main/main.c)
 `app_main()`이 순서대로 초기화합니다:
 1. `core_init()` — 온보드 RGB(GPIO38) 소등, 상태 LED(GPIO5) + `task_led` 생성, GPIO ISR 서비스 설치.
-2. `nvs_init()` — 설정 영구저장소. MAC 주소 읽기, 타임존(기본 `KST-9`), CAN/GPS/analog/digital 활성화 여부, CAN 비트레이트·필터·마스크, GPS 장치종류 등 **기본값 채우기**.
+2. `nvs_init()` — 설정 영구저장소. MAC 주소 읽기, 타임존(기본 `KST-9`), CAN/GPS/analog/digital 활성화 여부, CAN 비트레이트·필터·마스크, GPS 장치종류 등 **기본값 채우기**. WiFi 자격증명(ssid/passwd/server 등) 기본값은 네트워크 제거와 함께 사라졌고, 설정 구조체(`nvs_storage_t`)도 옛 `wifi`/`device` 그룹을 걷어내고 `storage.mac`/`storage.tz` 최상위 필드로 평탄화됨.
 3. `i2c0_init()` — TZ=UTC 설정, I2C0(GPIO9/10) 버스 생성(**자이로·디스플레이가 공유**), `gettimeofday(&boot,...)`로 부팅 시각 기록(GPS가 시계를 맞추기 전이라 아직 1970년 epoch 0일 수 있음).
 4. `sdcard_init()` — SD 마운트 + `logqueue` 생성 + SD 기록 태스크 + BOOT 레코드 기록.
 5. `peripheral_task_init()` — CAN/GPS/Analog/Digital/Gyroscope/Display 태스크 생성(설정에서 켜진 것만; Gyroscope·Display는 항상 생성).
@@ -54,28 +54,28 @@
 ## 3-2. 로그의 심장 — `LOG()` 매크로 ([main.h:146](device/firmware/main/include/main.h#L146))
 모든 센서 태스크가 `log_t`(24바이트)를 채우고 `LOG(타입, &log)` 한 줄로 끝냅니다. 매크로가:
 - 헤더 채움 (magic 0xAE, type, timestamp=부팅후 ms)
-- **체크섬** 계산 (6개 uint32 XOR → 16비트 폴딩)
-- `logqueue`에 넣음 (`xQueueSend`, 논블로킹). ISR 컨텍스트용 `LOG_FROM_ISR`도 동일 로직.
+- **체크섬** 계산 (6개 uint32 XOR → 16비트 폴딩, 8-1절)
+- `logqueue`에 넣음 (`xQueueSend`, 논블로킹). (예전의 `LOG_FROM_ISR`은 digital.c가 디바운스 구조로 바뀌면서 제거 — 이제 ISR에서 직접 기록하는 곳은 없습니다)
 
 큐는 `sdcard_init()`에서 `xQueueCreate(2560, sizeof(log_t))`로 생성되는 **`logqueue` 하나**뿐입니다.
 
 ## 3-3. 센서 태스크들 (`main/peripheral/`)
 | 파일 | 역할 | 핵심 |
 |------|------|------|
-| [can.c](device/firmware/main/peripheral/can.c) | TWAI(CAN) 수신, GPIO15/16 | 모든 프레임을 그대로 SD에 기록(레이트 제한 없음 — MQTT가 없으니 대역폭 걱정이 없어짐). EZ RPM·Daly SOC는 `display_can` 스냅샷에도 복사해 디스플레이가 사용 |
-| [analog.c](device/firmware/main/peripheral/analog.c) | ADS1115 외장 ADC 2개(0x48/0x49), I2C1(GPIO42 SCL/47 SDA) | **두 모듈 동시 변환** 후 1.4ms 한 번만 대기(파이프라이닝). ain1~8 |
-| [gyroscope.c](device/firmware/main/peripheral/gyroscope.c) | MPU-6050(0x68), I2C0 공유버스, 100Hz | 부팅 시 32샘플로 자이로 오프셋 자동 캘리브레이션 후 가속도/자이로 읽기 |
-| [gps.c](device/firmware/main/peripheral/gps.c) | u-blox GPS, UART1(GPIO17/18) | NMEA GPRMC 파싱 → 위경도/속도/방위. **첫 유효 픽스에서 시스템 시계를 1회 설정**하고 `boot_time_fixup_epoch`를 세팅해 SD 태스크에 보정을 트리거 |
-| [digital.c](device/firmware/main/peripheral/digital.c) | 디지털 입력 4채널(GPIO11~14) | ISR 기반(ANYEDGE, pull-down), 휠스피드센서 등 |
-| [display.c](device/firmware/main/peripheral/display.c) | I2C LCD(PCF8574 0x27) + HD44780, I2C0 공유버스, 1Hz | **차속 계산**: CAN RPM → 기어비 4.02 + 타이어 둘레로 km/h 환산, 대형 숫자 폰트 표시. SOC%도 상단에 표시. PCF8574 없으면 자동 종료 |
+| [can.c](device/firmware/main/peripheral/can.c) | TWAI(CAN) 수신, GPIO15/16 | `twai_receive()` **블로킹 수신**(100ms 타임아웃) — 프레임이 없으면 잠들어 있어 유휴 CPU 점유 최소. 모든 프레임을 그대로 SD에 기록(레이트 제한 없음). `data[]`는 8바이트 고정(짧은 프레임은 0 채움, DLC>8 방어). EZ RPM·Daly SOC는 `display_can` 스냅샷에도 복사해 디스플레이가 사용 |
+| [analog.c](device/firmware/main/peripheral/analog.c) | ADS1115 외장 ADC 2개(0x48/0x49), I2C1(GPIO42 SCL/47 SDA) | **두 모듈 동시 변환** 후 1.4ms 한 번만 대기(파이프라이닝). 대기도 busy-wait이 아니라 `vTaskDelay(2ms)`로 CPU 양보 후 부족분만 짧게 spin(8-7절). ain1~8 |
+| [gyroscope.c](device/firmware/main/peripheral/gyroscope.c) | MPU-6050(0x68), I2C0 공유버스, 100Hz | 부팅 시 32샘플을 **1ms 간격으로 분산 수집**해 자이로 오프셋 자동 캘리브레이션(8-9절) 후 가속도/자이로 읽기 |
+| [gps.c](device/firmware/main/peripheral/gps.c) | u-blox GPS, UART1(GPIO17/18) | NMEA GPRMC 파싱 → 위경도/속도/방위. **첫 유효 픽스에서 시스템 시계를 1회 설정**하고 `boot_time_fixup_epoch`를 세팅해 SD 태스크에 보정을 트리거. 파서는 콤마 누락(깨진 문장)에도 NULL 역참조 없이 안전 |
+| [digital.c](device/firmware/main/peripheral/digital.c) | 디지털 입력 4채널(GPIO11~14) | **디바운스 구조**(8-4절): ISR은 마지막 엣지 시각 기록+태스크 깨우기만, 태스크가 버스트 첫 엣지 즉시 1회 + 10ms 조용해진 뒤 안정 상태 기록(변화 없으면 스킵) |
+| [display.c](device/firmware/main/peripheral/display.c) | I2C LCD(PCF8574 0x27) + HD44780, I2C0 공유버스, 1Hz | **차속 계산**: CAN RPM → 기어비 4.02 + 타이어 둘레로 km/h 환산, 대형 숫자 폰트 표시. SOC%도 상단에 표시. **diff 렌더링**(8-5절): 프레임버퍼 비교로 바뀐 글자만 I2C 전송 → 같은 버스의 자이로를 방해하지 않음. PCF8574 없으면 자동 종료 |
 
-각 태스크 공통 패턴: 샘플 → `LOG()`(SD 기록) + (CAN·아날로그·자이로는) `memcpy(&logbuf.xxx, ...)`로 `logbuf`에도 최신값 유지 — `logbuf`는 현재 상태 비트맵과 함께 디버깅/디스플레이용 스냅샷 역할만 합니다(더 이상 어디로도 발행되지 않음).
+각 태스크 공통 패턴: 샘플 → `LOG()`(SD 기록). `logbuf`에는 이제 상태 비트맵(`run`)과 digital 최종 기록 상태(`digital` — 변화 감지 비교용)만 남았습니다. 예전의 CAN/아날로그/자이로 스냅샷 필드는 읽는 곳이 없어 제거됐고, 디스플레이용 CAN 값은 별도의 `display_can` 구조체로 전달됩니다.
 
 ## 3-4. SD 기록 — [sdcard.c](device/firmware/main/peripheral/sdcard.c)
-- SPI2(SCK39/MOSI40/MISO48/CS41), **SDSPI** 모드(SDMMC 아님), 프로빙 400kHz(점퍼선 모듈 안정성 때문에 낮춤).
+- SPI2(SCK39/MOSI40/MISO48/CS41), **SDSPI** 모드(SDMMC 아님), 클럭 **4MHz** — 점퍼선 배선에서 기본값 20MHz는 읽기 손상이 나고, 400kHz는 CAN 만부하 로깅(~50KB/s)을 못 따라가서 중간값으로 선정. (실카드 기록 → 뷰어 체크섬 검증 예정)
 - 파일명은 `/sdcard/<부팅카운터 8자리>-<YYYY-MM-DD-HH-MM-SS>.log`. 부팅카운터는 NVS에 저장된 단조증가 값 — GPS가 아직 시계를 못 맞춰 `boot.tv_sec == 0`(1970년)이어도 매 부팅마다 파일명이 겹쳐 `O_TRUNC`로 이전 로그를 지우는 사고를 막아줍니다.
 - 첫 레코드는 항상 **BOOT 레코드**(프로토콜 버전 + MAC + 부팅 시각).
-- `task_sdcard`: logqueue를 비우며 raw 24바이트 그대로 `write()`. **fsync는 512건 또는 3사이클(~600ms)마다** 묶어서 → SD 마모·지연 감소.
+- `task_sdcard`: 200ms마다 logqueue를 비우되, 레코드를 **64개(1536B = FAT 섹터 3개)씩 모아 한 번의 `write()`로 기록**(8-2절) — 호출당 VFS/FATFS 오버헤드를 줄이면서 파일의 바이트·순서는 개별 write와 완전히 동일. **fsync는 512건 또는 3사이클(~600ms)마다** 묶어서 → SD 마모·지연 감소. write/fsync 실패 시 FATAL 상태 전환.
 - **BOOT 레코드 boot_time 역보정** (`correct_boot_record`, STEP 7): GPS가 첫 픽스로 시계를 맞추면 `gps.c`가 `boot_time_fixup_epoch`를 세팅하고, `task_sdcard`가 다음 루프에서 파일의 레코드 0(BOOT)을 되읽어 `boot_time`만 고쳐 쓰고 체크섬을 재계산합니다. 매직/타입/레이아웃은 그대로 두고 **`boot_time` 필드 값만** 바뀝니다. 파일 오프셋은 항상 EOF로 복원하므로 이어지는 append 스트림엔 영향 없음.
 - **파일 = 와이어 포맷과 100% 동일**. 그래서 외부 업스트림 뷰어가 같은 24바이트 파서로 그대로 읽습니다.
 

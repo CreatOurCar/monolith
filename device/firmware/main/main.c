@@ -145,14 +145,14 @@ static void nvs_init(void) {
   }
 
   // read MAC (unique device ID written into the BOOT record)
-  esp_read_mac(storage.wifi.mac, ESP_MAC_WIFI_STA);
+  esp_read_mac(storage.mac, ESP_MAC_WIFI_STA);
 
   // set device timezone default value (used for the SD log filename)
-  size_t len = sizeof(storage.device.tz);
+  size_t len = sizeof(storage.tz);
 
-  if (nvs_get_str(nvs, "tz", storage.device.tz, &len) != ESP_OK) {
-    snprintf(storage.device.tz, sizeof(storage.device.tz), "KST-9");
-    nvs_set_str(nvs, "tz", storage.device.tz);
+  if (nvs_get_str(nvs, "tz", storage.tz, &len) != ESP_OK) {
+    snprintf(storage.tz, sizeof(storage.tz), "KST-9");
+    nvs_set_str(nvs, "tz", storage.tz);
   }
 
   // set peripheral enabled default values

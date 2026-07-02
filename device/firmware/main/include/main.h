@@ -19,12 +19,8 @@ extern volatile uint64_t boot_time_fixup_epoch;  // GPS→SD: corrected boot epo
 
 /***** nvs storage *****/
 typedef struct {
-  struct {
-    uint8_t mac[6];      // filled by esp_read_mac(); written into the BOOT record
-  } wifi;
-  struct {
-    char tz[40];         // local timezone, used for the SD log filename
-  } device;
+  uint8_t mac[6];        // filled by esp_read_mac(); written into the BOOT record
+  char tz[40];           // local timezone, used for the SD log filename
   struct {
     uint8_t can;
     uint8_t gps;
