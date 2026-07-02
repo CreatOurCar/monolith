@@ -69,15 +69,24 @@ restore:
 /*******************************************************************************
  * save log queue to SD card every 1000 ms
  ******************************************************************************/
+static void write_batch(int fd, const log_t *batch, int n) {
+  if (write(fd, batch, n * sizeof(log_t)) != (ssize_t)(n * sizeof(log_t)) && !IS_FATAL(&logbuf.run, SD)) {
+    FATAL_LOG(&logbuf.run, SD, "write failure");
+  }
+}
+
 static void task_sdcard(void *pvParameters) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  int ret;
   int fd = (int)pvParameters;
-  log_t log;
   int write_count = 0;
   int cycle_count = 0;
   bool boot_fixed = false;  // BOOT record boot_time corrected once from GPS
+
+  // 레코드를 모아서 write() 호출 횟수를 줄인다 (호출당 VFS+FATFS 오버헤드).
+  // 파일에 기록되는 바이트와 레코드 순서는 개별 write와 완전히 동일 — 뷰어 호환 유지.
+  // 64개 × 24B = 1536B = FAT 섹터 3개. 태스크 스택(4KB)에 안 올리려고 static.
+  static log_t batch[64];
 
   while (true) {
     // one-time boot_time correction once GPS has set the clock (STEP 7 trigger)
@@ -87,12 +96,22 @@ static void task_sdcard(void *pvParameters) {
       boot_fixed = true;
     }
 
-    do {
-      if ((ret = xQueueReceive(logqueue, &log, 0)) == pdTRUE) {
-        write(fd, &log, sizeof(log));
-        write_count++;
+    int n = 0;
+
+    while (xQueueReceive(logqueue, &batch[n], 0) == pdTRUE) {
+      n++;
+
+      if (n == (int)(sizeof(batch) / sizeof(batch[0]))) {
+        write_batch(fd, batch, n);
+        write_count += n;
+        n = 0;
       }
-    } while (ret);
+    }
+
+    if (n > 0) {
+      write_batch(fd, batch, n);
+      write_count += n;
+    }
 
     cycle_count++;
 
@@ -124,7 +143,7 @@ void sdcard_init(void) {
   sdmmc_card_t *card;
   sdmmc_host_t host = SDSPI_HOST_DEFAULT();
   host.slot         = SD_SPI_HOST;
-  host.max_freq_khz = SDMMC_FREQ_PROBING;  // 400 kHz — 점퍼선 SPI 모듈은 20MHz 기본값에서 읽기 손상
+  host.max_freq_khz = 4000;  // 4 MHz — 점퍼선 배선은 20MHz 기본값에서 읽기 손상, 400kHz는 CAN 만부하 로깅(~50KB/s)을 못 따라감
 
   spi_bus_config_t bus_cfg = {
     .mosi_io_num     = SD_PIN_MOSI,

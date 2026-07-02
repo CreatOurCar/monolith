@@ -117,7 +117,12 @@ void task_analog(void *pvParameters) {
         if (cnt) i2c_master_bus_reset(i2c1);
         ret  = adc_start(adc1, ch[i]);
         ret |= adc_start(adc2, ch[i]);
-        esp_rom_delay_us(1400);
+        // 860SPS 변환에 1.163ms 필요 — busy-wait 대신 sleep으로 CPU를 양보하고,
+        // 스케줄러가 일찍 깨운 경우에만 부족분을 짧게 spin해서 채운다
+        int64_t t0 = esp_timer_get_time();
+        vTaskDelay(pdMS_TO_TICKS(2));
+        int64_t remain = 1400 - (esp_timer_get_time() - t0);
+        if (remain > 0) esp_rom_delay_us((uint32_t)remain);
         ret |= adc_read(adc1, dst1[i]);
         ret |= adc_read(adc2, dst2[i]);
         cnt++;

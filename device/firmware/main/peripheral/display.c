@@ -56,14 +56,24 @@ static void lcd_nibble(uint8_t nibble, uint8_t flags) {
   lcd_pulse_en((uint8_t)((nibble << 4) | LCD_BL | flags));
 }
 
+/* one full byte = both nibbles' EN pulses in a single 4-byte I2C transaction
+ * (PCF8574 latches its outputs after every received byte). At 100kHz each I2C
+ * byte spends ~90us on the wire — longer than the HD44780's 37us execution
+ * time — so no explicit delay between pulses is needed. Kept to one character
+ * per transaction so the gyroscope sharing I2C0 is never blocked for long. */
+static void lcd_write8(uint8_t b, uint8_t flags) {
+  uint8_t hi     = (uint8_t)((b & 0xF0) | LCD_BL | flags);
+  uint8_t lo     = (uint8_t)((b << 4) | LCD_BL | flags);
+  uint8_t seq[4] = { hi | LCD_EN, hi, lo | LCD_EN, lo };
+  i2c_master_transmit(pcf8574_dev, seq, sizeof(seq), I2C_TIMEOUT_MS);
+}
+
 static void lcd_cmd(uint8_t cmd) {
-  lcd_nibble(cmd >> 4, 0);
-  lcd_nibble(cmd & 0x0F, 0);
+  lcd_write8(cmd, 0);
 }
 
 static void lcd_put(uint8_t b) {
-  lcd_nibble(b >> 4, LCD_RS);
-  lcd_nibble(b & 0x0F, LCD_RS);
+  lcd_write8(b, LCD_RS);
 }
 
 static void lcd_set_cursor(uint8_t row, uint8_t col) {

@@ -69,10 +69,44 @@ void task_can(void *pvParameters) {
     COPY_STATE(&logbuf.run, &init, CAN);
   }
 
-  uint32_t prev_alerts = 0;
+  uint32_t prev_alerts       = 0;
+  TickType_t last_alert_tick = xTaskGetTickCount();
 
   while (true) {
-    // check CAN alerts
+    // block inside the driver until a frame arrives; the timeout only bounds
+    // how long the periodic alert check below can be deferred on an idle bus
+    twai_message_t msg;
+
+    if (twai_receive(&msg, pdMS_TO_TICKS(100)) == ESP_OK) {
+      log_t log;
+      log.payload.can.id       = msg.identifier;
+      log.payload.can.extended = msg.extd;
+      log.payload.can.remote   = msg.rtr;
+      log.payload.can.len      = msg.data_length_code;
+      memcpy(log.payload.can.data, msg.data, msg.data_length_code);
+      LOG(LOG_TYPE_CAN, &log);
+
+      // update display snapshot
+      if (msg.identifier == CAN_EZ_ID1 && msg.data_length_code >= 8) {
+        display_can.ez_rpm_raw = (uint16_t)msg.data[6] | ((uint16_t)msg.data[7] << 8);
+        display_can.valid      = 1;
+        display_can.last_tick  = xTaskGetTickCount();
+      } else if (msg.identifier == CAN_DALY_ID90 && msg.data_length_code >= 8) {
+        display_can.bms_soc_raw = ((uint16_t)msg.data[6] << 8) | (uint16_t)msg.data[7];
+        display_can.valid       = 1;
+        display_can.last_tick   = xTaskGetTickCount();
+      }
+    }
+
+    // check CAN alerts at most every 100 ms
+    TickType_t now = xTaskGetTickCount();
+
+    if (now - last_alert_tick < pdMS_TO_TICKS(100)) {
+      continue;
+    }
+
+    last_alert_tick = now;
+
     uint32_t alerts = 0;
     twai_read_alerts(&alerts, 0);
 
@@ -94,35 +128,5 @@ void task_can(void *pvParameters) {
       CLEAR_ERROR(&logbuf.run, CAN);
       prev_alerts = 0;
     }
-
-    // receive CAN messages
-    twai_message_t msg;
-
-    while (true) {
-      if (twai_receive(&msg, pdMS_TO_TICKS(0)) != ESP_OK) {
-        break;
-      }
-
-      log_t log;
-      log.payload.can.id       = msg.identifier;
-      log.payload.can.extended = msg.extd;
-      log.payload.can.remote   = msg.rtr;
-      log.payload.can.len      = msg.data_length_code;
-      memcpy(log.payload.can.data, msg.data, msg.data_length_code);
-      LOG(LOG_TYPE_CAN, &log);
-
-      // update display snapshot
-      if (msg.identifier == CAN_EZ_ID1 && msg.data_length_code >= 8) {
-        display_can.ez_rpm_raw = (uint16_t)msg.data[6] | ((uint16_t)msg.data[7] << 8);
-        display_can.valid      = 1;
-        display_can.last_tick  = xTaskGetTickCount();
-      } else if (msg.identifier == CAN_DALY_ID90 && msg.data_length_code >= 8) {
-        display_can.bms_soc_raw = ((uint16_t)msg.data[6] << 8) | (uint16_t)msg.data[7];
-        display_can.valid       = 1;
-        display_can.last_tick   = xTaskGetTickCount();
-      }
-    }
-
-    vTaskDelay(1);  // 1 tick = 1ms at 1000Hz
   }
 }

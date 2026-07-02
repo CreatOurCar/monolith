@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -24,27 +25,48 @@ typedef struct {
   uint8_t *others;
 } nmea_gprmc_t;
 
-#define FIND_AND_NUL(s, p, c) ((p) = (uint8_t *)strchr((char *)s, c), *(p) = '\0', ++(p), (p))
+/* NUL-terminate the current field at the next comma and return the next field.
+ * Returns NULL when there is no next comma (truncated/corrupted sentence). */
+static uint8_t *next_field(uint8_t *s) {
+  uint8_t *p = (uint8_t *)strchr((char *)s, ',');
+  if (p == NULL) return NULL;
+  *p = '\0';
+  return p + 1;
+}
 
 bool parse_nmea_gprmc(nmea_gprmc_t *gprmc, uint8_t *data) {
   gprmc->id       = data;
-  gprmc->utc_time = FIND_AND_NUL(gprmc->id, gprmc->utc_time, ',');
-  gprmc->status   = FIND_AND_NUL(gprmc->utc_time, gprmc->status, ',');
+  gprmc->utc_time = next_field(gprmc->id);
+  if (gprmc->utc_time == NULL) return false;
 
-  if (*gprmc->status == 'A') {
-    gprmc->lat      = FIND_AND_NUL(gprmc->status, gprmc->lat, ',');
-    gprmc->north    = FIND_AND_NUL(gprmc->lat, gprmc->north, ',');
-    gprmc->lon      = FIND_AND_NUL(gprmc->north, gprmc->lon, ',');
-    gprmc->east     = FIND_AND_NUL(gprmc->lon, gprmc->east, ',');
-    gprmc->speed    = FIND_AND_NUL(gprmc->east, gprmc->speed, ',');
-    gprmc->course   = FIND_AND_NUL(gprmc->speed, gprmc->course, ',');
-    gprmc->utc_date = FIND_AND_NUL(gprmc->course, gprmc->utc_date, ',');
-    gprmc->others   = FIND_AND_NUL(gprmc->utc_date, gprmc->others, ',');
+  gprmc->status = next_field(gprmc->utc_time);
+  if (gprmc->status == NULL || *gprmc->status != 'A') return false;
 
-    return true;
-  } else {
-    return false;
-  }
+  gprmc->lat = next_field(gprmc->status);
+  if (gprmc->lat == NULL) return false;
+
+  gprmc->north = next_field(gprmc->lat);
+  if (gprmc->north == NULL) return false;
+
+  gprmc->lon = next_field(gprmc->north);
+  if (gprmc->lon == NULL) return false;
+
+  gprmc->east = next_field(gprmc->lon);
+  if (gprmc->east == NULL) return false;
+
+  gprmc->speed = next_field(gprmc->east);
+  if (gprmc->speed == NULL) return false;
+
+  gprmc->course = next_field(gprmc->speed);
+  if (gprmc->course == NULL) return false;
+
+  gprmc->utc_date = next_field(gprmc->course);
+  if (gprmc->utc_date == NULL) return false;
+
+  gprmc->others = next_field(gprmc->utc_date);
+  if (gprmc->others == NULL) return false;
+
+  return true;
 }
 
 static const uint32_t GPS_BAUD_RATES[] = { 115200, 57600, 38400, 19200, 9600 };
@@ -192,12 +214,18 @@ void task_gps(void *pvParameters) {
     }
 
     int pos = uart_pattern_pop_pos(UART_NUM_1);
+    int len = -1;
 
-    if (pos < 0 || pos >= sizeof(data) || uart_read_bytes(UART_NUM_1, data, pos + 1, pdMS_TO_TICKS(0)) < 6) {
+    // pos + 1 bytes are read below and one more byte is needed for the '\0'
+    if (pos < 0 || pos + 2 > (int)sizeof(data) ||
+        (len = uart_read_bytes(UART_NUM_1, data, pos + 1, pdMS_TO_TICKS(0))) < 6) {
       uart_flush_input(UART_NUM_1);
       uart_pattern_queue_reset(UART_NUM_1, 16);
       continue;
     }
+
+    // NUL-terminate so strncmp()/strchr() below can never scan past the buffer
+    data[len] = '\0';
 
     if (data[0] == '$') {
       if (gps_state != 1) {

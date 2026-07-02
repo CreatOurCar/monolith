@@ -54,7 +54,6 @@
 
 | GPIO | 인터페이스 | 신호 | 연결 대상 | 정의 위치 |
 |:----:|-----------|------|-----------|-----------|
-| 5  | GPIO Out (OD)   | 상태 LED  | 외부 상태표시 LED (장착됨) | `main/main.c:83,117` |
 | 9  | I2C0 SDA        | SDA       | 자이로·LCD 공유 버스       | `main/main.c:231` |
 | 10 | I2C0 SCL        | SCL       | 자이로·LCD 공유 버스       | `main/main.c:230` |
 | 11 | GPIO In (ISR)   | DIN1      | 디지털 입력 1 (휠스피드 등) | `main/peripheral/digital.c:19,36` |

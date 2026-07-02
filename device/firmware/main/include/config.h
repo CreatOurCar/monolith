@@ -47,6 +47,6 @@ enum {
 /***** sensor task intervals *****/
 #define TASK_INTERVAL_GYRO   pdMS_TO_TICKS(10)   // 100Hz
 
-#define TASK_INTERVAL_ANALOG pdMS_TO_TICKS(10)   // 100Hz (ADS1115 모듈 2개 7ch, ~6.2ms/cycle with pipelining)
+#define TASK_INTERVAL_ANALOG pdMS_TO_TICKS(10)   // 100Hz (ADS1115 모듈 2개 8ch, 변환 대기 sleep 포함 ~8.5ms/cycle)
 
 #endif  // CONFIG_H
